@@ -1,2 +1,2 @@
-# buffalo
+# Buffalo
 A Matrix Factorization Library
