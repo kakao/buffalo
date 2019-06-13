@@ -20,10 +20,10 @@ class Algo(abc.ABC):
 
     def get_option(self, opt_path) -> (aux.Option, str):
         if isinstance(opt_path, dict):
-            opt_path = self.cls_opt.create_temporary_option_from_dict(opt_path)
+            opt_path = self.create_temporary_option_from_dict(opt_path)
         opt = aux.Option(opt_path)
         opt_path = opt_path
-        self.cls_opt.is_valid_option(opt)
+        self.is_valid_option(opt)
         return (opt, opt_path)
 
 
