@@ -4,6 +4,8 @@ import abc
 import json
 import tempfile
 
+from buffalo.misc import aux
+
 
 class Algo(abc.ABC):
     def __init__(self, *args, **kwargs):
@@ -15,6 +17,14 @@ class Algo(abc.ABC):
                 os.remove(path)
             except Exception as e:
                 self.logger.warning('Cannot remove temporary file: %s, Error: %s' % (path, e))
+
+    def get_option(self, opt_path) -> (aux.Option, str):
+        if isinstance(opt_path, dict):
+            opt_path = self.cls_opt.create_temporary_option_from_dict(opt_path)
+        opt = aux.Option(opt_path)
+        opt_path = opt_path
+        self.cls_opt.is_valid_option(opt)
+        return (opt, opt_path)
 
 
 class AlgoOption(abc.ABC):

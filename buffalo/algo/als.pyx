@@ -78,14 +78,11 @@ class ALS(Algo):
         super(ALS, self).__init__(*args, **kwargs)
         self.logger = aux.get_logger('ALS')
         self.cls_opt = AlsOption()
-        self.temporary_files = []
-        if type(opt_path) == dict:
-            opt_path = self.cls_opt.create_temporary_option_from_dict(opt_path)
-            self.temporary_files.append(opt_path)
-        self.opt = aux.Option(opt_path)
-        self.cls_opt.is_valid_option(self.opt)
+
+        self.opt, self.opt_path = self.get_option(opt_path)
         self.obj = PyALS()
-        assert self.obj.init(bytes(opt_path, 'utf-8')), 'cannot parse option file: %s' % opt_path
+        assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
+            'cannot parse option file: %s' % opt_path
 
     def init_factors(self):
         self.P = np.abs(np.random.normal(scale=1.0/self.opt.d, size=(200000, self.opt.d)).astype("float32"))
