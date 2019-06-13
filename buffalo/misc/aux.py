@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import os
+
 
 def get_logger(name=__file__):
     import logging
@@ -55,3 +57,15 @@ class Option(dict):
     def __delitem__(self, key):
         super(Option, self).__delitem__(key)
         del self.__dict__[key]
+
+
+def mkdirs(path):
+    if not path:
+        return True
+    if os.path.isdir(path):
+        return True
+    if path.endswith('/'):
+        path = path[:-1]
+    parent = path.split('/')[:-1]
+    mkdirs('/'.join(parent))
+    os.mkdir(path)
