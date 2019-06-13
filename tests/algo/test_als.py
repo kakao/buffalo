@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
-import json
 import unittest
-import tempfile
-from buffalo.algo.als import ALS, AlsOption
-from buffalo.misc import aux
+from buffalo.algo.als import ALS
+from buffalo.algo.options import AlsOption
 
 
 class TestALS(unittest.TestCase):
