@@ -19,6 +19,11 @@ class TestALS(unittest.TestCase):
         opt['save_best_only'] = False
         self.assertTrue(AlsOption().is_valid_option(opt))
 
+    def test1_init_with_dict(self):
+        opt = AlsOption().get_default_option()
+        ALS(opt)
+        self.assertTrue(True)
+
 
 if __name__ == '__main__':
     unittest.main()

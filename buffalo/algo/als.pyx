@@ -1,4 +1,4 @@
-# cython: experimental_cpp_class_def=True, language_level=2
+# cython: experimental_cpp_class_def=True, language_level=3
 # distutils: language=c++
 # -*- coding: utf-8 -*-
 from libcpp cimport bool
@@ -74,15 +74,18 @@ class ALS(Algo):
     Implementation of Collaborative Filtering for Implicit Feedback datasets.
 
     Reference: http://yifanhu.net/PUB/cf.pdf"""
-    def __init__(self, opt_path, **kwargs):
+    def __init__(self, opt_path, *args, **kwargs):
+        super(ALS, self).__init__(*args, **kwargs)
         self.logger = aux.get_logger('ALS')
         self.cls_opt = AlsOption()
-        if isinstance(opt_path) == dict:
+        self.temporary_files = []
+        if type(opt_path) == dict:
             opt_path = self.cls_opt.create_temporary_option_from_dict(opt_path)
+            self.temporary_files.append(opt_path)
         self.opt = aux.Option(opt_path)
         self.cls_opt.is_valid_option(self.opt)
         self.obj = PyALS()
-        assert self.obj.init(opt_path), 'cannot parse option file: %s' % opt_path
+        assert self.obj.init(bytes(opt_path, 'utf-8')), 'cannot parse option file: %s' % opt_path
 
     def init_factors(self):
         self.P = np.abs(np.random.normal(scale=1.0/self.opt.d, size=(200000, self.opt.d)).astype("float32"))
