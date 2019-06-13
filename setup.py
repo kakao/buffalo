@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 """Buffalo
 """
 DOCLINES = __doc__.split("\n")
@@ -10,7 +9,7 @@ import pathlib
 import platform
 import subprocess
 from setuptools import setup
-from ConfigParser import ConfigParser
+from configparser import ConfigParser
 from distutils.extension import Extension
 from setuptools.command.build_ext import build_ext
 try:
@@ -23,22 +22,23 @@ import numpy
 import eigency
 
 # TODO: Python3 Support
-if sys.version_info[:2] < (2, 7) or (2, 8) <= sys.version_info[0:2]:
-    raise RuntimeError("Python version 2.7 required.")
+if sys.version_info[:3] < (3, 6):
+    raise RuntimeError("Python version 3.6 or later required.")
+
 assert platform.system() == 'Linux'  # TODO: MacOS
 numpy_include_dirs = os.path.split(numpy.__file__)[0] + '/core/include'
-
-CLASSIFIERS = """Development Status :: 0.1.0 - Dev
-Programming Language :: C/C++
-Programming Language :: Cythonj
-Programming Language :: Python :: 2.7
-Operating System :: Unix
-Operating System :: MacOS"""
 
 MAJOR = 0
 MINOR = 1
 MICRO = 0
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+
+CLASSIFIERS = """Development Status :: {version} - Dev
+Programming Language :: C/C++
+Programming Language :: Cython
+Programming Language :: Python :: 3.6+
+Operating System :: Unix
+Operating System :: MacOS""".format(version=VERSION)
 site_cfg = ConfigParser()
 site_cfg.read('site.cfg')
 

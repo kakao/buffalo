@@ -1,4 +1,4 @@
-# cython: experimental_cpp_class_def=True, language_level=2
+# cython: experimental_cpp_class_def=True
 # distutils: language=c++
 # -*- coding: utf-8 -*-
 
