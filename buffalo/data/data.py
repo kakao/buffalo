@@ -17,7 +17,7 @@ def load(opt):
     assert isinstance(opt, (dict, aux.Option)), 'opt must be either str, or dict/aux.Option but {}'.format(type(opt))
     if opt['type'] == 'matrix_market':
         return MatrixMarket(opt)
-    raise RuntimeError('Unexpected data.type: {}'.format(opt['type'))
+    raise RuntimeError('Unexpected data.type: {}'.format(opt['type']))
 
 
 class MatrixMarketOptions(aux.InputOptions):
@@ -57,17 +57,17 @@ class Data(object):
         pass
 
     def get_header(self):
-        assert self.db, 'DB is not opened'
+        assert self.handle, 'DB is not opened'
         if not self.header:
-            self.header = {'num_nnz': self.db['header']['num_nnz'][0],
-                           'num_users': self.db['header']['num_users'][0],
-                           'num_items': self.db['header']['num_items'][0]}
+            self.header = {'num_nnz': self.handle['header']['num_nnz'][0],
+                           'num_users': self.handle['header']['num_users'][0],
+                           'num_items': self.handle['header']['num_items'][0]}
         return self.header
 
     def iterate(self, axis='rowwise') -> [int, int, float]:
         assert axis in ['rowwise', 'colwise'], 'Unexpected axis: {}'.format(axis)
-        assert self.db, 'DB is not opened'
-        group = self.db[axis]
+        assert self.handle, 'DB is not opened'
+        group = self.handle[axis]
         data_index = 0
         for u, end in enumerate(group['indptr']):
             keys = group['key'][data_index:end]
@@ -78,27 +78,27 @@ class Data(object):
 
     def get_data(self, key, axis='rowwise') -> (int, [[int, float]]):
         assert axis in ['rowwise', 'colwise'], 'Unexpected axis: {}'.format(axis)
-        assert self.db, 'DB is not opened'
+        assert self.handle, 'DB is not opened'
         limit = self.get_header()['num_users'] if axis == 'rowwise' else self.get_header()['num_items']
         assert 0 <= key < limit, 'Out of range: {} [0, {})'.format(key, limit)
-        group = self.db[axis]
+        group = self.handle[axis]
         data_index = 0
-        beg = group['indtpr'][key - 1] if key > 0 else 0
+        beg = group['indptr'][key - 1] if key > 0 else 0
         end = group['indptr'][key]
         keys = group['key'][beg:end]
         vals = group['val'][beg:end]
         return (key, keys, vals)
 
     def __del__(self):
-        if self.db:
-            self.db.close()
-            self.db = None
+        if self.handle:
+            self.handle.close()
+            self.handle = None
             self.header = None
 
     def close(self):
-        if self.db:
-            self.db.close()
-            self.db = None
+        if self.handle:
+            self.handle.close()
+            self.handle = None
             self.header = None
 
 
@@ -204,7 +204,7 @@ class MatrixMarket(Data):
                 aux.psort(tmp_main, key=2)
                 self._build(db['colwise'], tmp_main, rowwise=False)
                 db.close()
-                self.db = h5py.File(data_path, 'r')
+                self.handle = h5py.File(data_path, 'r')
                 self.path = data_path
             except Exception as e:
                 self.logger.error('Cannot create db: %s' % (str(e)))

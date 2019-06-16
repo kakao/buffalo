@@ -1,10 +1,24 @@
 # -*- coding: utf-8 -*-
 from buffalo.misc.aux import InputOptions, Option
 
+class AlgoOption(InputOptions):
+    def __init__(self, *args, **kwargs):
+        super(AlgoOption, self).__init__(*args, **kwargs)
 
-class AlsOption(InputOptions):
     def get_default_option(self):
         opt = {
+            'batch_mb': 1024
+        }
+        return opt
+
+
+class AlsOption(AlgoOption):
+    def __init__(self, *args, **kwargs):
+        super(AlsOption, self).__init__(*args, **kwargs)
+
+    def get_default_option(self):
+        opt = super().get_default_option()
+        opt.update({
             'adaptive_reg': False,
             'evaluation_on_learning': True,
             'save_factors': False,
@@ -21,5 +35,5 @@ class AlsOption(InputOptions):
 
             'user_factor_path': '',
             'item_factor_path': ''
-        }
+        })
         return Option(opt)

@@ -16,11 +16,8 @@ class Algo(abc.ABC):
                 self.logger.warning('Cannot remove temporary file: %s, Error: %s' % (path, e))
 
     def get_option(self, opt_path) -> (aux.Option, str):
-        print(type(opt_path))
         if isinstance(opt_path, (dict, aux.Option)):
-            print('here we are')
             opt_path = self.create_temporary_option_from_dict(opt_path)
-            print(opt_path)
         opt = aux.Option(opt_path)
         opt_path = opt_path
         self.is_valid_option(opt)

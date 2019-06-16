@@ -1,2 +1,2 @@
 # -*- coding: utf-8 -*-
-from .data import MatrixMarket, MatrixMarketOptions
+from .data import MatrixMarket, MatrixMarketOptions, Data, load

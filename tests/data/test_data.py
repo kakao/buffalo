@@ -55,9 +55,10 @@ class TestMatrixMarket(unittest.TestCase):
         self.assertTrue(True)
         db = mm.db
         self.assertEqual(sorted(db.keys()), sorted(['header', 'idmap', 'rowwise', 'colwise']))
-        self.assertEqual(db['header']['num_nnz'][0], 5)
-        self.assertEqual(db['header']['num_users'][0], 5)
-        self.assertEqual(db['header']['num_items'][0], 3)
+        header = mm.get_header()
+        self.assertEqual(header['num_nnz'], 5)
+        self.assertEqual(header['num_users'], 5)
+        self.assertEqual(header['num_items'], 3)
 
         data = [(u, kk, vv) for u, kk, vv in mm.iterate()]
         self.assertEqual(len(data), 5)
