@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
+import abc
+import json
+import psutil
+import warnings
+import tempfile
+import subprocess
 
 
 def get_logger(name=__file__):
@@ -69,3 +75,65 @@ def mkdirs(path):
     parent = path.split('/')[:-1]
     mkdirs('/'.join(parent))
     os.mkdir(path)
+
+
+class InputOptions(abc.ABC):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    @abc.abstractmethod
+    def get_default_option(self) -> dict:
+        pass
+
+    def is_valid_option(self, opt) -> bool:
+        default_opt = self.get_default_option()
+        keys = self.get_default_option()
+        for key in keys:
+            if key not in opt:
+                raise RuntimeError('{} not exists on Option'.format(key))
+            expected_type = type(default_opt[key])
+            if not isinstance(opt.get(key), expected_type):
+                raise RuntimeError('Invalid type for {}, {} expected. '.format(key, type(default_opt[key])))
+        return True
+
+    def create_temporary_option_from_dict(self, opt) -> str:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ResourceWarning)
+            str_opt = json.dumps(opt)
+            tmp = tempfile.NamedTemporaryFile(mode='w', dir=opt.get('tmp_dir', '/tmp/'), delete=False)
+            tmp.write(str_opt)
+            return tmp.name
+
+
+def make_temporary_file(path, ignore_lines=0, chunk_size=8192, binary=False):
+    W = 'w' if not binary else 'wb'
+    R = 'r' if not binary else 'rb'
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ResourceWarning)
+        with tempfile.NamedTemporaryFile(mode=W, delete=False) as w:
+            fin = open(path, mode=R)
+            for _ in range(ignore_lines):
+                fin.readline()
+            while True:
+                chunk = fin.read(chunk_size)
+                if chunk:
+                    w.write(chunk)
+                if len(chunk) != chunk_size:
+                    break
+            w.close()
+            return w.name
+
+
+def psort(path, parallel=-1, field_seperator=' ', key=1, output=None):
+    commands = ['sort']
+    if parallel == -1:
+        parallel = psutil.cpu_count()
+    if parallel > 0:
+        commands.extend(['--parallel', parallel])
+    if not output:
+        output = path
+    commands.extend(['-t', '{}'.format(field_seperator)])
+    commands.extend(['-k', key])
+    commands.extend(['-o', output])
+    commands.append(path)
+    subprocess.check_output(map(str, commands), stderr=subprocess.STDOUT)
