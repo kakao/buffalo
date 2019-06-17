@@ -3,7 +3,7 @@
 # -*- coding: utf-8 -*-
 from libcpp cimport bool
 from libcpp.string cimport string
-from eigency.core cimport MatrixXf, Map
+from eigency.core cimport MatrixXf, Map, VectorXi, VectorXf
 
 import numpy as np
 cimport numpy as np
@@ -18,6 +18,9 @@ cdef extern from "buffalo/algo_impl/als/als.hpp" namespace "als":
     cdef cppclass CALS:
         bool init(string) nogil except +
         void set_factors(Map[MatrixXf]&, Map[MatrixXf]&) nogil except +
+        void precompute(int) nogil except +
+        void partial_update(Map[VectorXi]&, Map[VectorXi]&,
+                            Map[VectorXi]&, Map[VectorXf]&, int) nogil except +
 
 
 cdef class PyALS:
@@ -36,6 +39,17 @@ cdef class PyALS:
     def set_factors(self, np.ndarray P, np.ndarray Q):
         self.obj.set_factors(Map[MatrixXf](P), Map[MatrixXf](Q))
 
+    def precompute(self, axis):
+        self.obj.precompute(axis)
+
+    def partial_update(self, np.ndarray indptr, np.ndarray rows,
+                       np.ndarray keys, np.ndarray vals, int axis):
+        self.obj.partial_update(Map[VectorXi](indptr),
+                                Map[VectorXi](rows),
+                                Map[VectorXi](keys),
+                                Map[VectorXf](vals),
+                                axis)
+
 
 class AlsBuffer(object):
     def __init__(self, limit):
@@ -44,9 +58,10 @@ class AlsBuffer(object):
 
     def resize(self, limit):
         self.index, self.limit = 0, limit
-        self.U = np.zeros(shape=(limit,), dtype=np.int32)
-        self.I = np.zeros(shape=(limit,), dtype=np.int32)
-        self.V = np.zeros(shape=(limit,), dtype=np.float32)
+        self.rows = []
+        self.indptr = []
+        self.keys = np.zeros(shape=(limit,), dtype=np.int32)
+        self.vals = np.zeros(shape=(limit,), dtype=np.float32)
 
     def add(self, key, keys, vals):
         if self.index == 0 and len(keys) >= self.limit:
@@ -56,17 +71,23 @@ class AlsBuffer(object):
             return False
         i = self.index
         sz = len(keys)
-        self.U[i:i + sz] = [key] * sz
-        self.I[i:i + sz] = keys
-        self.V[i:i + sz] = vals
+        self.rows.append(key)
+        self.indptr.append(i + sz)
+        self.keys[i:i + sz] = keys
+        self.vals[i:i + sz] = vals
         self.index += sz
         return True
 
     def reset(self):
-        self.U *= 0
-        self.I *= 0
-        self.V *= 0
+        self.rows = []
+        self.indptr = []
+        self.keys *= 0
+        self.vals *= 0
         self.index = 0
+
+    def get(self):
+        # TODO: Checkout long long structure for Eigen/Eigency
+        return np.array(self.indptr, dtype=np.int32), np.array(self.rows, dtype=np.int32), self.keys, self.vals
 
 
 class ALS(Algo, AlsOption):
@@ -97,8 +118,10 @@ class ALS(Algo, AlsOption):
     def init_factors(self):
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
-        self.P = np.abs(np.random.normal(scale=1.0/self.opt.d, size=(header['num_users'], self.opt.d)).astype("float32"))
-        self.Q = np.abs(np.random.normal(scale=1.0/self.opt.d, size=(header['num_items'], self.opt.d)).astype("float32"))
+        self.P = np.abs(np.random.normal(scale=1.0/self.opt.d,
+                                         size=(header['num_users'], self.opt.d)).astype("float32"))
+        self.Q = np.abs(np.random.normal(scale=1.0/self.opt.d,
+                                         size=(header['num_items'], self.opt.d)).astype("float32"))
         self.obj.set_factors(self.P, self.Q)
 
     def _get_buffer(self, est_chunk_size=None):
@@ -110,18 +133,27 @@ class ALS(Algo, AlsOption):
     def _iterate(self, buf, axis='rowwise'):
         header = self.data.get_header()
         end = header['num_users'] if axis == 'rowwise' else header['num_items']
+        int_axis = 0 if axis == 'rowwise' else 1
+        self.obj.precompute(int_axis)
         for beg in range(end):
             key, keys, vals = self.data.get_data(beg, axis=axis)
             if not buf.add(key, keys, vals):
+                indptr, R, K, V = buf.get()
                 # flush
+                self.obj.partial_update(indptr, R, K, V, int_axis)
                 buf.reset()
                 buf.add(key, keys, vals)
         if buf.index:
-            # flush
-            pass
+            indptr, R, K, V = buf.get()
+            buf.reset()
+            self.obj.partial_update(indptr, R, K, V, int_axis)
 
     def train(self):
         buf = self._get_buffer()
+        self.logger.info(self.P[0])
+        self.logger.info(self.Q[0])
         for i in range(self.opt.num_iters):
             self._iterate(buf, axis='rowwise')
             self._iterate(buf, axis='colwise')
+            self.logger.info(self.P[0])
+            self.logger.info(self.Q[0])

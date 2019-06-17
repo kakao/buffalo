@@ -21,11 +21,16 @@ public:
     bool parse_option(string out_path);
 
     void set_factors(Map<MatrixXf>& P, Map<MatrixXf>& Q);
+    void precompute(int axis);
+    void partial_update(Map<VectorXi>& indptr, Map<VectorXi>& rows,
+                        Map<VectorXi>& keys, Map<VectorXf>& vals,
+                        int axis);
 
 private:
     Json opt_;
     float* P_data_, * Q_data_;
     int P_rows_, P_cols_, Q_rows_, Q_cols_;
+    Matrix<float, Dynamic, Dynamic, RowMajor> FF_;
 };
 
 }
