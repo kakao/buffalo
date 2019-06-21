@@ -53,7 +53,7 @@ class TestMatrixMarket(unittest.TestCase):
         mm.create()
         self.temp_files.append(opt.data.path)
         self.assertTrue(True)
-        db = mm.db
+        db = mm.handle
         self.assertEqual(sorted(db.keys()), sorted(['header', 'idmap', 'rowwise', 'colwise']))
         header = mm.get_header()
         self.assertEqual(header['num_nnz'], 5)

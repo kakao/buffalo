@@ -4,6 +4,7 @@ import abc
 import warnings
 
 import h5py
+import tqdm
 import numpy as np
 
 from buffalo.misc import aux
@@ -30,6 +31,7 @@ class MatrixMarketOptions(aux.InputOptions):
                 'iid': ''
             },
             'data': {
+                'use_cache': False,
                 'tmp_dir': '/tmp/',
                 'path': './mm.h5py'
             }
@@ -49,8 +51,9 @@ class Data(object):
         self.tmp_root = opt.data.tmp_dir
         if not os.path.isdir(self.tmp_root):
             aux.mkdirs(self.tmp_root)
-        self.db = None
+        self.handle = None
         self.header = None
+        self.temp_files = []
 
     @abc.abstractmethod
     def create_database(self, filename, **kwargs):
@@ -94,6 +97,8 @@ class Data(object):
             self.handle.close()
             self.handle = None
             self.header = None
+        for path in self.temp_files:
+            os.remove(path)
 
     def close(self):
         if self.handle:
@@ -137,25 +142,36 @@ class MatrixMarket(Data):
                              maxshape=(num_items, iid_max_col))
         return f
 
-    def _build(self, db, mm_path, rowwise=True):
+    def _build(self, db, mm_path, max_key, rowwise=True):
         with open(mm_path) as fin:
-            prev_key, data_index, ptr_index = None, 0, 0
-            for line in fin:
+            prev_key, data_index = 0, 0
+            chunk = []
+            for line in tqdm.tqdm(fin, mininterval=1):
                 tkns = line.strip().split()
                 if tkns[0] == '%' or len(tkns) != 3:
                     continue
                 u, i, v = int(tkns[0]) - 1, int(tkns[1]) - 1, float(tkns[2])
                 if not rowwise:
                     u, i = i, u
-                db['key'][data_index] = i
-                db['val'][data_index] = v
+                chunk.append((i, v))
                 if prev_key != u:
-                    if prev_key is not None:
-                        db['indptr'][ptr_index] = data_index
-                        ptr_index += 1
-                    prev_key = u
-                data_index += 1
-            db['indptr'][ptr_index] = data_index
+                    for empty_index in range(prev_key + 1, u):
+                        db['indptr'][empty_index] = data_index
+                    sz = len(chunk)
+                    db['key'][data_index:data_index + sz] = [k for k, _ in chunk]
+                    db['val'][data_index:data_index + sz] = [v for _, v in chunk]
+                    data_index += sz
+                    db['indptr'][prev_key] = data_index
+                    chunk = []
+                    prev_key += 1
+            if chunk:
+                sz = len(chunk)
+                db['key'][data_index:data_index + sz] = [k for k, _ in chunk]
+                db['val'][data_index:data_index + sz] = [v for _, v in chunk]
+                data_index += sz
+                prev_key += 1
+            for empty_index in range(prev_key + 1, max_key):
+                db['indptr'][empty_index] = data_index
 
     def create(self) -> h5py.File:
         mm_main_path = self.opt.input.main
@@ -163,7 +179,7 @@ class MatrixMarket(Data):
         mm_iid_path = self.opt.input.iid
 
         data_path = self.opt.data.path
-        if os.path.isfile(data_path) and not self.opt.data.force_rebuild:
+        if os.path.isfile(data_path) and self.opt.data.use_cache:
             self.handle = h5py.File(data_path, 'r')
             self.path = data_path
             return
@@ -174,8 +190,10 @@ class MatrixMarket(Data):
             while header.startswith('%'):
                 header = fin.readline()
             num_users, num_items, num_nnz = map(int, header.split())
-            uid_max_col = max([len(l.strip()) + 1 for l in open(mm_uid_path)])
-            iid_max_col = max([len(l.strip()) + 1 for l in open(mm_iid_path)])
+            with open(mm_uid_path) as fin:
+                uid_max_col = max([len(l.strip()) + 1 for l in fin])
+            with open(mm_iid_path) as fin:
+                iid_max_col = max([len(l.strip()) + 1 for l in fin])
             try:
                 db = self.create_database(data_path,
                                           num_users=num_users,
@@ -192,17 +210,22 @@ class MatrixMarket(Data):
                         idmap['cols'][idx] = np.string_(line.strip())
 
                 num_header_lines = 0
-                for line in open(mm_main_path):
-                    if line.strip().startswith('%'):
-                        num_header_lines += 1
-                    else:
-                        break
+                with open(mm_main_path) as fin:
+                    for line in fin:
+                        if line.strip().startswith('%'):
+                            num_header_lines += 1
+                        else:
+                            break
                 num_header_lines += 1  # add metaline
                 tmp_main = aux.make_temporary_file(mm_main_path, ignore_lines=num_header_lines)
+                self.logger.info('create temporary data: %s' % tmp_main)
                 aux.psort(tmp_main, key=1)
-                self._build(db['rowwise'], tmp_main, rowwise=True)
+                self._build(db['rowwise'], tmp_main,
+                            max_key=db['header']['num_users'][0], rowwise=True)
                 aux.psort(tmp_main, key=2)
-                self._build(db['colwise'], tmp_main, rowwise=False)
+                self._build(db['colwise'], tmp_main,
+                            max_key=db['header']['num_items'][0], rowwise=False)
+                self.temp_files.append(tmp_main)
                 db.close()
                 self.handle = h5py.File(data_path, 'r')
                 self.path = data_path

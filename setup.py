@@ -68,7 +68,7 @@ extensions = [
                             site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
-              extra_compile_args=['-fopenmp', '-std=c++14', '-O3'] + extend_compile_flags),
+              extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb'] + extend_compile_flags),
     Extension(name="buffalo.misc.log",
               sources=['buffalo/misc/log.cpp'],
               include_dirs=['./include',
@@ -78,7 +78,7 @@ extensions = [
                             site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
-              extra_compile_args=['-fopenmp', '-std=c++14', '-O3'] + extend_compile_flags),
+              extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb'] + extend_compile_flags),
 ]
 
 

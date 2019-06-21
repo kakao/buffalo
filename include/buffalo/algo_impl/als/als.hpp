@@ -12,25 +12,29 @@ using namespace Eigen;
 
 namespace als {
 
+
 class CALS : public Algorithm {
 public:
     CALS();
     ~CALS();
 
+    void release();
     bool init(string opt_path);
     bool parse_option(string out_path);
 
-    void set_factors(Map<MatrixXf>& P, Map<MatrixXf>& Q);
+    void set_factors(
+            Map<MatrixXf>& P,
+            Map<MatrixXf>& Q);
     void precompute(int axis);
-    void partial_update(Map<VectorXi>& indptr, Map<VectorXi>& rows,
-                        Map<VectorXi>& keys, Map<VectorXf>& vals,
-                        int axis);
+    double partial_update(Map<VectorXi>& indptr, Map<VectorXi>& rows,
+                          Map<VectorXi>& keys, Map<VectorXf>& vals,
+                          int axis);
 
 private:
     Json opt_;
     float* P_data_, * Q_data_;
     int P_rows_, P_cols_, Q_rows_, Q_cols_;
-    Matrix<float, Dynamic, Dynamic, RowMajor> FF_;
+    FactorType FF_;
 };
 
 }

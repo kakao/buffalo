@@ -13,6 +13,9 @@ using namespace json11;
 using namespace Eigen;
 
 
+typedef Matrix<float, Dynamic, Dynamic, ColMajor> FactorType;
+
+
 class Algorithm  // Algorithm? Logic? Learner?
 {
 public:
@@ -22,7 +25,7 @@ public:
     virtual bool init(string opt_path) = 0;
     bool parse_option(string opt_path, Json& j);
     virtual bool parse_option(string opt_path) = 0;
-    void decouple(Map<MatrixXf>& mat, float** data, int& rows, int& cols);
+    void decouple(Map<MatrixXf>& mat, float** data, int& rows, int& cols);  // due to eigency compatibility
 
     std::shared_ptr<spdlog::logger> logger_;
 };

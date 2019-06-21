@@ -11,15 +11,27 @@ from buffalo.data import MatrixMarketOptions
 class TestALS(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
-            f.write('''%%MatrixMarket matrix coordinate integer general\n%\n%\n5 3 5\n1 1 1\n2 1 3\n3 3 1\n4 2 1\n5 2 2''')
-            cls.mm_path = f.name
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
-            f.write('''lucas\ngony\nnagari\nkim\nlee''')
-            cls.uid_path = f.name
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
-            f.write('''apple\nmango\nbanana''')
-            cls.iid_path = f.name
+        if os.path.isfile('ml-100k/'):
+            raise RuntimeError('Cannot find the resource  on ./ml-100k directory, checkout: https://grouplens.org/datasets/movielens/100k/')
+        if not os.path.isfile('./ml-100k/main'):
+            with open('./ml-100k/main', 'w') as fout:
+                fout.write('%%MatrixMarket matrix coordinate integer general\n%\n%\n944 1682 80000\n')
+                with open('./ml-100k/u1.base') as fin:
+                    for line in fin:
+                        u, i, v, ts = line.strip().split('\t')
+                        fout.write('%s %s %s\n' % (u, i, v))
+
+            with open('./ml-100k/iid', 'w') as fout:
+                with open('./ml-100k/u.item', encoding='ISO-8859-1') as fin:
+                    for line in fin:
+                        fout.write('%s\n' % line.strip().split('|')[1].encode('utf8'))
+
+            with open('./ml-100k/uid', 'w') as fout:
+                for line in open('./ml-100k/u.user'):
+                    fout.write('%s\n' % line.strip())
+        cls.mm_path = './ml-100k/main'
+        cls.iid_path = './ml-100k/iid'
+        cls.uid_path = './ml-100k/uid'
         cls.temp_files = []
 
     @classmethod
@@ -65,6 +77,8 @@ class TestALS(unittest.TestCase):
     def test3_train(self):
         set_log_level(2)
         opt = AlsOption().get_default_option()
+        opt.d = 5
+
         data_opt = MatrixMarketOptions().get_default_option()
         data_opt.input.main = self.mm_path
         data_opt.input.uid = self.uid_path

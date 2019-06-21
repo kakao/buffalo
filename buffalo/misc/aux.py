@@ -125,7 +125,7 @@ def make_temporary_file(path, ignore_lines=0, chunk_size=8192, binary=False):
 
 
 def psort(path, parallel=-1, field_seperator=' ', key=1, output=None):
-    commands = ['sort']
+    commands = ['sort', '-n']
     if parallel == -1:
         parallel = psutil.cpu_count()
     if parallel > 0:

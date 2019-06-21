@@ -1,6 +1,7 @@
 # cython: experimental_cpp_class_def=True, language_level=3
 # distutils: language=c++
 # -*- coding: utf-8 -*-
+import time
 from libcpp cimport bool
 from libcpp.string cimport string
 from eigency.core cimport MatrixXf, Map, VectorXi, VectorXf
@@ -16,11 +17,13 @@ from buffalo.algo.options import AlsOption
 
 cdef extern from "buffalo/algo_impl/als/als.hpp" namespace "als":
     cdef cppclass CALS:
+        void release() nogil except +
         bool init(string) nogil except +
-        void set_factors(Map[MatrixXf]&, Map[MatrixXf]&) nogil except +
+        void set_factors(Map[MatrixXf]&,
+                         Map[MatrixXf]&) nogil except +
         void precompute(int) nogil except +
-        void partial_update(Map[VectorXi]&, Map[VectorXi]&,
-                            Map[VectorXi]&, Map[VectorXf]&, int) nogil except +
+        double partial_update(Map[VectorXi]&, Map[VectorXi]&,
+                              Map[VectorXi]&, Map[VectorXf]&, int) nogil except +
 
 
 cdef class PyALS:
@@ -33,41 +36,51 @@ cdef class PyALS:
     def __dealloc__(self):
         del self.obj
 
+    def release(self):
+        self.obj.release()
+
     def init(self, option_path):
         return self.obj.init(option_path)
 
-    def set_factors(self, np.ndarray P, np.ndarray Q):
-        self.obj.set_factors(Map[MatrixXf](P), Map[MatrixXf](Q))
+    def set_factors(self,
+                    np.ndarray[np.float32_t, ndim=2] P,
+                    np.ndarray[np.float32_t, ndim=2] Q):
+        self.obj.set_factors(Map[MatrixXf](P),
+                             Map[MatrixXf](Q))
 
     def precompute(self, axis):
         self.obj.precompute(axis)
 
-    def partial_update(self, np.ndarray indptr, np.ndarray rows,
-                       np.ndarray keys, np.ndarray vals, int axis):
-        self.obj.partial_update(Map[VectorXi](indptr),
-                                Map[VectorXi](rows),
-                                Map[VectorXi](keys),
-                                Map[VectorXf](vals),
-                                axis)
+    def partial_update(self,
+                       np.ndarray[np.int32_t, ndim=1] indptr,
+                       np.ndarray[np.int32_t, ndim=1] rows,
+                       np.ndarray[np.int32_t, ndim=1] keys,
+                       np.ndarray[np.float32_t, ndim=1] vals,
+                       int axis):
+        return self.obj.partial_update(Map[VectorXi](indptr),
+                                       Map[VectorXi](rows),
+                                       Map[VectorXi](keys),
+                                       Map[VectorXf](vals),
+                                       axis)
 
 
-class AlsBuffer(object):
+class DataBuffer(object):
     def __init__(self, limit):
         self.resize(limit)
-        self.logger = aux.get_logger('AlsBuffer')
+        self.logger = aux.get_logger('DataBuffer')
 
     def resize(self, limit):
         self.index, self.limit = 0, limit
         self.rows = []
         self.indptr = []
-        self.keys = np.zeros(shape=(limit,), dtype=np.int32)
-        self.vals = np.zeros(shape=(limit,), dtype=np.float32)
+        self.keys = np.zeros(shape=(limit,), dtype=np.int32, order='F')
+        self.vals = np.zeros(shape=(limit,), dtype=np.float32, order='F')
 
     def add(self, key, keys, vals):
         if self.index == 0 and len(keys) >= self.limit:
             self.logger.warning('buffer size is too smaller, increase from {} to {}'.format(self.limit, len(keys) + 1))
             self.resize(len(keys) + 1)
-        if self.index + len(keys) < self.limit:
+        if self.index + len(keys) >= self.limit:
             return False
         i = self.index
         sz = len(keys)
@@ -87,7 +100,10 @@ class AlsBuffer(object):
 
     def get(self):
         # TODO: Checkout long long structure for Eigen/Eigency
-        return np.array(self.indptr, dtype=np.int32), np.array(self.rows, dtype=np.int32), self.keys, self.vals
+        return (np.array(self.indptr, dtype=np.int32),
+                np.array(self.rows, dtype=np.int32),
+                self.keys,
+                self.vals)
 
 
 class ALS(Algo, AlsOption):
@@ -105,11 +121,13 @@ class ALS(Algo, AlsOption):
         assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
             'cannot parse option file: %s' % opt_path
         self.data = None
-        if kwargs.get('data_opt'):
-            self.data = buffalo.data.load(kwargs['data_opt'])
+        data = kwargs.get('data')
+        data_opt = kwargs.get('data_opt')
+        if data_opt:
+            self.data = buffalo.data.load(data_opt)
             self.data.create()
-        elif isinstance(kwargs.get('data'), buffalo.data.Data):
-            self.data = kwargs.get('data')
+        elif isinstance(data, buffalo.data.Data):
+            self.data = data
 
     def set_data(self, data):
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
@@ -118,16 +136,16 @@ class ALS(Algo, AlsOption):
     def init_factors(self):
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
-        self.P = np.abs(np.random.normal(scale=1.0/self.opt.d,
-                                         size=(header['num_users'], self.opt.d)).astype("float32"))
-        self.Q = np.abs(np.random.normal(scale=1.0/self.opt.d,
-                                         size=(header['num_items'], self.opt.d)).astype("float32"))
+        self.P = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
+                                         size=(header['num_users'], self.opt.d)).astype("float32"), order='F')
+        self.Q = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
+                                         size=(header['num_items'], self.opt.d)).astype("float32"), order='F')
         self.obj.set_factors(self.P, self.Q)
 
     def _get_buffer(self, est_chunk_size=None):
         if not est_chunk_size:
             est_chunk_size = max(int(((self.opt.batch_mb * 1024) / 12.)), 64)
-        buf = AlsBuffer(est_chunk_size)
+        buf = DataBuffer(est_chunk_size)
         return buf
 
     def _iterate(self, buf, axis='rowwise'):
@@ -135,25 +153,25 @@ class ALS(Algo, AlsOption):
         end = header['num_users'] if axis == 'rowwise' else header['num_items']
         int_axis = 0 if axis == 'rowwise' else 1
         self.obj.precompute(int_axis)
+        err = 0.0
         for beg in range(end):
             key, keys, vals = self.data.get_data(beg, axis=axis)
             if not buf.add(key, keys, vals):
                 indptr, R, K, V = buf.get()
-                # flush
-                self.obj.partial_update(indptr, R, K, V, int_axis)
+                err += self.obj.partial_update(indptr, R, K, V, int_axis)
                 buf.reset()
                 buf.add(key, keys, vals)
         if buf.index:
             indptr, R, K, V = buf.get()
+            err += self.obj.partial_update(indptr, R, K, V, int_axis)
             buf.reset()
-            self.obj.partial_update(indptr, R, K, V, int_axis)
+        return err
 
     def train(self):
         buf = self._get_buffer()
-        self.logger.info(self.P[0])
-        self.logger.info(self.Q[0])
         for i in range(self.opt.num_iters):
-            self._iterate(buf, axis='rowwise')
-            self._iterate(buf, axis='colwise')
-            self.logger.info(self.P[0])
-            self.logger.info(self.Q[0])
+            start_t = time.time()
+            err = self._iterate(buf, axis='rowwise')
+            err = self._iterate(buf, axis='colwise')
+            self.logger.info('Iteration %d: Error %.3f Elapsed %.3f secs' % (i + 1, err, time.time() - start_t))
+        self.obj.release()
