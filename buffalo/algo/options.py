@@ -31,7 +31,6 @@ class AlsOption(AlgoOption):
             'reg_u': 0.1,
             'reg_i': 0.1,
             'alpha': 8,
-            'validation_p': 0.1,
 
             'user_factor_path': '',
             'item_factor_path': ''

@@ -67,14 +67,15 @@ void CALS::precompute(int axis)
 }
 
 double CALS::partial_update(
-        Map<VectorXi>& indptr,
-        Map<VectorXi>& rows,
+        int start_x,
+        int next_x,
+        int64_t* indptr,
         Map<VectorXi>& keys,
         Map<VectorXf>& vals,
         int axis)
 {
-    if( indptr.size() == 0 ) {
-        WARN0("No data to process");
+    if( (next_x - start_x) == 0) {
+        // WARN0("No data to process");
         return 0.0;
     }
 
@@ -100,18 +101,21 @@ double CALS::partial_update(
     float alpha = opt_["alpha"].number_value();
 
     vector<float> errs(num_workers, 0.0);
+    int end_loop = next_x - start_x;
+    const int64_t shifted = start_x == 0 ? 0 : indptr[start_x - 1];
     #pragma omp parallel
     {
         int worker_id = omp_get_thread_num();
         #pragma omp for schedule(dynamic, 4)
-        for (int i=0; i < indptr.size(); ++i)
+        for (int i=0; i < end_loop; ++i)
         {
-            const int u = rows[i];
-            const size_t beg = i == 0 ? 0 : indptr[i - 1];
-            const size_t end = indptr[i];
-            int data_size = end - beg;
+            int x = start_x + i;
+            const int u = x;
+            int64_t beg = x == 0 ? 0 : indptr[x - 1];
+            int64_t end = indptr[x];
+            int64_t data_size = end - beg;
             if (data_size == 0) {
-                WARN("No data exists for {}", u);
+                DEBUG("No data exists for {}", u);
                 continue;
             }
 
@@ -123,9 +127,9 @@ double CALS::partial_update(
             Matrix<float, Dynamic, 1> Fxy;
             Fxy.resize(D, 1);
             Fxy.setZero();
-            for (size_t idx=0, it = beg; it < end; ++it, ++idx) {
-                const int& c = keys[it];
-                const float& v = vals[it];
+            for (int64_t idx=0, it = beg; it < end; ++it, ++idx) {
+                const int& c = keys[it - shifted];
+                const float& v = vals[it - shifted];
                 Fs.row(idx) = v * Q.row(c);
                 Fs2.row(idx) = Q.row(c);
                 Fxy.noalias() += (Q.row(c) * (1.0 + v * alpha));
@@ -138,21 +142,20 @@ double CALS::partial_update(
 
             P.row(u).noalias() = m.ldlt().solve(Fxy);
 
-            if (evaluation_on_learning and axis == 1) {
-                // }
-                for (size_t it=beg; it < end; ++it) {
-                    const int& c = keys[it];
-                    const float& v = vals[it];
-                    double error = v - (P.row(u) * Q.row(c).transpose());
+            if (evaluation_on_learning and axis == 1) {  // for only on item side
+                for (int64_t it=beg; it < end; ++it) {
+                    const int& c = keys[it - shifted];
+                    const float& v = vals[it - shifted];
+                    float p = P.row(u) * Q.row(c).transpose();
+                    double error = v - p;
                     errs[worker_id] += error * error;
                 }
             }
         }
     }
 
-    double rmse = accumulate(errs.begin(), errs.end(), 0.0);
-    rmse = sqrt( rmse / indptr[indptr.size() - 1] );
-    return rmse;
+    double err = accumulate(errs.begin(), errs.end(), 0.0);
+    return err;
 }
 
 }

@@ -31,6 +31,7 @@ class MatrixMarketOptions(aux.InputOptions):
                 'iid': ''
             },
             'data': {
+                'validation_p': 0.1,
                 'use_cache': False,
                 'tmp_dir': '/tmp/',
                 'path': './mm.h5py'
@@ -67,6 +68,12 @@ class Data(object):
                            'num_items': self.handle['header']['num_items'][0]}
         return self.header
 
+    def get_group(self, axis='rowwise'):
+        assert axis in ['rowwise', 'colwise'], 'Unexpected axis: {}'.format(axis)
+        assert self.handle, 'DB is not opened'
+        group = self.handle[axis]
+        return group
+
     def iterate(self, axis='rowwise') -> [int, int, float]:
         assert axis in ['rowwise', 'colwise'], 'Unexpected axis: {}'.format(axis)
         assert self.handle, 'DB is not opened'
@@ -78,19 +85,6 @@ class Data(object):
             for k, v in zip(keys, vals):
                 yield u, k, v
             data_index = end
-
-    def get_data(self, key, axis='rowwise') -> (int, [[int, float]]):
-        assert axis in ['rowwise', 'colwise'], 'Unexpected axis: {}'.format(axis)
-        assert self.handle, 'DB is not opened'
-        limit = self.get_header()['num_users'] if axis == 'rowwise' else self.get_header()['num_items']
-        assert 0 <= key < limit, 'Out of range: {} [0, {})'.format(key, limit)
-        group = self.handle[axis]
-        data_index = 0
-        beg = group['indptr'][key - 1] if key > 0 else 0
-        end = group['indptr'][key]
-        keys = group['key'][beg:end]
-        vals = group['val'][beg:end]
-        return (key, keys, vals)
 
     def __del__(self):
         if self.handle:
@@ -146,7 +140,7 @@ class MatrixMarket(Data):
         with open(mm_path) as fin:
             prev_key, data_index = 0, 0
             chunk = []
-            for line in tqdm.tqdm(fin, mininterval=1):
+            for line in tqdm.tqdm(fin, desc='build index', total=max_key, mininterval=1):
                 tkns = line.strip().split()
                 if tkns[0] == '%' or len(tkns) != 3:
                     continue
@@ -169,8 +163,9 @@ class MatrixMarket(Data):
                 db['key'][data_index:data_index + sz] = [k for k, _ in chunk]
                 db['val'][data_index:data_index + sz] = [v for _, v in chunk]
                 data_index += sz
+                db['indptr'][prev_key] = data_index
                 prev_key += 1
-            for empty_index in range(prev_key + 1, max_key):
+            for empty_index in range(prev_key, max_key):
                 db['indptr'][empty_index] = data_index
 
     def create(self) -> h5py.File:

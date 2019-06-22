@@ -26,8 +26,11 @@ public:
             Map<MatrixXf>& P,
             Map<MatrixXf>& Q);
     void precompute(int axis);
-    double partial_update(Map<VectorXi>& indptr, Map<VectorXi>& rows,
-                          Map<VectorXi>& keys, Map<VectorXf>& vals,
+    double partial_update(int start_x,
+                          int next_x,
+                          int64_t* indptr,
+                          Map<VectorXi>& keys,
+                          Map<VectorXf>& vals,
                           int axis);
 
 private:

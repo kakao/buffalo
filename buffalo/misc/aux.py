@@ -7,6 +7,8 @@ import warnings
 import tempfile
 import subprocess
 
+from buffalo.misc.log import get_log_level
+
 
 def get_logger(name=__file__):
     import logging
@@ -15,7 +17,12 @@ def get_logger(name=__file__):
     if logger.handlers:
         return logger
 
-    logger.setLevel(logging.DEBUG)
+    if get_log_level() == 0:
+        logger.setLevel(logging.NOTSET)
+    elif get_log_level() == 1:
+        logger.setLevel(logging.INFO)
+    else:
+        logger.setLevel(logging.DEBUG)
 
     sh = logging.StreamHandler()
     sh.setLevel(logging.DEBUG)

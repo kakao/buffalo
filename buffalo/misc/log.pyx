@@ -6,6 +6,7 @@
 cdef extern from "buffalo/misc/log.hpp":
     cdef cppclass _BuffaloLogger "BuffaloLogger":
         void set_log_level(int)
+        int get_log_level()
 
 cdef class PyBuffaloLog:
     """CALS object holder"""
@@ -20,6 +21,13 @@ cdef class PyBuffaloLog:
     def set_log_level(self, lvl):
         self.obj.set_log_level(lvl)
 
+    def get_log_level(self):
+        return self.obj.get_log_level()
+
 
 def set_log_level(lvl):
     PyBuffaloLog().set_log_level(lvl)
+
+
+def get_log_level():
+    return PyBuffaloLog().get_log_level()

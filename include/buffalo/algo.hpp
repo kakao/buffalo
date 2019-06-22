@@ -1,4 +1,5 @@
 #pragma once
+#include <omp.h>
 #include <string>
 
 #include <Eigen/Core>

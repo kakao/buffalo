@@ -10,7 +10,7 @@ class TestBase(unittest.TestCase):
             raise RuntimeError('Cannot find the resource  on ./ml-100k directory, checkout: https://grouplens.org/datasets/movielens/100k/')
         if not os.path.isfile('./ml-100k/main'):
             with open('./ml-100k/main', 'w') as fout:
-                fout.write('%%MatrixMarket matrix coordinate integer general\n%\n%\n944 1682 80000\n')
+                fout.write('%%MatrixMarket matrix coordinate integer general\n%\n%\n943 1682 80000\n')
                 with open('./ml-100k/u1.base') as fin:
                     for line in fin:
                         u, i, v, ts = line.strip().split('\t')
