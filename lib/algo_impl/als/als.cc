@@ -115,7 +115,7 @@ double CALS::partial_update(
             int64_t end = indptr[x];
             int64_t data_size = end - beg;
             if (data_size == 0) {
-                DEBUG("No data exists for {}", u);
+                TRACE("No data exists for {}", u);
                 continue;
             }
 

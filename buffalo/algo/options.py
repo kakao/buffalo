@@ -7,7 +7,6 @@ class AlgoOption(InputOptions):
 
     def get_default_option(self):
         opt = {
-            'batch_mb': 1024
         }
         return opt
 

@@ -3,7 +3,7 @@ import os
 import unittest
 import tempfile
 
-from buffalo.data import MatrixMarket, MatrixMarketOptions
+from buffalo.data.mm import MatrixMarket, MatrixMarketOptions
 
 
 class TestMatrixMarket(unittest.TestCase):
@@ -67,11 +67,6 @@ class TestMatrixMarket(unittest.TestCase):
 
         data = [(u, kk, vv) for u, kk, vv in mm.iterate(axis='colwise')]
         self.assertEqual([int(kk) for _, kk, _ in data], [0, 1, 3, 4, 2])
-
-        self.assertEqual(self.data_serialize(mm.get_data(0)), (0, [0], [1.]))
-
-        self.assertEqual(self.data_serialize(mm.get_data(0, axis='colwise')),
-                         (0, [0, 1], [1., 3.]))
 
 if __name__ == '__main__':
     unittest.main()

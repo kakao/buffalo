@@ -19,7 +19,7 @@ class TestBase(unittest.TestCase):
             with open('./ml-100k/iid', 'w') as fout:
                 with open('./ml-100k/u.item', encoding='ISO-8859-1') as fin:
                     for line in fin:
-                        fout.write('%s\n' % line.strip().split('|')[1].encode('utf8'))
+                        fout.write('%s\n' % line.strip().split('|')[1].replace(' ', '_'))
 
             with open('./ml-100k/uid', 'w') as fout:
                 for line in open('./ml-100k/u.user'):

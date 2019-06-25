@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import io
 import os
 import abc
 import json
@@ -7,7 +8,7 @@ import warnings
 import tempfile
 import subprocess
 
-from buffalo.misc.log import get_log_level
+from buffalo.misc import log
 
 
 def get_logger(name=__file__):
@@ -17,16 +18,19 @@ def get_logger(name=__file__):
     if logger.handlers:
         return logger
 
-    if get_log_level() == 0:
+    lvl = log.get_log_level()
+    if lvl == log.NOTSET:
         logger.setLevel(logging.NOTSET)
-    elif get_log_level() == 1:
+    elif lvl == log.INFO:
         logger.setLevel(logging.INFO)
+    elif lvl == log.DEBUG:
+        logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.DEBUG)
 
     sh = logging.StreamHandler()
     sh.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('[%(levelname)-8s] %(asctime)s [%(filename)s] [%(funcName)s:%(lineno)d] %(message)s', '%Y-%m-%d %H:%M:%S')
+    formatter = logging.Formatter('[%(levelname)-8s] [%(asctime)s] [%(filename)s:%(lineno)d] %(message)s', '%Y-%m-%d %H:%M:%S')
     sh.setFormatter(formatter)
 
     logger.addHandler(sh)

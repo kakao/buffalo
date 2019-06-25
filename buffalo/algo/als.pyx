@@ -3,6 +3,9 @@
 # -*- coding: utf-8 -*-
 import time
 import json
+import logging
+
+import tqdm
 import cython
 from libcpp cimport bool
 from libc.stdint cimport int64_t
@@ -13,10 +16,11 @@ import numpy as np
 cimport numpy as np
 
 import buffalo.data
-from buffalo.misc import aux
+from buffalo.data.base import Data
+from buffalo.misc import aux, log
 from buffalo.algo.base import Algo
-from buffalo.data import BufferedDataMM
 from buffalo.algo.options import AlsOption
+from buffalo.data.buffered_data import BufferedDataMM
 
 
 cdef extern from "buffalo/algo_impl/als/als.hpp" namespace "als":
@@ -96,7 +100,7 @@ class ALS(Algo, AlsOption):
         if data_opt:
             self.data = buffalo.data.load(data_opt)
             self.data.create()
-        elif isinstance(data, buffalo.data.Data):
+        elif isinstance(data, Data):
             self.data = data
         self.logger.info('ALS(%s)' % json.dumps(self.opt, indent=2))
 
@@ -113,12 +117,9 @@ class ALS(Algo, AlsOption):
                                          size=(header['num_items'], self.opt.d)).astype("float32"), order='F')
         self.obj.set_factors(self.P, self.Q)
 
-    def _get_buffer(self, est_chunk_size=None):
-        if not est_chunk_size:
-            # 16 bytes(indptr8, keys4, vals4)
-            est_chunk_size = max(int(((self.opt.batch_mb * 1024) / 16.)), 64)
+    def _get_buffer(self):
         buf = BufferedDataMM()
-        buf.initialize(est_chunk_size, self.data)
+        buf.initialize(self.data)
         return buf
 
     def _iterate(self, buf, axis='rowwise'):
@@ -127,16 +128,21 @@ class ALS(Algo, AlsOption):
         int_axis = 0 if axis == 'rowwise' else 1
         self.obj.precompute(int_axis)
         err = 0.0
-        start_t, update_t, time_feed_t = time.time(), 0, 0
-        start_t = time.time()
+        update_t, feed_t, updated = 0, 0, 0
         buf.set_axis(axis)
-        for _ in buf.fetch_batch():
-            time_feed_t += time.time() - start_t
+        with log.pbar(self.logger.debug, desc='%s' % axis,
+                      total=header['num_nnz'], mininterval=30) as pbar:
             start_t = time.time()
-            start_x, next_x, indptr, keys, vals = buf.get()
-            err += self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_axis)
-            update_t += time.time() - start_t
-        self.logger.debug('elapsed(data feed: %.3f update: %.3f)' % (time_feed_t, update_t))
+            for sz in buf.fetch_batch():
+                updated += sz
+                feed_t += time.time() - start_t
+                start_x, next_x, indptr, keys, vals = buf.get()
+                start_t = time.time()
+                err += self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_axis)
+                update_t += time.time() - start_t
+                pbar.update(sz)
+            pbar.refresh()
+        self.logger.debug('updated %s processed(%s) elapsed(data feed: %.3f update: %.3f)' % (axis, updated, feed_t, update_t))
         return err
 
     def train(self):
