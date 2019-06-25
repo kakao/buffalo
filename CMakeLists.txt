@@ -12,8 +12,9 @@ set(SOURCES
     "./3rd/json11/json11.cpp"
 )
 file(GLOB ALGO_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/lib/*.cc)
+file(GLOB MISC_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/lib/misc/*.cc)
 file(GLOB ALS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/lib/algo_impl/als/*.cc)
-add_library(cbuffalo SHARED ${SOURCES} ${ALGO_SRCS} ${ALS_SRCS})
+add_library(cbuffalo SHARED ${SOURCES} ${ALGO_SRCS} ${ALS_SRCS} ${MISC_SRCS})
 include_directories(cbuffalo "/usr/local/include/eigen3")
 
 set_target_properties(cbuffalo PROPERTIES VERSION 0.1.0)
