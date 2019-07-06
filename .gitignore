@@ -1,3 +1,9 @@
 *.pyc
 *.un~
 *.swp
+build/
+.ropeproject
+obj/
+dist/
+*.egg-info/
+Makefile

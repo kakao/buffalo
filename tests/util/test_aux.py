@@ -11,10 +11,5 @@ class TestOption(unittest.TestCase):
         self.assertTrue(opt['float'] == opt.float == 0.1)
 
 
-class TestLogger(unittest.TestCase):
-    def test0_get_logger(self):
-        aux.get_logger()
-        self.assertTrue(True)
-
 if __name__ == '__main__':
     unittest.main()

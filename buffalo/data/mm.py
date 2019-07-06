@@ -37,7 +37,7 @@ class MatrixMarketOptions(aux.InputOptions):
 class MatrixMarket(Data):
     def __init__(self, opt, *args, **kwargs):
         super(MatrixMarket, self).__init__(opt, *args, **kwargs)
-        self.logger = aux.get_logger('MatrixMarket')
+        self.logger = log.get_logger('MatrixMarket')
 
     def create_database(self, path, **kwargs):
         f = h5py.File(path, 'w')
@@ -75,7 +75,7 @@ class MatrixMarket(Data):
         with open(mm_path) as fin:
             prev_key, data_index, data_rear_index = 0, 0, 0
             chunk, data_chunk = [], []
-            with log.pbar(self.logger.debug, total=num_lines, mininterval=30) as pbar:
+            with log.pbar(log.DEBUG, total=num_lines, mininterval=30) as pbar:
                 for line in fin:
                     pbar.update(1)
                     tkns = line.strip().split()
@@ -118,7 +118,7 @@ class MatrixMarket(Data):
     def _create(self, data_path, P, H):
         uid_path, iid_path, main_path = P['uid_path'], P['iid_path'], P['main_path']
         num_users, num_items, num_nnz = map(int, H.split())
-        with log.pbar(self.logger.debug, total=5, mininterval=30) as pbar:
+        with log.pbar(log.DEBUG, total=5, mininterval=30) as pbar:
             with open(uid_path) as fin:
                 uid_max_col = 0
                 for l in fin:

@@ -89,7 +89,7 @@ class ALS(Algo, AlsOption):
     def __init__(self, opt_path, *args, **kwargs):
         super(ALS, self).__init__(*args, **kwargs)
         super(AlsOption, self).__init__(*args, **kwargs)
-        self.logger = aux.get_logger('ALS')
+        self.logger = log.get_logger('ALS')
         self.opt, self.opt_path = self.get_option(opt_path)
         self.obj = PyALS()
         assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
@@ -130,7 +130,7 @@ class ALS(Algo, AlsOption):
         err = 0.0
         update_t, feed_t, updated = 0, 0, 0
         buf.set_axis(axis)
-        with log.pbar(self.logger.debug, desc='%s' % axis,
+        with log.pbar(log.DEBUG, desc='%s' % axis,
                       total=header['num_nnz'], mininterval=30) as pbar:
             start_t = time.time()
             for sz in buf.fetch_batch():

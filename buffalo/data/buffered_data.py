@@ -2,12 +2,12 @@
 import abc
 import bisect
 import numpy as np
-from buffalo.misc import aux
+from buffalo.misc import log
 
 
 class BufferedData(object):
     def __init__(self):
-        self.logger = aux.get_logger('BufferedData')
+        self.logger = log.get_logger('BufferedData')
 
     @abc.abstractmethod
     def initialize(self, limit):

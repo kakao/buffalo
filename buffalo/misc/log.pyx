@@ -4,6 +4,8 @@
 import io
 import os
 import sys
+import logging
+import logging.handlers
 from contextlib import contextmanager
 
 import tqdm
@@ -62,8 +64,35 @@ class TqdmLogger(io.StringIO):
             self.logger(self.buf)
 
 
+def get_logger(name=__file__, no_fileno=False):
+    logger = logging.getLogger(name)
+    if logger.handlers:
+        return logger
+
+    lvl = get_log_level()
+    if lvl == NOTSET:
+        logger.setLevel(logging.NOTSET)
+    elif lvl == INFO:
+        logger.setLevel(logging.INFO)
+    elif lvl == DEBUG:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.DEBUG)
+
+    sh = logging.StreamHandler()
+    sh.setLevel(logging.DEBUG)
+    if no_fileno:
+        formatter = logging.Formatter('[%(levelname)-8s] %(asctime)s %(message)s', '%Y-%m-%d %H:%M:%S')
+    else:
+        formatter = logging.Formatter('[%(levelname)-8s] %(asctime)s [%(filename)s:%(lineno)d] %(message)s', '%Y-%m-%d %H:%M:%S')
+    sh.setFormatter(formatter)
+
+    logger.addHandler(sh)
+    return logger
+
+
 @contextmanager
-def pbar(logger, **kwargs):
+def pbar(log_level=INFO, **kwargs):
     if 'total' not in kwargs:
         fmt = '{desc}: {n_fmt}/{total_fmt} {elapsed}<{remaining}'
     else:
@@ -75,4 +104,12 @@ def pbar(logger, **kwargs):
     if 'mininterval' not in kwargs:
         kwargs['mininterval'] = 1
     kwargs['leave'] = False
-    yield tqdm.tqdm(file=TqdmLogger(logger), **kwargs)
+    logger = get_logger('pbar', no_fileno=True)
+    logger_func = logger.info
+    if log_level == INFO:
+        logger_func = logger.info
+    elif log_level == WARN:
+        logger_func = logger.warn
+    elif log_level == DEBUG:
+        logger_func = logger.debug
+    yield tqdm.tqdm(file=TqdmLogger(logger_func), **kwargs)

@@ -4,7 +4,7 @@ int BuffaloLogger::global_logging_level_ = 1;
 
 BuffaloLogger::BuffaloLogger() 
 {
-    spdlog::set_pattern("[%^%-8l%$] [%Y-%m-%d %H:%M:%S] %v");
+    spdlog::set_pattern("[%^%-8l%$] %Y-%m-%d %H:%M:%S %v");
     logger_ = spdlog::default_logger();
 }
 

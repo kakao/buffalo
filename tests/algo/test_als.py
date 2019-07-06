@@ -31,9 +31,9 @@ class TestALS(TestBase):
         set_log_level(3)
         opt = AlsOption().get_default_option()
         data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.input.main = self.mm_path
-        data_opt.input.uid = self.uid_path
-        data_opt.input.iid = self.iid_path
+        data_opt.input.main = self.ml_100k + 'main'
+        data_opt.input.uid = self.ml_100k + 'uid'
+        data_opt.input.iid = self.ml_100k + 'iid'
 
         als = ALS(opt, data_opt=data_opt)
         self.assertTrue(True)
@@ -48,10 +48,9 @@ class TestALS(TestBase):
         opt.d = 5
 
         data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.input.main = self.mm_path
-        data_opt.input.uid = self.uid_path
-        data_opt.input.iid = self.iid_path
-        self.temp_files.append(data_opt.data.path)
+        data_opt.input.main = self.ml_100k + 'main'
+        data_opt.input.uid = self.ml_100k + 'uid'
+        data_opt.input.iid = self.ml_100k + 'iid'
 
         als = ALS(opt, data_opt=data_opt)
         als.init_factors()
@@ -63,10 +62,10 @@ class TestALS(TestBase):
         opt.num_workers = 8
 
         data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.input.main = './ml-20m-mm/main'
-        data_opt.input.uid = './ml-20m-mm/uid'
-        data_opt.input.iid = './ml-20m-mm/iid'
-        data_opt.data.path = './ml20.h5py'
+        data_opt.input.main = self.ml_20m + 'main'
+        data_opt.input.uid = self.ml_20m + 'uid'
+        data_opt.input.iid = self.ml_20m + 'iid'
+        data_opt.data.path = './ml20m.h5py'
         data_opt.data.use_cache = True
 
         als = ALS(opt, data_opt=data_opt)
