@@ -82,6 +82,7 @@ class MatrixMarket(Data):
                     if tkns[0] == '%' or len(tkns) != 3:
                         continue
                     u, i, v = int(tkns[0]) - 1, int(tkns[1]) - 1, float(tkns[2])
+                    v = self.value_prepro(v)
                     if not rowwise:
                         u, i = i, u
                     if prev_key != u:
@@ -198,13 +199,17 @@ class MatrixMarket(Data):
                 tmp_main = aux.make_temporary_file(mm_main_path, ignore_lines=num_header_lines)
                 self.logger.info('Create temporary data on %s.' % tmp_main)
                 aux.psort(tmp_main, key=1)
+                self.prepro.pre(db['header'])
                 self._build(db['rowwise'], tmp_main,
                             num_lines=db['header']['num_nnz'][0],
                             max_key=db['header']['num_users'][0], rowwise=True)
+                self.prepro.pre(db['rowwise'])
                 aux.psort(tmp_main, key=2)
+                self.prepro.pre(db['header'])
                 self._build(db['colwise'], tmp_main,
                             num_lines=db['header']['num_nnz'][0],
                             max_key=db['header']['num_items'][0], rowwise=False)
+                self.prepro.pre(db['rowwise'])
                 self.temp_files.append(tmp_main)
                 db['header']['completed'][0] = 1
                 db.close()

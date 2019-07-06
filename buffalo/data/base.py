@@ -5,6 +5,7 @@ import abc
 import h5py
 
 from buffalo.misc import aux
+from buffalo.data import prepro
 
 
 class Data(object):
@@ -16,6 +17,11 @@ class Data(object):
         self.handle = None
         self.header = None
         self.temp_files = []
+        self.prepro = prepro.PreProcess()
+        self.value_prepro = self.prepro
+        if self.opt.data.value_prepro:
+            self.prepro = getattr(prepro, self.opt.data.value_prepro.name)()
+            self.value_prepro = self.prepro
 
     @abc.abstractmethod
     def create_database(self, filename, **kwargs):
