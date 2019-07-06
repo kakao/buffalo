@@ -66,7 +66,30 @@ class TestMatrixMarket(unittest.TestCase):
         self.assertEqual(data[2], (2, 2, 1.0))
 
         data = [(u, kk, vv) for u, kk, vv in mm.iterate(axis='colwise')]
+
+    def test2_create2(self):
+        opt = MatrixMarketOptions().get_default_option()
+        opt.input.main = self.mm_path
+        opt.input.uid = None
+        opt.input.iid = None
+        mm = MatrixMarket(opt)
+        mm.create()
+        self.assertTrue(True)
+        db = mm.handle
+        self.assertEqual(sorted(db.keys()), sorted(['header', 'idmap', 'rowwise', 'colwise']))
+        header = mm.get_header()
+        self.assertEqual(header['num_nnz'], 5)
+        self.assertEqual(header['num_users'], 5)
+        self.assertEqual(header['num_items'], 3)
+
+        data = [(u, kk, vv) for u, kk, vv in mm.iterate()]
+        self.assertEqual(len(data), 5)
+        self.assertEqual([int(kk) for _, kk, _ in data], [0, 0, 2, 1, 1])
+        self.assertEqual(data[2], (2, 2, 1.0))
+
+        data = [(u, kk, vv) for u, kk, vv in mm.iterate(axis='colwise')]
         self.assertEqual([int(kk) for _, kk, _ in data], [0, 1, 3, 4, 2])
+
 
 if __name__ == '__main__':
     unittest.main()

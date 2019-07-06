@@ -34,10 +34,10 @@ class TestALS(TestBase):
         data_opt.input.main = self.ml_100k + 'main'
         data_opt.input.uid = self.ml_100k + 'uid'
         data_opt.input.iid = self.ml_100k + 'iid'
+        data_opt.data.path = './ml100k.h5py'
 
         als = ALS(opt, data_opt=data_opt)
         self.assertTrue(True)
-        self.temp_files.append(data_opt.data.path)
         als.init_factors()
         self.assertTrue(als.P.shape, (5, 20))
         self.assertTrue(als.Q.shape, (3, 20))

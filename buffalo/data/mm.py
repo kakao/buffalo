@@ -14,8 +14,8 @@ class MatrixMarketOptions(aux.InputOptions):
             'type': 'matrix_market',
             'input': {
                 'main': '',
-                'uid': '',
-                'iid': ''
+                'uid': '',  # if not set, row-id is used as userid.
+                'iid': ''  # if not set, col-id is used as itemid.
             },
             'data': {
                 'batch_mb': 1024,
@@ -116,18 +116,23 @@ class MatrixMarket(Data):
                     db['indptr'][empty_index] = data_index
 
     def _create(self, data_path, P, H):
+        def get_max_column_length(fname):
+            with open(fname) as fin:
+                max_col = 0
+                for l in fin:
+                    max_col = max(max_col, len(l))
+            return max_col
+
         uid_path, iid_path, main_path = P['uid_path'], P['iid_path'], P['main_path']
         num_users, num_items, num_nnz = map(int, H.split())
         with log.pbar(log.DEBUG, total=5, mininterval=30) as pbar:
-            with open(uid_path) as fin:
-                uid_max_col = 0
-                for l in fin:
-                    uid_max_col = max(uid_max_col, len(l) + 1)
+            uid_max_col = len(str(num_users)) + 1
+            if uid_path:
+                uid_max_col = get_max_column_length(uid_path) + 1
             pbar.update(1)
-            with open(iid_path) as fin:
-                iid_max_col = 0
-                for l in fin:
-                    iid_max_col = max(iid_max_col, len(l) + 1)
+            iid_max_col = len(str(num_items)) + 1
+            if iid_path:
+                iid_max_col = get_max_column_length(iid_path) + 1
             pbar.update(1)
             try:
                 db = self.create_database(data_path,
@@ -137,11 +142,19 @@ class MatrixMarket(Data):
                                           uid_max_col=uid_max_col,
                                           iid_max_col=iid_max_col)
                 idmap = db['idmap']
-                with open(uid_path) as fin:
-                    idmap['rows'][:] = np.loadtxt(fin, dtype='S%s' % uid_max_col)
+                if uid_path:
+                    with open(uid_path) as fin:
+                        idmap['rows'][:] = np.loadtxt(fin, dtype=f'S{uid_max_col}')
+                else:
+                    idmap['rows'][:] = np.array([str(i) for i in range(1, num_users + 1)],
+                                                dtype=f'S{uid_max_col}')
                 pbar.update(1)
-                with open(iid_path) as fin:
-                    idmap['cols'][:] = np.loadtxt(fin, dtype='S%s' % iid_max_col)
+                if iid_path:
+                    with open(iid_path) as fin:
+                        idmap['cols'][:] = np.loadtxt(fin, dtype=f'S{iid_max_col}')
+                else:
+                    idmap['cols'][:] = np.array([str(i) for i in range(1, num_items + 1)],
+                                                dtype=f'S{iid_max_col}')
                 pbar.update(1)
                 num_header_lines = 0
                 with open(main_path) as fin:
