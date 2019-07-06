@@ -1,5 +1,8 @@
 setuptools>=1.3.2
 pathlib
-eigency
 numpy
 cython
+eigency
+tqdm
+psutil
+h5py
