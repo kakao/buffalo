@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import math
 import unittest
 import tempfile
 
@@ -29,7 +30,7 @@ class TestPrepro(unittest.TestCase):
         for path in cls.temp_files:
             os.remove(path)
 
-    def test0_create(self):
+    def test0_onebased(self):
         opt = MatrixMarketOptions().get_default_option()
         opt.input.main = self.mm_path
         opt.input.uid = self.uid_path
@@ -52,6 +53,58 @@ class TestPrepro(unittest.TestCase):
         self.assertEqual([int(vv) for _, _, vv in data], [1, 1, 1, 1, 1])
         self.assertEqual(data[2], (2, 2, 1.0))
 
+    def test1_minmax(self):
+        opt = MatrixMarketOptions().get_default_option()
+        opt.input.main = self.mm_path
+        opt.input.uid = self.uid_path
+        opt.input.iid = self.iid_path
+        opt.data.value_prepro = aux.Option({'name': 'MinMaxScalar',
+                                            'min': 3, 'max': 5.0})
+        mm = MatrixMarket(opt)
+        mm.create()
+        self.assertTrue(True)
+        db = mm.handle
+        self.assertEqual(sorted(db.keys()), sorted(['header', 'idmap', 'rowwise', 'colwise']))
+        header = mm.get_header()
+        self.assertEqual(header['num_nnz'], 5)
+        self.assertEqual(header['num_users'], 5)
+        self.assertEqual(header['num_items'], 3)
+
+        data = [(u, kk, vv) for u, kk, vv in mm.iterate()]
+        self.assertEqual(len(data), 5)
+        self.assertEqual([int(kk) for _, kk, _ in data], [0, 0, 2, 1, 1])
+        self.assertEqual([int(vv) for _, _, vv in data], [3, 5, 3, 3, 4])
+        self.assertEqual(data[2], (2, 2, 3.0))
+
+    def test2_implicit_als(self):
+        opt = MatrixMarketOptions().get_default_option()
+        opt.input.main = self.mm_path
+        opt.input.uid = self.uid_path
+        opt.input.iid = self.iid_path
+        opt.data.value_prepro = aux.Option({'name': 'ImplicitALS',
+                                            'epsilon': 0.5})
+        mm = MatrixMarket(opt)
+        mm.create()
+        self.assertTrue(True)
+        db = mm.handle
+        self.assertEqual(sorted(db.keys()), sorted(['header', 'idmap', 'rowwise', 'colwise']))
+        header = mm.get_header()
+        self.assertEqual(header['num_nnz'], 5)
+        self.assertEqual(header['num_users'], 5)
+        self.assertEqual(header['num_items'], 3)
+
+        data = [(u, kk, vv) for u, kk, vv in mm.iterate()]
+        self.assertEqual(len(data), 5)
+        self.assertEqual([int(kk) for _, kk, _ in data], [0, 0, 2, 1, 1])
+        self.assertAlmostEqual(data[2][2], math.log(1 + 1.0 / 0.5))
+
+    def test3_sppmi(self):
+        opt = MatrixMarketOptions().get_default_option()
+        opt.input.main = self.mm_path
+        opt.input.uid = self.uid_path
+        opt.input.iid = self.iid_path
+        opt.data.value_prepro = aux.Option({'name': 'SPPMI'})
+        self.assertRaises(RuntimeError, MatrixMarket, opt)
 
 if __name__ == '__main__':
     unittest.main()

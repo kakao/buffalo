@@ -17,10 +17,10 @@ class Data(object):
         self.handle = None
         self.header = None
         self.temp_files = []
-        self.prepro = prepro.PreProcess()
+        self.prepro = prepro.PreProcess(self.opt.data)
         self.value_prepro = self.prepro
         if self.opt.data.value_prepro:
-            self.prepro = getattr(prepro, self.opt.data.value_prepro.name)()
+            self.prepro = getattr(prepro, self.opt.data.value_prepro.name)(self.opt.data.value_prepro)
             self.value_prepro = self.prepro
 
     @abc.abstractmethod

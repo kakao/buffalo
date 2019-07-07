@@ -4,6 +4,7 @@ import os
 import h5py
 import numpy as np
 
+from buffalo.data import prepro
 from buffalo.misc import aux, log
 from buffalo.data.base import Data
 
@@ -38,6 +39,9 @@ class MatrixMarket(Data):
     def __init__(self, opt, *args, **kwargs):
         super(MatrixMarket, self).__init__(opt, *args, **kwargs)
         self.logger = log.get_logger('MatrixMarket')
+        if isinstance(self.value_prepro,
+                      (prepro.SPPMI)):
+            raise RuntimeError(f'{self.opt.data.value_prepro.name} does not support MatrixMarket')
 
     def create_database(self, path, **kwargs):
         f = h5py.File(path, 'w')
@@ -203,13 +207,13 @@ class MatrixMarket(Data):
                 self._build(db['rowwise'], tmp_main,
                             num_lines=db['header']['num_nnz'][0],
                             max_key=db['header']['num_users'][0], rowwise=True)
-                self.prepro.pre(db['rowwise'])
+                self.prepro.post(db['rowwise'])
                 aux.psort(tmp_main, key=2)
                 self.prepro.pre(db['header'])
                 self._build(db['colwise'], tmp_main,
                             num_lines=db['header']['num_nnz'][0],
                             max_key=db['header']['num_items'][0], rowwise=False)
-                self.prepro.pre(db['rowwise'])
+                self.prepro.post(db['colwise'])
                 self.temp_files.append(tmp_main)
                 db['header']['completed'][0] = 1
                 db.close()
