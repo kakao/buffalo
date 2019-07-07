@@ -43,7 +43,7 @@ class BufferedDataMM(BufferedData):
         minimum_required_batch_size = 0
         for axis in ['rowwise', 'colwise']:
             lim = int(limit / 2)
-            group = data.get_group(axis=axis)
+            group = data.get_group(axis)
             header = data.get_header()
             m = self.major[axis]
             m['index'] = 0
@@ -81,7 +81,7 @@ class BufferedDataMM(BufferedData):
 
             m['start_x'] = m['next_x']
 
-            group = self.data.get_group(axis=self.axis)
+            group = self.data.get_group(self.axis)
             beg = 0 if m['start_x'] == 0 else m['indptr'][m['start_x'] - 1]
             where = bisect.bisect_left(m['indptr'], beg + m['limit'])
             if where == m['start_x']:

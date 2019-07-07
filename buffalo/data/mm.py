@@ -6,10 +6,10 @@ import numpy as np
 
 from buffalo.data import prepro
 from buffalo.misc import aux, log
-from buffalo.data.base import Data
+from buffalo.data.base import Data, DataOption
 
 
-class MatrixMarketOptions(aux.InputOptions):
+class MatrixMarketOptions(DataOption):
     def get_default_option(self) -> aux.Option:
         opt = {
             'type': 'matrix_market',
@@ -19,6 +19,11 @@ class MatrixMarketOptions(aux.InputOptions):
                 'iid': ''  # if not set, col-id is used as itemid.
             },
             'data': {
+                'validation': {
+                    'name': 'sample',
+                    'p': 0.01,
+                    'max_samples': 500
+                },
                 'batch_mb': 1024,
                 'validation_p': 0.1,
                 'use_cache': False,
@@ -29,7 +34,7 @@ class MatrixMarketOptions(aux.InputOptions):
         return aux.Option(opt)
 
     def is_valid_option(self, opt) -> bool:
-        super(MatrixMarketOptions, self).is_valid_option(opt)
+        assert super(MatrixMarketOptions, self).is_valid_option(opt)
         if not opt['type'] == 'matrix_market':
             raise RuntimeError('Invalid data type: %s' % opt['type'])
         return True
@@ -38,23 +43,37 @@ class MatrixMarketOptions(aux.InputOptions):
 class MatrixMarket(Data):
     def __init__(self, opt, *args, **kwargs):
         super(MatrixMarket, self).__init__(opt, *args, **kwargs)
+        self.name = 'MatrixMarket'
         self.logger = log.get_logger('MatrixMarket')
         if isinstance(self.value_prepro,
                       (prepro.SPPMI)):
             raise RuntimeError(f'{self.opt.data.value_prepro.name} does not support MatrixMarket')
 
     def create_database(self, path, **kwargs):
+        # Create database structure
         f = h5py.File(path, 'w')
         self.path = path
 
         f.create_group('rowwise')
         f.create_group('colwise')
+
         num_users, num_items, num_nnz = kwargs['num_users'], kwargs['num_items'], kwargs['num_nnz']
         for g in [f['rowwise'], f['colwise']]:
             g.create_dataset('key', (num_nnz,), dtype='int32', maxshape=(num_nnz,))
             g.create_dataset('val', (num_nnz,), dtype='float32', maxshape=(num_nnz,))
         f['rowwise'].create_dataset('indptr', (num_users,), dtype='int64', maxshape=(num_users,))
         f['colwise'].create_dataset('indptr', (num_items,), dtype='int64', maxshape=(num_items,))
+
+        if self.opt.data.validation:
+            f.create_group('vali')
+            g = f['vali']
+            sz = min(self.opt.data.validation.max_samples, int(num_nnz * self.opt.data.validation.p))
+            g.create_dataset('row', (sz,), dtype='int32', maxshape=(sz,))
+            g.create_dataset('col', (sz,), dtype='int32', maxshape=(sz,))
+            g.create_dataset('val', (sz,), dtype='float32', maxshape=(sz,))
+            g.create_dataset('indexes', (sz,), dtype='int64', maxshape=(sz,))
+            g['indexes'][:] = np.random.choice(num_nnz, sz, replace=False)
+            num_nnz -= sz
 
         header = f.create_group('header')
         header.create_dataset('num_users', (1,), dtype='int64')
@@ -76,6 +95,7 @@ class MatrixMarket(Data):
         return f
 
     def _build(self, db, mm_path, num_lines, max_key, data_chunk_size=1000000, rowwise=True):
+        # NOTE: this part is the bottle-neck, can we do better?
         with open(mm_path) as fin:
             prev_key, data_index, data_rear_index = 0, 0, 0
             chunk, data_chunk = [], []
@@ -130,6 +150,7 @@ class MatrixMarket(Data):
 
         uid_path, iid_path, main_path = P['uid_path'], P['iid_path'], P['main_path']
         num_users, num_items, num_nnz = map(int, H.split())
+        # Manually updating progress bar is a bit naive
         with log.pbar(log.DEBUG, total=5, mininterval=30) as pbar:
             uid_max_col = len(str(num_users)) + 1
             if uid_path:
@@ -147,6 +168,7 @@ class MatrixMarket(Data):
                                           uid_max_col=uid_max_col,
                                           iid_max_col=iid_max_col)
                 idmap = db['idmap']
+                # if not given, assume id as is
                 if uid_path:
                     with open(uid_path) as fin:
                         idmap['rows'][:] = np.loadtxt(fin, dtype=f'S{uid_max_col}')
@@ -175,6 +197,32 @@ class MatrixMarket(Data):
                 raise
         return db, num_header_lines
 
+    def fill_validation_data(self, db, validation_data):
+        if not validation_data:
+            return
+        validation_data = [line.strip().split() for line in validation_data]
+        assert len(validation_data) == db['vali']['indexes'].shape[0], 'Given data data is not matched with required for validation data'
+        db['vali']['row'][:] = [int(r) - 1 for r, _, _ in validation_data]  # 0-based
+        db['vali']['col'][:] = [int(c) - 1 for _, c, _ in validation_data]  # 0-based
+        db['vali']['val'][:] = [self.value_prepro(float(v)) for _, _, v in validation_data]
+
+    def _build_data(self, db, working_data_path, validation_data):
+        aux.psort(working_data_path, key=1)
+        self.prepro.pre(db['header'])
+        self._build(db['rowwise'], working_data_path,
+                    num_lines=db['header']['num_nnz'][0],
+                    max_key=db['header']['num_users'][0], rowwise=True)
+        self.prepro.post(db['rowwise'])
+
+        self.fill_validation_data(db, validation_data)
+
+        aux.psort(working_data_path, key=2)
+        self.prepro.pre(db['header'])
+        self._build(db['colwise'], working_data_path,
+                    num_lines=db['header']['num_nnz'][0],
+                    max_key=db['header']['num_items'][0], rowwise=False)
+        self.prepro.post(db['colwise'])
+
     def create(self) -> h5py.File:
         mm_main_path = self.opt.input.main
         mm_uid_path = self.opt.input.uid
@@ -198,22 +246,15 @@ class MatrixMarket(Data):
                                                  'iid_path': mm_iid_path},
                                                 header)
             try:
-                self.logger.info('Building data part...')
                 num_header_lines += 1  # add metaline
-                tmp_main = aux.make_temporary_file(mm_main_path, ignore_lines=num_header_lines)
-                self.logger.info('Create temporary data on %s.' % tmp_main)
-                aux.psort(tmp_main, key=1)
-                self.prepro.pre(db['header'])
-                self._build(db['rowwise'], tmp_main,
-                            num_lines=db['header']['num_nnz'][0],
-                            max_key=db['header']['num_users'][0], rowwise=True)
-                self.prepro.post(db['rowwise'])
-                aux.psort(tmp_main, key=2)
-                self.prepro.pre(db['header'])
-                self._build(db['colwise'], tmp_main,
-                            num_lines=db['header']['num_nnz'][0],
-                            max_key=db['header']['num_items'][0], rowwise=False)
-                self.prepro.post(db['colwise'])
+                self.logger.info('Creating working data...')
+                pickup_line_indexes = [] if 'vali' not in db else db['vali']['indexes']
+                tmp_main, validation_data = aux.make_temporary_file(mm_main_path,
+                                                                    ignore_lines=num_header_lines,
+                                                                    pickup_line_indexes=pickup_line_indexes)
+                self.logger.debug(f'Working data is created on {tmp_main}')
+                self.logger.info('Building data part...')
+                self._build_data(db, tmp_main, validation_data)
                 self.temp_files.append(tmp_main)
                 db['header']['completed'][0] = 1
                 db.close()

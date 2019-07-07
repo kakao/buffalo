@@ -26,3 +26,15 @@ class Algo(abc.ABC):
         opt_path = opt_path
         self.is_valid_option(opt)
         return (aux.Option(opt), opt_path)
+
+
+class Serializable(abc.ABC):
+    def dump(self, directory):
+        if not os.path.isdir(directory):
+            os.mkdir(directory)
+        meatadata_path = os.path.join(directory, 'metadata')
+        with open(metadata_path, 'w') as fout:
+            fout.write(json.dumps({'opt': self.opt}))
+
+    def load(self, dir):
+        pass

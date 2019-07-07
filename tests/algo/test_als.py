@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
 import unittest
+from buffalo.misc import aux
 from buffalo.algo.als import ALS
 from buffalo.algo.options import AlsOption
-from buffalo.misc.log import set_log_level, get_log_level
 from buffalo.data.mm import MatrixMarketOptions
+from buffalo.misc.log import set_log_level, get_log_level
 
 from .base import TestBase
 
@@ -51,15 +52,36 @@ class TestALS(TestBase):
         data_opt.input.main = self.ml_100k + 'main'
         data_opt.input.uid = self.ml_100k + 'uid'
         data_opt.input.iid = self.ml_100k + 'iid'
+        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
 
         als = ALS(opt, data_opt=data_opt)
         als.init_factors()
         als.train()
 
-    def test5_train_ml_20m(self):
+    def test5_validation(self):
+        set_log_level(3)
+        opt = AlsOption().get_default_option()
+        opt.d = 5
+        opt.validation = aux.Option({'topk': 10})
+
+        data_opt = MatrixMarketOptions().get_default_option()
+        data_opt.input.main = self.ml_100k + 'main'
+        data_opt.input.uid = self.ml_100k + 'uid'
+        data_opt.input.iid = self.ml_100k + 'iid'
+        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
+
+        als = ALS(opt, data_opt=data_opt)
+        als.init_factors()
+        als.train()
+        results = als.get_validation_results()
+        self.assertTrue(results['ndcg'] > 0.03)
+        self.assertTrue(results['map'] > 0.015)
+
+    def test6_train_ml_20m(self):
         set_log_level(3)
         opt = AlsOption().get_default_option()
         opt.num_workers = 8
+        opt.validation = aux.Option({'topk': 10})
 
         data_opt = MatrixMarketOptions().get_default_option()
         data_opt.input.main = self.ml_20m + 'main'
@@ -71,7 +93,6 @@ class TestALS(TestBase):
         als = ALS(opt, data_opt=data_opt)
         als.init_factors()
         als.train()
-
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import io
 import os
 import abc
 import json
@@ -7,8 +6,6 @@ import psutil
 import warnings
 import tempfile
 import subprocess
-
-from buffalo.misc import log
 
 
 class Option(dict):
@@ -90,7 +87,7 @@ class InputOptions(abc.ABC):
             return tmp.name
 
 
-def make_temporary_file(path, ignore_lines=0, chunk_size=8192, binary=False):
+def make_temporary_file(path, ignore_lines=0, pickup_line_indexes=[], chunk_size=8192, binary=False):
     W = 'w' if not binary else 'wb'
     R = 'r' if not binary else 'rb'
     with warnings.catch_warnings():
@@ -99,17 +96,30 @@ def make_temporary_file(path, ignore_lines=0, chunk_size=8192, binary=False):
             fin = open(path, mode=R)
             for _ in range(ignore_lines):
                 fin.readline()
-            while True:
-                chunk = fin.read(chunk_size)
-                if chunk:
-                    w.write(chunk)
-                if len(chunk) != chunk_size:
-                    break
-            w.close()
-            return w.name
+            if pickup_line_indexes:
+                target_indexes = set(pickup_line_indexes)
+                lines = []
+                for idx, line in enumerate(fin):
+                    if idx in target_indexes:
+                        lines.append(line.strip())
+                    else:
+                        w.write(line)
+                w.close()
+                return w.name, lines
+            else:
+                while True:
+                    chunk = fin.read(chunk_size)
+                    if chunk:
+                        w.write(chunk)
+                    if len(chunk) != chunk_size:
+                        break
+                w.close()
+            return w.name, []
 
 
 def psort(path, parallel=-1, field_seperator=' ', key=1, output=None):
+    # TODO: We need better way for OS/platform compatibility. At least
+    # compatibility checking routine is needed.
     commands = ['sort', '-n']
     if parallel == -1:
         parallel = psutil.cpu_count()

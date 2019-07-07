@@ -27,6 +27,17 @@ class Data(object):
     def create_database(self, filename, **kwargs):
         pass
 
+    def show_info(self):
+        header = self.get_header()
+        g = self.get_group('vali')
+        info = '{name} Header({users}, {items}, {nnz}) Validation({vali} samples)'
+        info = info.format(name=self.name,
+                           users=header['num_users'],
+                           items=header['num_items'],
+                           nnz=header['num_nnz'],
+                           vali=g['indexes'].shape[0])
+        return info
+
     def open(self, data_path):
         self.handle = h5py.File(data_path, 'r')
         self.path = data_path
@@ -46,11 +57,14 @@ class Data(object):
                            'completed': self.handle['header']['completed'][0]}
         return self.header
 
-    def get_group(self, axis='rowwise'):
-        assert axis in ['rowwise', 'colwise'], 'Unexpected axis: {}'.format(axis)
+    def get_group(self, group_name='rowwise'):
+        assert group_name in ['rowwise', 'colwise', 'vali'], 'Unexpected group_name: {}'.format(group_name)
         assert self.handle, 'DB is not opened'
-        group = self.handle[axis]
+        group = self.handle[group_name]
         return group
+
+    def has_group(self, name):
+        return name in self.handle
 
     def iterate(self, axis='rowwise') -> [int, int, float]:
         assert axis in ['rowwise', 'colwise'], 'Unexpected axis: {}'.format(axis)
@@ -77,3 +91,16 @@ class Data(object):
             self.handle.close()
             self.handle = None
             self.header = None
+
+
+class DataOption(object):
+    def is_valid_option(self, opt) -> bool:
+        assert super(DataOption, self).is_valid_option(opt)
+        if 'validation' in opt['data']:
+            assert opt['data']['validation']['name'] in ['sample'], 'Unknown validation.name.'
+            if opt['data']['validation']['name'] == 'sample':
+                assert hasattr(opt['data']['validation'], 'max_samples'), 'max_samples not defined on data.validation.'
+                assert isinstance(opt['data']['validation']['max_samples'], int), 'invalid type for data.validation.max_samples'
+                assert hasattr(opt['data']['validation'], 'p'), 'not defined on data.validation.'
+                assert isinstance(opt['data']['validation']['p'], float), 'invalid type for data.validation.p'
+        return True

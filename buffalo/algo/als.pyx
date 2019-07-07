@@ -19,6 +19,7 @@ import buffalo.data
 from buffalo.data.base import Data
 from buffalo.misc import aux, log
 from buffalo.algo.base import Algo
+from buffalo.evaluate import Evaluable
 from buffalo.algo.options import AlsOption
 from buffalo.data.buffered_data import BufferedDataMM
 
@@ -80,7 +81,7 @@ cdef class PyALS:
                                        axis)
 
 
-class ALS(Algo, AlsOption):
+class ALS(Algo, AlsOption, Evaluable):
     """Python implementation for C-ALS.
 
     Implementation of Collaborative Filtering for Implicit Feedback datasets.
@@ -103,6 +104,7 @@ class ALS(Algo, AlsOption):
         elif isinstance(data, Data):
             self.data = data
         self.logger.info('ALS(%s)' % json.dumps(self.opt, indent=2))
+        self.logger.info(self.data.show_info())
 
     def set_data(self, data):
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
@@ -116,6 +118,15 @@ class ALS(Algo, AlsOption):
         self.Q = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
                                          size=(header['num_items'], self.opt.d)).astype("float32"), order='F')
         self.obj.set_factors(self.P, self.Q)
+
+    def get_topk_recommendation(self, rows, topk):
+        p = self.P[rows]
+        topks = np.argsort(p.dot(self.Q.T), axis=1)[:, -topk:][:,::-1]
+        return topks
+
+    def get_scores(self, row_col_pairs):
+        rets = {(r, c): self.P[r].dot(self.Q[c]) for r, c in row_col_pairs}
+        return rets
 
     def _get_buffer(self):
         buf = BufferedDataMM()
@@ -153,4 +164,6 @@ class ALS(Algo, AlsOption):
             err = self._iterate(buf, axis='colwise')
             rmse = (err / self.data.get_header()['num_nnz']) ** 0.5
             self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, time.time() - start_t))
+            if self.opt.validation:
+                self.logger.info(self.show_validation_results())
         self.obj.release()
