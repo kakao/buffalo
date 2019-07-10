@@ -35,8 +35,8 @@ class Evaluable(object):
         HIT = 0.0
         N = 0.0
         for index in range(0, len(rows), batch_size):
-            recs = self.get_topk_recommendation(rows[index:index + batch_size], topk=topk)
-            for row, _topk in zip(rows[index:index + batch_size], recs):
+            recs = self._get_topk_recommendation(rows[index:index + batch_size], topk=topk)
+            for row, _topk in recs:
                 _gt = gt[row]
 
                 # accuracy

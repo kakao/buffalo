@@ -69,6 +69,7 @@ class ImplicitALS(PreProcess):
 
 
 class SPPMI(PreProcess):
+    """NotImplemented Yet"""
     def __init__(self, opt):
         super(SPPMI, self).__init__(opt)
 

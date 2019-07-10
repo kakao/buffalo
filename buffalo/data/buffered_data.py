@@ -30,6 +30,10 @@ class BufferedData(object):
 
 
 class BufferedDataMM(BufferedData):
+    """Buffered Data
+
+    This class feed chunked data to training step.
+    """
     def __init__(self):
         super(BufferedDataMM, self).__init__()
         self.axis = 'rowwise'

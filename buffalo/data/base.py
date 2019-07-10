@@ -22,6 +22,8 @@ class Data(object):
         if self.opt.data.value_prepro:
             self.prepro = getattr(prepro, self.opt.data.value_prepro.name)(self.opt.data.value_prepro)
             self.value_prepro = self.prepro
+        self.id_mapped = False
+        self.userid_map, self.itemid_map = {}, {}
 
     @abc.abstractmethod
     def create_database(self, filename, **kwargs):
@@ -57,8 +59,27 @@ class Data(object):
                            'completed': self.handle['header']['completed'][0]}
         return self.header
 
+    def build_itemid_map(self):
+        idmap = self.get_group('idmap')
+        header = self.get_header()
+        if idmap['cols'].shape[0] == 0:
+            self.itemid_map = {str(i): i for i in range(header['num_items'])}
+        self.itemid_map = {v.decode('utf-8', 'ignore'): idx for idx, v in enumerate(idmap['cols'][::])}
+
+    def build_userid_map(self):
+        idmap = self.get_group('idmap')
+        header = self.get_header()
+        if idmap['rows'].shape[0] == 0:
+            self.userid_map = {str(i): i for i in range(header['num_users'])}
+        self.userid_map = {v.decode('utf-8', 'ignore'): idx for idx, v in enumerate(idmap['rows'][::])}
+
+    def build_idmaps(self):
+        self.id_mapped = True
+        self.build_itemid_map()
+        self.build_userid_map()
+
     def get_group(self, group_name='rowwise'):
-        assert group_name in ['rowwise', 'colwise', 'vali'], 'Unexpected group_name: {}'.format(group_name)
+        assert group_name in ['rowwise', 'colwise', 'vali', 'idmap'], 'Unexpected group_name: {}'.format(group_name)
         assert self.handle, 'DB is not opened'
         group = self.handle[group_name]
         return group

@@ -15,6 +15,7 @@ WARN = 1
 INFO = 2
 DEBUG = 3
 TRACE = 4
+__logger_holder = []
 
 
 cdef extern from "buffalo/misc/log.hpp":
@@ -41,6 +42,17 @@ cdef class PyBuffaloLog:
 
 
 def set_log_level(lvl):
+    for logger in __logger_holder:
+        if lvl == NOTSET:
+            logger.setLevel(logging.NOTSET)
+        elif lvl == WARN:
+            logger.setLevel(logging.WARN)
+        elif lvl == INFO:
+            logger.setLevel(logging.INFO)
+        elif lvl == DEBUG:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.DEBUG)
     PyBuffaloLog().set_log_level(lvl)
 
 
@@ -65,6 +77,7 @@ class TqdmLogger(io.StringIO):
 
 
 def get_logger(name=__file__, no_fileno=False):
+    global __logger_holder
     logger = logging.getLogger(name)
     if logger.handlers:
         return logger
@@ -72,6 +85,8 @@ def get_logger(name=__file__, no_fileno=False):
     lvl = get_log_level()
     if lvl == NOTSET:
         logger.setLevel(logging.NOTSET)
+    elif lvl == WARN:
+        logger.setLevel(logging.WARN)
     elif lvl == INFO:
         logger.setLevel(logging.INFO)
     elif lvl == DEBUG:
@@ -88,6 +103,7 @@ def get_logger(name=__file__, no_fileno=False):
     sh.setFormatter(formatter)
 
     logger.addHandler(sh)
+    __logger_holder.append(logger)
     return logger
 
 

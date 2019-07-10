@@ -23,7 +23,8 @@ class TestBase(unittest.TestCase):
 
             with open('./ml-100k/uid', 'w') as fout:
                 for line in open('./ml-100k/u.user'):
-                    fout.write('%s\n' % line.strip())
+                    userid = line.strip().split('|')[0]
+                    fout.write('%s\n' % userid)
         cls.ml_100k = './ml-100k/'
         if not os.path.isdir('ml-20m'):
             raise RuntimeError('Cannot find the ./ml-20m directory')

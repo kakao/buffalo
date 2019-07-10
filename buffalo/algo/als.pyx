@@ -14,6 +14,7 @@ from eigency.core cimport MatrixXf, Map, VectorXi, VectorXf
 
 import numpy as np
 cimport numpy as np
+from numpy.linalg import norm
 
 import buffalo.data
 from buffalo.data.base import Data
@@ -64,6 +65,7 @@ cdef class PyALS:
     def precompute(self, axis):
         self.obj.precompute(axis)
 
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def partial_update(self,
@@ -110,6 +112,13 @@ class ALS(Algo, AlsOption, Evaluable):
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
         self.data = data
 
+    def fast_similar(self, onoff=True):
+        if onoff:
+            self.FQ = self.normalize(self.Q)
+        else:
+            if hasattr(self, 'FQ'):
+                del self.FQ
+
     def init_factors(self):
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
@@ -119,10 +128,21 @@ class ALS(Algo, AlsOption, Evaluable):
                                          size=(header['num_items'], self.opt.d)).astype("float32"), order='F')
         self.obj.set_factors(self.P, self.Q)
 
-    def get_topk_recommendation(self, rows, topk):
+    def _get_topk_recommendation(self, rows, topk):
         p = self.P[rows]
         topks = np.argsort(p.dot(self.Q.T), axis=1)[:, -topk:][:,::-1]
-        return topks
+        return zip(rows, topks)
+
+    def _get_most_similar(self, cols, topk):
+        if hasattr(self, 'FQ'):
+            q = self.FQ[cols]
+            topks = np.argsort(q.dot(self.FQ.T), axis=1)[:, -topk:][:,::-1]
+        else:
+            q = self.Q[cols]
+            dot = q.dot(self.Q.T)
+            dot = dot / (norm(q) * norm(self.Q, axis=1))
+            topks = np.argsort(dot, axis=1)[:, -topk:][:,::-1]
+        return zip(cols, topks)
 
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.P[r].dot(self.Q[c]) for r, c in row_col_pairs}

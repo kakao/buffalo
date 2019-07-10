@@ -59,7 +59,7 @@ class TestALS(TestBase):
         als.train()
 
     def test5_validation(self):
-        set_log_level(3)
+        set_log_level(1)
         opt = AlsOption().get_default_option()
         opt.d = 5
         opt.validation = aux.Option({'topk': 10})
@@ -77,8 +77,33 @@ class TestALS(TestBase):
         self.assertTrue(results['ndcg'] > 0.03)
         self.assertTrue(results['map'] > 0.015)
 
-    def test6_train_ml_20m(self):
-        set_log_level(3)
+    def test6_topk(self):
+        set_log_level(1)
+        opt = AlsOption().get_default_option()
+        opt.d = 5
+        opt.validation = aux.Option({'topk': 10})
+
+        data_opt = MatrixMarketOptions().get_default_option()
+        data_opt.input.main = self.ml_100k + 'main'
+        data_opt.input.uid = self.ml_100k + 'uid'
+        data_opt.input.iid = self.ml_100k + 'iid'
+        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
+
+        als = ALS(opt, data_opt=data_opt)
+        als.init_factors()
+        als.train()
+        als.data.build_idmaps()
+        self.assertTrue(len(als.topk_recommendation('1', 10)['1']), 10)
+        als.fast_similar(True)
+        ret_a = als.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
+        als.fast_similar(False)
+        ret_b = als.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        self.assertIn('Return_of_the_Jedi_(1983)', ret_b)
+        self.assertEqual(ret_a, ret_b)
+
+    def test7_train_ml_20m(self):
+        set_log_level(2)
         opt = AlsOption().get_default_option()
         opt.num_workers = 8
         opt.validation = aux.Option({'topk': 10})
