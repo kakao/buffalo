@@ -101,7 +101,6 @@ class Data(object):
 
     def __del__(self):
         if self.handle:
-            self.handle.close()
             self.handle = None
             self.header = None
         for path in self.temp_files:
@@ -109,7 +108,6 @@ class Data(object):
 
     def close(self):
         if self.handle:
-            self.handle.close()
             self.handle = None
             self.header = None
 
