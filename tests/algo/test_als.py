@@ -139,6 +139,7 @@ class TestALS(TestBase):
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
         als.dump('als.bin')
         als.load('als.bin')
+        os.remove('als.bin')
         ret_a = als.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
 
