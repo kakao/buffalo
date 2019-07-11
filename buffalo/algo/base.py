@@ -13,6 +13,10 @@ class Algo(abc.ABC):
     def __init__(self, *args, **kwargs):
         self.temporary_files = []
 
+    @abc.abstractmethod
+    def init(self):
+        raise NotImplemented
+
     def __del__(self):
         for path in self.temporary_files:
             try:
