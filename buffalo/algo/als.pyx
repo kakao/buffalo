@@ -119,6 +119,9 @@ class ALS(Algo, AlsOption, Evaluable, Serializable):
             if hasattr(self, 'FQ'):
                 del self.FQ
 
+    def init(self):
+        self.init_factors()
+
     def init_factors(self):
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
@@ -189,6 +192,9 @@ class ALS(Algo, AlsOption, Evaluable, Serializable):
         self.obj.release()
 
     def _get_data(self):
-        return [('opt', self.opt),
+        data = [('opt', self.opt),
                 ('Q', self.Q),
                 ('P', self.P)]
+        if hasattr(self, 'FQ'):
+            data.append('FQ', self.FQ)
+        return data
