@@ -46,6 +46,12 @@ class Option(dict):
         super(Option, self).__delitem__(key)
         del self.__dict__[key]
 
+    def __getstate__(self):
+        return vars(self)
+
+    def __setstate__(self, state):
+        vars(self).update(state)
+
 
 def mkdirs(path):
     if not path:

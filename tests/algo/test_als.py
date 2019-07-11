@@ -119,5 +119,28 @@ class TestALS(TestBase):
         als.init_factors()
         als.train()
 
+    def test8_serialization(self):
+        set_log_level(1)
+        opt = AlsOption().get_default_option()
+        opt.d = 5
+        opt.validation = aux.Option({'topk': 10})
+
+        data_opt = MatrixMarketOptions().get_default_option()
+        data_opt.input.main = self.ml_100k + 'main'
+        data_opt.input.uid = self.ml_100k + 'uid'
+        data_opt.input.iid = self.ml_100k + 'iid'
+        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
+
+        als = ALS(opt, data_opt=data_opt)
+        als.init_factors()
+        als.train()
+        als.data.build_idmaps()
+        ret_a = als.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
+        als.dump('als.bin')
+        als.load('als.bin')
+        ret_a = als.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
+
 if __name__ == '__main__':
     unittest.main()

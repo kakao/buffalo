@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
 import abc
-import tarfile
+import pickle
+import struct
 
 import numpy as np
 
@@ -68,12 +69,29 @@ class Algo(abc.ABC):
 
 
 class Serializable(abc.ABC):
-    def dump(self, directory):
-        if not os.path.isdir(directory):
-            os.mkdir(directory)
-        meatadata_path = os.path.join(directory, 'metadata')
-        with open(metadata_path, 'w') as fout:
-            fout.write(json.dumps({'opt': self.opt}))
+    def dump(self, path):
+        data = self._get_data()
+        with open(path, 'wb') as fout:
+            total_objs = len(data)
+            fout.write(struct.pack('Q', total_objs))
+            for name, obj in data:
+                bname = bytes(name, encoding='utf-8')
+                fout.write(struct.pack('Q', len(bname)))
+                fout.write(bname)
+                s = pickle.dumps(obj, protocol=4)
+                fout.write(struct.pack('Q', len(s)))
+                fout.write(s)
 
-    def load(self, dir):
-        pass
+    @abc.abstractmethod
+    def _get_data(self):
+        raise NotImplemented
+
+    def load(self, path):
+        with open(path, 'rb') as fin:
+            total_objs = struct.unpack('Q', fin.read(8))[0]
+            for _ in range(total_objs):
+                name_sz = struct.unpack('Q', fin.read(8))[0]
+                name = fin.read(name_sz).decode('utf8')
+                obj_sz = struct.unpack('Q', fin.read(8))[0]
+                obj = pickle.loads(fin.read(obj_sz))
+                setattr(self, name, obj)

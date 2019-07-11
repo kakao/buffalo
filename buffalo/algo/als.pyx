@@ -19,9 +19,9 @@ from numpy.linalg import norm
 import buffalo.data
 from buffalo.data.base import Data
 from buffalo.misc import aux, log
-from buffalo.algo.base import Algo
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import AlsOption
+from buffalo.algo.base import Algo, Serializable
 from buffalo.data.buffered_data import BufferedDataMM
 
 
@@ -83,7 +83,7 @@ cdef class PyALS:
                                        axis)
 
 
-class ALS(Algo, AlsOption, Evaluable):
+class ALS(Algo, AlsOption, Evaluable, Serializable):
     """Python implementation for C-ALS.
 
     Implementation of Collaborative Filtering for Implicit Feedback datasets.
@@ -187,3 +187,8 @@ class ALS(Algo, AlsOption, Evaluable):
             if self.opt.validation:
                 self.logger.info(self.show_validation_results())
         self.obj.release()
+
+    def _get_data(self):
+        return [('opt', self.opt),
+                ('Q', self.Q),
+                ('P', self.P)]
