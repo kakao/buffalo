@@ -1,6 +1,6 @@
 #include "buffalo/misc/log.hpp"
 
-int BuffaloLogger::global_logging_level_ = 1;
+int BuffaloLogger::global_logging_level_ = 2;
 
 BuffaloLogger::BuffaloLogger() 
 {
