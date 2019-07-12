@@ -196,5 +196,5 @@ class ALS(Algo, AlsOption, Evaluable, Serializable):
                 ('Q', self.Q),
                 ('P', self.P)]
         if hasattr(self, 'FQ'):
-            data.append('FQ', self.FQ)
+            data.append(('FQ', self.FQ))
         return data
