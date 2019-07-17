@@ -41,7 +41,7 @@ class TestPrepro(unittest.TestCase):
         self.temp_files.append(opt.data.path)
         self.assertTrue(True)
         db = mm.handle
-        self.assertEqual(sorted(db.keys()), sorted(['header', 'idmap', 'rowwise', 'colwise']))
+        self.assertEqual(sorted(db.keys()), sorted(['vali', 'idmap', 'rowwise', 'colwise']))
         header = mm.get_header()
         self.assertEqual(header['num_nnz'], 5)
         self.assertEqual(header['num_users'], 5)
@@ -64,7 +64,7 @@ class TestPrepro(unittest.TestCase):
         mm.create()
         self.assertTrue(True)
         db = mm.handle
-        self.assertEqual(sorted(db.keys()), sorted(['header', 'idmap', 'rowwise', 'colwise']))
+        self.assertEqual(sorted(db.keys()), sorted(['vali', 'idmap', 'rowwise', 'colwise']))
         header = mm.get_header()
         self.assertEqual(header['num_nnz'], 5)
         self.assertEqual(header['num_users'], 5)
@@ -87,7 +87,7 @@ class TestPrepro(unittest.TestCase):
         mm.create()
         self.assertTrue(True)
         db = mm.handle
-        self.assertEqual(sorted(db.keys()), sorted(['header', 'idmap', 'rowwise', 'colwise']))
+        self.assertEqual(sorted(db.keys()), sorted(['vali', 'idmap', 'rowwise', 'colwise']))
         header = mm.get_header()
         self.assertEqual(header['num_nnz'], 5)
         self.assertEqual(header['num_users'], 5)

@@ -29,32 +29,31 @@ class BufferedData(object):
                 self.vals)
 
 
-class BufferedDataMM(BufferedData):
+class BufferedDataMatrix(BufferedData):
     """Buffered Data
 
     This class feed chunked data to training step.
     """
     def __init__(self):
-        super(BufferedDataMM, self).__init__()
-        self.axis = 'rowwise'
-        self.major = {'rowwise': {},
-                      'colwise': {}}
+        super(BufferedDataMatrix, self).__init__()
+        self.group = 'rowwise'
+        self.major = {'rowwise': {}, 'colwise': {}}
 
     def initialize(self, data):
         self.data = data
         # 16 bytes(indptr8, keys4, vals4)
         limit = max(int(((self.data.opt.data.batch_mb * 1000 * 1000) / 16.)), 64)
         minimum_required_batch_size = 0
-        for axis in ['rowwise', 'colwise']:
+        for G in ['rowwise', 'colwise']:
             lim = int(limit / 2)
-            group = data.get_group(axis)
+            group = data.get_group(G)
             header = data.get_header()
-            m = self.major[axis]
+            m = self.major[G]
             m['index'] = 0
             m['limit'] = lim
             m['start_x'] = 0
             m['next_x'] = 0
-            m['max_x'] = header['num_users'] if axis == 'rowwise' else header['num_items']
+            m['max_x'] = header['num_users'] if G == 'rowwise' else header['num_items']
             m['indptr'] = group['indptr'][::]
             minimum_required_batch_size = max([m['indptr'][i] - m['indptr'][i - 1]
                                                for i in range(1, len(m['indptr']))])
@@ -65,15 +64,15 @@ class BufferedDataMM(BufferedData):
                                 'minimum required batch size is %d for the data, but %d given. '
                                 'Increasing batch_mb would be helpful for faster traininig.',
                                 minimum_required_batch_size, int(limit / 2))
-            for axis in ['rowwise', 'colwise']:
-                m = self.major[axis]
+            for G in ['rowwise', 'colwise']:
+                m = self.major[G]
                 lim = minimum_required_batch_size + 1
                 m['limit'] = lim
                 m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='F')
                 m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order='F')
 
     def fetch_batch(self):
-        m = self.major[self.axis]
+        m = self.major[self.group]
         while True:
             if m['start_x'] == 0 and m['next_x'] + 1 >= m['max_x']:
                 yield m['indptr'][-1]
@@ -85,7 +84,7 @@ class BufferedDataMM(BufferedData):
 
             m['start_x'] = m['next_x']
 
-            group = self.data.get_group(self.axis)
+            group = self.data.get_group(self.group)
             beg = 0 if m['start_x'] == 0 else m['indptr'][m['start_x'] - 1]
             where = bisect.bisect_left(m['indptr'], beg + m['limit'])
             if where == m['start_x']:
@@ -101,16 +100,16 @@ class BufferedDataMM(BufferedData):
             m['vals'][:size] = group['val'][beg:end]
             yield size
 
-    def set_axis(self, axis):
-        assert axis in ['rowwise', 'colwise'], 'Unexpected axis: {}'.format(axis)
-        self.axis = axis
+    def set_group(self, group):
+        assert group in ['rowwise', 'colwise'], 'Unexpected group: {}'.format(group)
+        self.group = group
 
     def reset(self):
         for m in self.major.valus():
             m['index'], m['start_x'], m['next_x'] = 0, 0
 
     def get(self):
-        m = self.major[self.axis]
+        m = self.major[self.group]
         return (m['start_x'],
                 m['next_x'],
                 m['indptr'],
