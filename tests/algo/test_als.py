@@ -24,6 +24,7 @@ class TestALS(TestBase):
         self.assertTrue(AlsOption().is_valid_option(opt))
 
     def test2_init_with_dict(self):
+        set_log_level(3)
         opt = AlsOption().get_default_option()
         ALS(opt)
         self.assertTrue(True)

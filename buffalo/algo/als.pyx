@@ -22,7 +22,7 @@ from buffalo.misc import aux, log
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import AlsOption
 from buffalo.algo.base import Algo, Serializable
-from buffalo.data.buffered_data import BufferedDataMM
+from buffalo.data.buffered_data import BufferedDataMatrix
 
 
 cdef extern from "buffalo/algo_impl/als/als.hpp" namespace "als":
@@ -106,7 +106,9 @@ class ALS(Algo, AlsOption, Evaluable, Serializable):
         elif isinstance(data, Data):
             self.data = data
         self.logger.info('ALS(%s)' % json.dumps(self.opt, indent=2))
-        self.logger.info(self.data.show_info())
+        if self.data:
+            self.logger.info(self.data.show_info())
+            assert self.data.data_type in ['matrix']
 
     def set_data(self, data):
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
@@ -149,19 +151,19 @@ class ALS(Algo, AlsOption, Evaluable, Serializable):
         return rets
 
     def _get_buffer(self):
-        buf = BufferedDataMM()
+        buf = BufferedDataMatrix()
         buf.initialize(self.data)
         return buf
 
-    def _iterate(self, buf, axis='rowwise'):
+    def _iterate(self, buf, group='rowwise'):
         header = self.data.get_header()
-        end = header['num_users'] if axis == 'rowwise' else header['num_items']
-        int_axis = 0 if axis == 'rowwise' else 1
-        self.obj.precompute(int_axis)
+        end = header['num_users'] if group == 'rowwise' else header['num_items']
+        int_group = 0 if group == 'rowwise' else 1
+        self.obj.precompute(int_group)
         err = 0.0
         update_t, feed_t, updated = 0, 0, 0
-        buf.set_axis(axis)
-        with log.pbar(log.DEBUG, desc='%s' % axis,
+        buf.set_group(group)
+        with log.pbar(log.DEBUG, desc='%s' % group,
                       total=header['num_nnz'], mininterval=30) as pbar:
             start_t = time.time()
             for sz in buf.fetch_batch():
@@ -169,19 +171,19 @@ class ALS(Algo, AlsOption, Evaluable, Serializable):
                 feed_t += time.time() - start_t
                 start_x, next_x, indptr, keys, vals = buf.get()
                 start_t = time.time()
-                err += self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_axis)
+                err += self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)
                 update_t += time.time() - start_t
                 pbar.update(sz)
             pbar.refresh()
-        self.logger.debug('updated %s processed(%s) elapsed(data feed: %.3f update: %.3f)' % (axis, updated, feed_t, update_t))
+        self.logger.debug('updated %s processed(%s) elapsed(data feed: %.3f update: %.3f)' % (group, updated, feed_t, update_t))
         return err
 
     def train(self):
         buf = self._get_buffer()
         for i in range(self.opt.num_iters):
             start_t = time.time()
-            self._iterate(buf, axis='rowwise')
-            err = self._iterate(buf, axis='colwise')
+            self._iterate(buf, group='rowwise')
+            err = self._iterate(buf, group='colwise')
             rmse = (err / self.data.get_header()['num_nnz']) ** 0.5
             self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, time.time() - start_t))
             if self.opt.validation:

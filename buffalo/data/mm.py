@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
+import warnings
+import tempfile
+import traceback
 
 import h5py
 import numpy as np
@@ -19,6 +22,7 @@ class MatrixMarketOptions(DataOption):
                 'iid': ''  # if not set, col-id is used as itemid.
             },
             'data': {
+                'internal_data_type': 'matrix',
                 'validation': {
                     'name': 'sample',
                     'p': 0.01,
@@ -37,6 +41,8 @@ class MatrixMarketOptions(DataOption):
         assert super(MatrixMarketOptions, self).is_valid_option(opt)
         if not opt['type'] == 'matrix_market':
             raise RuntimeError('Invalid data type: %s' % opt['type'])
+        if opt['data']['internal_data_type'] != 'matrix':
+            raise RuntimeError('MatrixMarket only support internal data type(matrix)')
         return True
 
 
@@ -48,97 +54,7 @@ class MatrixMarket(Data):
         if isinstance(self.value_prepro,
                       (prepro.SPPMI)):
             raise RuntimeError(f'{self.opt.data.value_prepro.name} does not support MatrixMarket')
-
-    def create_database(self, path, **kwargs):
-        # Create database structure
-        f = h5py.File(path, 'w')
-        self.path = path
-
-        f.create_group('rowwise')
-        f.create_group('colwise')
-
-        num_users, num_items, num_nnz = kwargs['num_users'], kwargs['num_items'], kwargs['num_nnz']
-        for g in [f['rowwise'], f['colwise']]:
-            g.create_dataset('key', (num_nnz,), dtype='int32', maxshape=(num_nnz,))
-            g.create_dataset('val', (num_nnz,), dtype='float32', maxshape=(num_nnz,))
-        f['rowwise'].create_dataset('indptr', (num_users,), dtype='int64', maxshape=(num_users,))
-        f['colwise'].create_dataset('indptr', (num_items,), dtype='int64', maxshape=(num_items,))
-
-        if self.opt.data.validation:
-            f.create_group('vali')
-            g = f['vali']
-            sz = min(self.opt.data.validation.max_samples, int(num_nnz * self.opt.data.validation.p))
-            g.create_dataset('row', (sz,), dtype='int32', maxshape=(sz,))
-            g.create_dataset('col', (sz,), dtype='int32', maxshape=(sz,))
-            g.create_dataset('val', (sz,), dtype='float32', maxshape=(sz,))
-            g.create_dataset('indexes', (sz,), dtype='int64', maxshape=(sz,))
-            g['indexes'][:] = np.random.choice(num_nnz, sz, replace=False)
-            num_nnz -= sz
-
-        header = f.create_group('header')
-        header.create_dataset('num_users', (1,), dtype='int64')
-        header.create_dataset('num_items', (1,), dtype='int64')
-        header.create_dataset('num_nnz', (1,), dtype='int64')
-        header.create_dataset('completed', (1,), dtype='int64')
-        header['num_users'][0] = num_users
-        header['num_items'][0] = num_items
-        header['num_nnz'][0] = num_nnz
-        header['completed'][0] = 0
-
-        iid_max_col = kwargs['iid_max_col']
-        uid_max_col = kwargs['uid_max_col']
-        idmap = f.create_group('idmap')
-        idmap.create_dataset('rows', (num_users,), dtype='S%s' % uid_max_col,
-                             maxshape=(num_users,))
-        idmap.create_dataset('cols', (num_items,), dtype='S%s' % iid_max_col,
-                             maxshape=(num_items,))
-        return f
-
-    def _build(self, db, mm_path, num_lines, max_key, data_chunk_size=1000000, rowwise=True):
-        # NOTE: this part is the bottle-neck, can we do better?
-        with open(mm_path) as fin:
-            prev_key, data_index, data_rear_index = 0, 0, 0
-            chunk, data_chunk = [], []
-            with log.pbar(log.DEBUG, total=num_lines, mininterval=30) as pbar:
-                for line in fin:
-                    pbar.update(1)
-                    tkns = line.strip().split()
-                    if tkns[0] == '%' or len(tkns) != 3:
-                        continue
-                    u, i, v = int(tkns[0]) - 1, int(tkns[1]) - 1, float(tkns[2])
-                    v = self.value_prepro(v)
-                    if not rowwise:
-                        u, i = i, u
-                    if prev_key != u:
-                        for empty_index in range(prev_key + 1, u):
-                            db['indptr'][empty_index] = data_index
-                        sz = len(chunk)
-                        data_chunk.extend(chunk)
-                        data_index += sz
-                        db['indptr'][prev_key] = data_index
-                        chunk = []
-                        prev_key += 1
-                    chunk.append((i, v))
-                    if len(data_chunk) % data_chunk_size == 0:
-                        sz = len(data_chunk)
-                        db['key'][data_rear_index:data_rear_index + sz] = [k for k, _ in data_chunk]
-                        db['val'][data_rear_index:data_rear_index + sz] = [v for _, v in data_chunk]
-                        data_rear_index += sz
-                        data_chunk = []
-                if chunk:
-                    sz = len(chunk)
-                    data_chunk.extend(chunk)
-                    data_index += sz
-                    db['indptr'][prev_key] = data_index
-                    prev_key += 1
-                if len(data_chunk) > 0:
-                    sz = len(data_chunk)
-                    db['key'][data_rear_index:data_rear_index + sz] = [k for k, _ in data_chunk]
-                    db['val'][data_rear_index:data_rear_index + sz] = [v for _, v in data_chunk]
-                    data_rear_index += sz
-                    data_chunk = []
-                for empty_index in range(prev_key, max_key):
-                    db['indptr'][empty_index] = data_index
+        self.data_type = 'matrix'
 
     def _create(self, data_path, P, H):
         def get_max_column_length(fname):
@@ -161,12 +77,12 @@ class MatrixMarket(Data):
                 iid_max_col = get_max_column_length(iid_path) + 1
             pbar.update(1)
             try:
-                db = self.create_database(data_path,
-                                          num_users=num_users,
-                                          num_items=num_items,
-                                          num_nnz=num_nnz,
-                                          uid_max_col=uid_max_col,
-                                          iid_max_col=iid_max_col)
+                db = self._create_database(data_path,
+                                           num_users=num_users,
+                                           num_items=num_items,
+                                           num_nnz=num_nnz,
+                                           uid_max_col=uid_max_col,
+                                           iid_max_col=iid_max_col)
                 idmap = db['idmap']
                 # if not given, assume id as is
                 if uid_path:
@@ -193,35 +109,50 @@ class MatrixMarket(Data):
                 pbar.update(1)
             except Exception as e:
                 self.logger.error('Cannot create db: %s' % (str(e)))
-                os.remove(self.path)
+                self.logger.error(traceback.format_exc())
                 raise
         return db, num_header_lines
 
-    def fill_validation_data(self, db, validation_data):
-        if not validation_data:
-            return
-        validation_data = [line.strip().split() for line in validation_data]
-        assert len(validation_data) == db['vali']['indexes'].shape[0], 'Given data data is not matched with required for validation data'
-        db['vali']['row'][:] = [int(r) - 1 for r, _, _ in validation_data]  # 0-based
-        db['vali']['col'][:] = [int(c) - 1 for _, c, _ in validation_data]  # 0-based
-        db['vali']['val'][:] = [self.value_prepro(float(v)) for _, _, v in validation_data]
-
     def _build_data(self, db, working_data_path, validation_data):
         aux.psort(working_data_path, key=1)
-        self.prepro.pre(db['header'])
-        self._build(db['rowwise'], working_data_path,
-                    num_lines=db['header']['num_nnz'][0],
-                    max_key=db['header']['num_users'][0], rowwise=True)
+        self.prepro.pre(db)
+        self._build_compressed_triplets(db['rowwise'], working_data_path,
+                                        num_lines=db.attrs['num_nnz'],
+                                        max_key=db.attrs['num_users'])
         self.prepro.post(db['rowwise'])
 
         self.fill_validation_data(db, validation_data)
 
         aux.psort(working_data_path, key=2)
-        self.prepro.pre(db['header'])
-        self._build(db['colwise'], working_data_path,
-                    num_lines=db['header']['num_nnz'][0],
-                    max_key=db['header']['num_items'][0], rowwise=False)
+        self.prepro.pre(db)
+        self._build_compressed_triplets(db['colwise'], working_data_path,
+                                        num_lines=db.attrs['num_nnz'],
+                                        max_key=db.attrs['num_items'],
+                                        switch_row_col=True)
         self.prepro.post(db['colwise'])
+
+    def _create_working_data(self, db, source_path, ignore_lines):
+        """
+        Args:
+            source_path: source data file path
+            ignore_lines: number of lines to skip from start line
+        """
+        vali_indexes = [] if 'vali' not in db else db['vali']['indexes']
+        vali_lines = []
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", ResourceWarning)
+            with tempfile.NamedTemporaryFile(mode='w', delete=False) as w:
+                fin = open(source_path, mode='r')
+                for _ in range(ignore_lines):
+                    fin.readline()
+                target_indexes = set(vali_indexes)
+                for idx, line in enumerate(fin):
+                    if idx in target_indexes:
+                        vali_lines.append(line.strip())
+                    else:
+                        w.write(line)
+                w.close()
+                return w.name, vali_lines
 
     def create(self) -> h5py.File:
         mm_main_path = self.opt.input.main
@@ -248,20 +179,23 @@ class MatrixMarket(Data):
             try:
                 num_header_lines += 1  # add metaline
                 self.logger.info('Creating working data...')
-                pickup_line_indexes = [] if 'vali' not in db else db['vali']['indexes']
-                tmp_main, validation_data = aux.make_temporary_file(mm_main_path,
-                                                                    ignore_lines=num_header_lines,
-                                                                    pickup_line_indexes=pickup_line_indexes)
+                tmp_main, validation_data = self._create_working_data(db,
+                                                                      mm_main_path,
+                                                                      num_header_lines)
                 self.logger.debug(f'Working data is created on {tmp_main}')
                 self.logger.info('Building data part...')
                 self._build_data(db, tmp_main, validation_data)
                 self.temp_files.append(tmp_main)
-                db['header']['completed'][0] = 1
+                db.attrs['completed'] = 1
                 db.close()
                 self.handle = h5py.File(data_path, 'r')
                 self.path = data_path
             except Exception as e:
                 self.logger.error('Cannot create db: %s' % (str(e)))
-                os.remove(self.path)
+                self.logger.error(traceback.format_exc().splitlines())
                 raise
+            finally:
+                if hasattr(self, 'patr'):
+                    if os.path.isfile(self.path):
+                        os.remove(self.path)
         self.logger.info('DB built on %s' % data_path)
