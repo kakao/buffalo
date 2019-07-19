@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from buffalo.misc.aux import InputOptions, Option
 
+
 class AlgoOption(InputOptions):
     def __init__(self, *args, **kwargs):
         super(AlgoOption, self).__init__(*args, **kwargs)
@@ -32,6 +33,7 @@ class AlsOption(AlgoOption):
             'alpha': 8,
 
             'user_factor_path': '',
-            'item_factor_path': ''
+            'item_factor_path': '',
+            'data_opt': {}
         })
         return Option(opt)
