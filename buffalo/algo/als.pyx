@@ -15,12 +15,14 @@ from eigency.core cimport MatrixXf, Map, VectorXi, VectorXf
 import numpy as np
 cimport numpy as np
 from numpy.linalg import norm
+from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
 from buffalo.data.base import Data
 from buffalo.misc import aux, log
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import AlsOption
+from buffalo.algo.optimize import Optimizable
 from buffalo.algo.base import Algo, Serializable
 from buffalo.data.buffered_data import BufferedDataMatrix
 
@@ -48,10 +50,8 @@ cdef class PyALS:
         self.obj = new CALS()
 
     def __dealloc__(self):
-        del self.obj
-
-    def release(self):
         self.obj.release()
+        del self.obj
 
     def init(self, option_path):
         return self.obj.init(option_path)
@@ -83,15 +83,19 @@ cdef class PyALS:
                                        axis)
 
 
-class ALS(Algo, AlsOption, Evaluable, Serializable):
+class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable):
     """Python implementation for C-ALS.
 
     Implementation of Collaborative Filtering for Implicit Feedback datasets.
 
     Reference: http://yifanhu.net/PUB/cf.pdf"""
     def __init__(self, opt_path, *args, **kwargs):
-        super(ALS, self).__init__(*args, **kwargs)
-        super(AlsOption, self).__init__(*args, **kwargs)
+        Algo.__init__(self, *args, **kwargs)
+        AlsOption.__init__(self, *args, **kwargs)
+        Evaluable.__init__(self, *args, **kwargs)
+        Serializable.__init__(self, *args, **kwargs)
+        Optimizable.__init__(self, *args, **kwargs)
+
         self.logger = log.get_logger('ALS')
         self.opt, self.opt_path = self.get_option(opt_path)
         self.obj = PyALS()
@@ -180,6 +184,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable):
 
     def train(self):
         buf = self._get_buffer()
+        rmse, self.validation_result = None, {}
         for i in range(self.opt.num_iters):
             start_t = time.time()
             self._iterate(buf, group='rowwise')
@@ -187,8 +192,30 @@ class ALS(Algo, AlsOption, Evaluable, Serializable):
             rmse = (err / self.data.get_header()['num_nnz']) ** 0.5
             self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, time.time() - start_t))
             if self.opt.validation:
-                self.logger.info(self.show_validation_results())
-        self.obj.release()
+                self.validation_result = self.get_validation_results()
+                self.logger.info(self.validation_result)
+        ret = {'rmse': rmse}
+        ret.update(self.validation_result)
+        return ret
+
+    def _optimize(self, params):
+        self._optimize_params = params
+        for name, value in params.items():
+            assert name in self.opt, 'Unexepcted parameter: {}'.format(name)
+            setattr(self.opt, name, value)
+        with open(self._temporary_opt_file, 'w') as fout:
+            json.dump(self.opt, fout, indent=2)
+        assert self.obj.init(bytes(self._temporary_opt_file, 'utf-8')),\
+            'cannot parse option file: %s' % self._temporary_opt_file
+        self.logger.info(params)
+        self.init_factors()
+        loss = self.train()
+        loss['eval_time'] = time.time()
+        loss['loss'] = loss.get(self.opt.optimize.loss)
+        # TODO: deal with failture of training
+        loss['status'] = HOPT_STATUS_OK
+        self._optimize_loss = loss
+        return loss
 
     def _get_data(self):
         return [('opt', self.opt),

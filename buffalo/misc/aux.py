@@ -127,3 +127,10 @@ def psort(path, parallel=-1, field_seperator=' ', key=1, output=None):
     commands.extend(['-o', output])
     commands.append(path)
     subprocess.check_output(map(str, commands), stderr=subprocess.STDOUT)
+
+
+def get_temporary_file(write_mode='w'):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", ResourceWarning)
+        w = tempfile.NamedTemporaryFile(mode=write_mode, delete=False)
+        return w.name
