@@ -45,12 +45,12 @@ class AlsOption(AlgoOption):
     def get_default_optimize_option(self):
         """Optimization Options for ALS
         options:
-            loss: Target loss to optimize
-            max_trials: Maximum experiments for optimization
-            min_trials: Minimum experiments before deploying model (To deal with in case of the best model is found before min_trials rounds, the fisrt best model will always be deployed)
-            deployment: Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
-            start_with_default_parameters: If set True, default parameter use as a starting best parameter.
-            space: Parameter space definition
+			loss(str): Target loss to optimize.
+			max_trials(int, option): Maximum experiments for optimization. If not given, run forever.
+			min_trials(int, option): Minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
+			deployment(bool): Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
+			start_with_default_parameters(bool): If set to True, the loss value of the default parameter is used as the starting loss to beat.
+			space(dict): Parameter space definition. For more information, pleases reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Pleases see optimize.py to check how we deal with `randint`.k
         """
         opt = super().get_default_optimize_option()
         opt.update({
