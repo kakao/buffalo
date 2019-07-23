@@ -6,3 +6,4 @@ eigency
 tqdm
 psutil
 h5py
+hyperopt

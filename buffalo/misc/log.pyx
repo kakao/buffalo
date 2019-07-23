@@ -152,3 +152,16 @@ def iter_pbar(log_level=INFO, **kwargs):
     elif log_level == DEBUG:
         logger_func = logger.debug
     return tqdm.tqdm(file=TqdmLogger(logger_func), **kwargs)
+
+
+class supress_log_level(object):
+    def __init__(self, log_level):
+        self.desire_log_level = log_level
+        self.original_log_level = get_log_level()
+
+    def __enter__(self):
+        set_log_level(self.desire_log_level)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        set_log_level(self.original_log_level)

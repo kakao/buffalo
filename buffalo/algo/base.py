@@ -69,6 +69,9 @@ class Algo(abc.ABC):
 
 
 class Serializable(abc.ABC):
+    def __init__(self, *args, **kwargs):
+        pass
+
     def dump(self, path):
         data = self._get_data()
         with open(path, 'wb') as fout:

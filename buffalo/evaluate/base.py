@@ -3,6 +3,9 @@ import math
 
 
 class Evaluable(object):
+    def __init__(self, *args, **kargs):
+        pass
+
     def show_validation_results(self):
         results = self.get_validation_results()
         if not results:
