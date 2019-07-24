@@ -39,11 +39,18 @@ class Optimizable(object):
         with log.pbar(log.INFO, desc='optimizing... ',
                       total=None if max_trials == -1 else max_trials,
                       mininterval=30) as pbar:
+            tb_opt = None
+            tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick
             if opt.start_with_default_parameters:
                 with log.supress_log_level(log.WARN):
                     loss = self._optimize({})
                 self.logger.info(f'Starting with default parameter result: {loss}')
                 self._optimization_info['best'] = loss
+            # NOTE: need better way
+            tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick
+            self.initialize_tensorboard(1000000 if max_trials == -1 else max_trials,
+                                        name_postfix='.optimize')
+            tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick
             while(max_trials):
                 with log.supress_log_level(log.WARN):
                     best = fmin(fn=self._optimize,
@@ -52,6 +59,9 @@ class Optimizable(object):
                                 max_evals=len(self._optimization_info['trials'].trials) + 1,
                                 trials=self._optimization_info['trials'],
                                 show_progressbar=False)
+                tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick
+                self.update_tensorboard_data(self._optimize_loss)
+                tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick
                 iters += 1
                 max_trials -= 1
                 if self._optimization_info.get('best', {}).get('loss', 987654321) > self._optimize_loss['loss']:
@@ -68,6 +78,8 @@ class Optimizable(object):
                     self.optimize_after_callback_fn(self._optimization_info)
                 pbar.update(1)
                 self.logger.debug('Params({}) Losses({})'.format(self._optimize_params, self._optimize_loss))
+            tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick
+            self.finalize_tensorboard()
 
     def get_optimization_data(self):
         return self._optimization_info

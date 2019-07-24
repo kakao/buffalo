@@ -3,9 +3,9 @@ import os
 import unittest
 from buffalo.misc import aux
 from buffalo.algo.als import ALS
+from buffalo.misc.log import set_log_level
 from buffalo.algo.options import AlsOption
 from buffalo.data.mm import MatrixMarketOptions
-from buffalo.misc.log import set_log_level, get_log_level
 
 from .base import TestBase
 
@@ -143,6 +143,7 @@ class TestALS(TestBase):
         os.remove('als.bin')
         ret_a = als.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
+
 
 if __name__ == '__main__':
     unittest.main()

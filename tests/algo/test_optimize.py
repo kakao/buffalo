@@ -98,6 +98,8 @@ class TestOptimize(TestBase):
             }
         })
         opt.optimize = optimize_option
+        opt.tensorboard = aux.Option({'root': './tb',
+                                      'name': 'als'})
 
         data_opt = MatrixMarketOptions().get_default_option()
         data_opt.input.main = self.ml_100k + 'main'
@@ -111,7 +113,7 @@ class TestOptimize(TestBase):
         default_result = als.get_validation_results()
         als.optimize()
         base_loss = default_result['rmse']
-        optimize_loss = als.get_optimization_data()['best']['rmse']
+        optimize_loss = als.get_optimization_data()['best']['val_rmse']
         self.assertTrue(base_loss > optimize_loss)
 
         als.load('als.bin')
