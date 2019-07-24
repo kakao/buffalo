@@ -48,7 +48,7 @@ class MatrixMarketOptions(DataOption):
 
 class MatrixMarket(Data):
     def __init__(self, opt, *args, **kwargs):
-        super(MatrixMarket, self).__init__(opt, *args, **kwargs)
+        super().__init__(opt, *args, **kwargs)
         self.name = 'MatrixMarket'
         self.logger = log.get_logger('MatrixMarket')
         if isinstance(self.value_prepro,

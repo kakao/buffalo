@@ -23,8 +23,8 @@ from buffalo.misc import aux, log
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import AlsOption
 from buffalo.algo.optimize import Optimizable
-from buffalo.algo.base import Algo, Serializable
 from buffalo.data.buffered_data import BufferedDataMatrix
+from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
 
 cdef extern from "buffalo/algo_impl/als/als.hpp" namespace "als":
@@ -83,7 +83,7 @@ cdef class PyALS:
                                        axis)
 
 
-class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable):
+class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
     """Python implementation for C-ALS.
 
     Implementation of Collaborative Filtering for Implicit Feedback datasets.
@@ -185,17 +185,24 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable):
     def train(self):
         buf = self._get_buffer()
         rmse, self.validation_result = None, {}
+        self.initialize_tensorboard(self.opt.num_iters)
         for i in range(self.opt.num_iters):
             start_t = time.time()
             self._iterate(buf, group='rowwise')
             err = self._iterate(buf, group='colwise')
             rmse = (err / self.data.get_header()['num_nnz']) ** 0.5
             self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, time.time() - start_t))
+            metrics = {'rmse': rmse}
             if self.opt.validation:
                 self.validation_result = self.get_validation_results()
                 self.logger.info(self.validation_result)
+                metrics.update({'val_%s' % k: v
+                                for k, v in self.validation_result.items()})
+            self.update_tensorboard_data(metrics)
         ret = {'rmse': rmse}
-        ret.update(self.validation_result)
+        ret.update({'val_%s' % k: v
+                    for k, v in self.validation_result.items()})
+        self.finalize_tensorboard()
         return ret
 
     def _optimize(self, params):
@@ -221,3 +228,6 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable):
         return [('opt', self.opt),
                 ('Q', self.Q),
                 ('P', self.P)]
+
+    def get_evaluation_metrics(self):
+        return ['rmse', 'val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error']
