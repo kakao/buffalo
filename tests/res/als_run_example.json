@@ -1,0 +1,61 @@
+{
+    "adaptive_reg": false,
+    "evaluation_on_learning": true,
+    "save_factors": false,
+    "save_best_only": false,
+
+    "d": 20,
+    "num_iters": 10,
+    "num_workers": 1,
+    "early_stopping_rounds": 5,
+    "reg_u": 0.1,
+    "reg_i": 0.1,
+    "alpha": 8,
+    "model_path": "als.bin",
+
+    "validation": {
+        "topk": 10
+    },
+
+    "data_opt": {
+        "type": "matrix_market",
+        "input": {
+            "main": "./ml-100k/main",
+            "uid": "./ml-100k/uid",
+            "iid": "./ml-100k/iid"
+        },
+        "data": {
+            "internal_data_type": "matrix",
+            "validation": {
+                "name": "sample",
+                "p": 0.01,
+                "max_samples": 500
+            },
+            "batch_mb": 1024,
+            "validation_p": 0.1,
+            "use_cache": false,
+            "tmp_dir": "/tmp/",
+            "path": "./mm.h5py"
+        }
+    },
+
+    "optimize": {
+        "loss": "rmse",
+        "max_trials": 100,
+        "min_trials": 0,
+        "deployment": true,
+        "start_with_default_parameters": true,
+        "space": {
+            "adaptive_reg": ["choice", ["adaptive_reg", [0, 1]]],
+            "d": ["randint", ["d", 10, 30]],
+            "reg_u": ["uniform", ["reg_u", 0.1, 1]],
+            "reg_i": ["uniform", ["reg_i", 0.1, 1]],
+            "alpha": ["randint", ["alpha", 1, 32]]
+        }
+    },
+
+    "tensorboard": {
+        "root": "./tb",
+        "name": "als-example"
+    }
+}
