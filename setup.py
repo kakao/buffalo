@@ -189,12 +189,7 @@ def setup_package():
         install_requires=build_requires,
         entry_points={
             'console_scripts': [
-                # 'ModelHouse = aurochs.modelhouse.modelhousedb:_cli',
-                # 'ResourceManager = aurochs.modelhouse.resource_manager:_cli',
-                # 'ALS = aurochs.buffalo.buffalo:_cli_als',
-                # 'W2V = aurochs.buffalo.buffalo:_cli_w2v',
-                # 'ClusteringLDA = aurochs.farmer_john.farmer_john:_cli_lda',
-                # 'AurochsApp = aurochs.app.aurochs_app:_cli'
+                'Buffalo = buffalo.cli:_cli_buffalo',
             ]
         }
     )
