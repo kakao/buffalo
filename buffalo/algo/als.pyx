@@ -103,7 +103,8 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
             'cannot parse option file: %s' % opt_path
         self.data = None
         data = kwargs.get('data')
-        data_opt = kwargs.get('data_opt')
+        data_opt = self.opt.get('data_opt')
+        data_opt = kwargs.get('data_opt', data_opt)
         if data_opt:
             self.data = buffalo.data.load(data_opt)
             self.data.create()

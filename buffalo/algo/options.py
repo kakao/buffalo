@@ -16,6 +16,14 @@ class AlgoOption(InputOptions):
         }
         return opt
 
+    def get_default_tensorboard_option(self):
+        opt = {
+            'name': 'default',
+            'root': './tb',
+            'name_template': '{name}.{dtm}'
+        }
+        return opt
+
 
 class AlsOption(AlgoOption):
     def __init__(self, *args, **kwargs):
