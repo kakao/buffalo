@@ -87,5 +87,9 @@ class TestMatrixMarket(unittest.TestCase):
         data = [(u, kk, vv) for u, kk, vv in mm.iterate(axis='colwise')]
         self.assertEqual([int(kk) for _, kk, _ in data], [0, 1, 3, 4, 2])
 
+    def test4_get(self):
+        # TODO: implement
+        pass
+
 if __name__ == '__main__':
     unittest.main()

@@ -41,8 +41,8 @@ class TestALS(TestBase):
         als = ALS(opt, data_opt=data_opt)
         self.assertTrue(True)
         als.init_factors()
-        self.assertTrue(als.P.shape, (5, 20))
-        self.assertTrue(als.Q.shape, (3, 20))
+        self.assertEqual(als.P.shape, (943, 20))
+        self.assertEqual(als.Q.shape, (1682, 20))
 
     def test4_train(self):
         set_log_level(3)
@@ -60,7 +60,7 @@ class TestALS(TestBase):
         als.train()
 
     def test5_validation(self):
-        set_log_level(1)
+        set_log_level(2)
         opt = AlsOption().get_default_option()
         opt.d = 5
         opt.validation = aux.Option({'topk': 10})

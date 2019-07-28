@@ -73,9 +73,11 @@ class BufferedDataMatrix(BufferedData):
 
     def fetch_batch(self):
         m = self.major[self.group]
+        flushed = False
         while True:
             if m['start_x'] == 0 and m['next_x'] + 1 >= m['max_x']:
-                yield m['indptr'][-1]
+                if not flushed:
+                    yield m['indptr'][-1]
                 raise StopIteration
 
             if m['next_x'] + 1 >= m['max_x']:
@@ -98,6 +100,8 @@ class BufferedDataMatrix(BufferedData):
             size = end - beg
             m['keys'][:size] = group['key'][beg:end]
             m['vals'][:size] = group['val'][beg:end]
+            if m['next_x'] + 1 >= m['max_x']:
+                flushed = True
             yield size
 
     def set_group(self, group):
