@@ -24,6 +24,7 @@ CALS::~CALS()
 
 void CALS::release()
 {
+    FF_.resize(0, 0);
 }
 
 bool CALS::init(string opt_path) {

@@ -4,12 +4,16 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import abc
 import pickle
 import struct
+import logging
 import datetime
 
 import numpy as np
 import tensorflow as tf
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 from tensorflow.keras.utils import Progbar
+# what the...
+import absl.logging
+logging.root.removeHandler(absl.logging._absl_handler)
+absl.logging._warn_preinit_stderr = False
 
 from buffalo.misc import aux
 
