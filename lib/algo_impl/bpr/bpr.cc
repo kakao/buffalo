@@ -295,7 +295,7 @@ double CBPRMF::update_parameters()
     #pragma omp parallel for schedule(static)
     for(int u=0; u < P_rows_; ++u){
         if (P_samples_per_coordinates_[u]) {
-            // gradP_.row(u) /= P_samples_per_coordinates_[u];
+            gradP_.row(u) /= P_samples_per_coordinates_[u];
         }
         complexity[omp_get_thread_num()] += (pow(P.row(u).norm(), 2.0) * reg_u);
         gradP_.row(u) -= (P.row(u) * (2 * reg_u));
@@ -306,8 +306,8 @@ double CBPRMF::update_parameters()
     #pragma omp parallel for schedule(static)
     for (int i=0; i < Q_rows_; ++i) {
         if (Q_samples_per_coordinates_[i]) {
-            // gradQ_.row(i) /= Q_samples_per_coordinates_[i];
-            // gradQb_.row(i) /= Q_samples_per_coordinates_[i];
+            gradQ_.row(i) /= Q_samples_per_coordinates_[i];
+            gradQb_.row(i) /= Q_samples_per_coordinates_[i];
         }
         complexity[omp_get_thread_num()] += (pow(Q.row(i).norm(), 2.0) * reg_i);
         gradQ_.row(i) -= (Q.row(i) * (2 * reg_u));
@@ -322,9 +322,6 @@ double CBPRMF::update_parameters()
         }
     }
     double _complexity = accumulate(complexity.begin(), complexity.end(), 0.0);
-    // DEBUG("complexity {}", _complexity);
-    // _complexity /= total_samples_;
-    // DEBUG("complexity {}", _complexity);
 
     iters_ += 1;
     total_samples_ = 0;  // not good flow..
