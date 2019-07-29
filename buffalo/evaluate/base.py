@@ -6,6 +6,20 @@ class Evaluable(object):
     def __init__(self, *args, **kargs):
         pass
 
+    def prepare_evaluation(self):
+        if not self.opt.validation or not self.data.has_group('vali'):
+            return
+        vali = self.data.get_group('vali')
+        validation_seen = {}
+        rows = set([r for r in vali['row'][::]])
+        max_seen_size = 0
+        for rowid in rows:
+            seen, *_ = self.data.get(rowid)
+            validation_seen[rowid] = set(seen)
+            max_seen_size = max(len(seen), max_seen_size)
+        self._validation_seen = validation_seen
+        self._validation_max_seen_size = max_seen_size
+
     def show_validation_results(self):
         results = self.get_validation_results()
         if not results:
@@ -38,8 +52,11 @@ class Evaluable(object):
         HIT = 0.0
         N = 0.0
         for index in range(0, len(rows), batch_size):
-            recs = self._get_topk_recommendation(rows[index:index + batch_size], topk=topk)
+            recs = self._get_topk_recommendation(rows[index:index + batch_size],
+                                                 topk=topk + self._validation_max_seen_size)
             for row, _topk in recs:
+                seen = self._validation_seen.get(row, set())
+                _topk = [t for t in _topk if t not in seen][:topk]
                 _gt = gt[row]
 
                 # accuracy

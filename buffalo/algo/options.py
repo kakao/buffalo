@@ -106,10 +106,14 @@ class BprmfOption(AlgoOption):
             'reg_i': 0.025,
             'reg_b': 0.025,
 
-            'lr': 0.001,
+            'optimizer': 'sgd',
+            'lr': 0.01,
+            'lr_decay': 0.99999,
+            'min_lr': 0.0001,
             'beta1': 0.9,
             'beta2': 0.999,
             'early_stopping_rounds': 5,
+            'batch_size': -1,
 
             'random_seed': None,
             'num_negative_samples': 1,

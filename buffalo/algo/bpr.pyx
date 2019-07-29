@@ -277,6 +277,7 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def train(self):
         rmse, self.validation_result = None, {}
+        self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
         self.sampling_loss_samples()
         for i in range(self.opt.num_iters):
@@ -326,4 +327,4 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
                 ('P', self.P)]
 
     def get_evaluation_metrics(self):
-        return ['rmse', 'val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error']
+        return ['val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error', 'auc']

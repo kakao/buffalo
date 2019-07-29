@@ -64,13 +64,19 @@ class TestBPRMF(TestBase):
         self.assertTrue(True)
 
     def test5_validation(self):
-        set_log_level(2)
+        set_log_level(3)
         opt = BprmfOption().get_default_option()
         opt.d = 5
+        opt.num_workers = 2
+        opt.optimizer = 'sgd'
         opt.lr = 0.001
+        opt.lr_decay = 0.0
         opt.sampling_power = 0.0
         opt.num_iters = 1000
+        # opt.update_j = False
         opt.validation = aux.Option({'topk': 10})
+        opt.tensorboard = aux.Option({'root': './tb',
+                                      'name': 'bpr'})
 
         data_opt = MatrixMarketOptions().get_default_option()
         data_opt.input.main = self.ml_100k + 'main'

@@ -51,6 +51,7 @@ bool CBPRMF::init(string opt_path) {
     if (ok) {
         int num_workers = opt_["num_workers"].int_value();
         omp_set_num_threads(num_workers);
+		optimizer_ = opt_["optimizer"].string_value();
     }
     return ok;
 }
@@ -74,16 +75,29 @@ void CBPRMF::set_factors(
     Map<MatrixXf> Q(Q_data_, Q_rows_, Q_cols_);
     Map<MatrixXf> Qb(Qb_data_, Q_rows_, one);
 
-    DEBUG("P({} x {}) Q({} x {}) Qb({} x {}) setted",
+    DEBUG("P({} x {}) Q({} x {}) Qb({} x {}) setted.",
             P.rows(), P.cols(),
             Q.rows(), Q.cols(), Qb.rows(), Qb.cols());
 
+    if (optimizer_ == "adam") {
+        initialize_adam_optimizer();
+    }
+    else {
+        initialize_sgd_optimizer();
+    }
+    DEBUG("Optimizer({}).", optimizer_);
+
+    iters_ = 0;
+    total_samples_ = 0;
+}
+
+void CBPRMF::initialize_adam_optimizer()
+{
     int D = opt_["d"].int_value();
     bool use_bias = opt_["use_bias"].bool_value();
 
     gradP_.resize(P_rows_, D);
     gradQ_.resize(Q_rows_, D);
-    if (use_bias)
 
     // currently only adam optimizer can be used
     momentumP_.resize(P_rows_, D);
@@ -91,7 +105,6 @@ void CBPRMF::set_factors(
     momentumQ_.resize(Q_rows_, D);
     momentumQ_.setZero();
 
-    
     velocityP_.resize(P_rows_, D);
     velocityP_.setZero();
     velocityQ_.resize(Q_rows_, D);
@@ -104,15 +117,16 @@ void CBPRMF::set_factors(
         velocityQb_.resize(Q_rows_, 1);
         velocityQb_.setZero();
     }
-
-    iters_ = 0;
-    total_samples_ = 0;
     gradP_.setZero();
     gradQ_.setZero();
     gradQb_.setZero();
-
     P_samples_per_coordinates_.assign(P_rows_, 0);
     Q_samples_per_coordinates_.assign(Q_rows_, 0);
+}
+
+void CBPRMF::initialize_sgd_optimizer()
+{
+    lr_ = opt_["lr"].number_value();
 }
 
 double CBPRMF::partial_update(
@@ -138,8 +152,12 @@ double CBPRMF::partial_update(
     bool update_i = opt_["update_i"].bool_value();
     bool update_j = opt_["update_j"].bool_value();
 
+    double reg_u = opt_["reg_u"].number_value();
+    double reg_i = opt_["reg_i"].number_value();
+    double reg_b = opt_["reg_b"].number_value();
+
     int num_negative_samples = opt_["num_negative_samples"].int_value();
-    bool evaluation_on_learning = opt_["evaluation_on_learning"].bool_value();
+    // bool evaluation_on_learning = opt_["evaluation_on_learning"].bool_value();
 
     vector<float> errs(num_workers, 0.0);
     int end_loop = next_x - start_x;
@@ -184,50 +202,70 @@ double CBPRMF::partial_update(
                     if (update_i or update_j)
                         item_deriv = logit * P.row(u);
                     
-                    gradP_.row(u) += logit * (Q.row(pos) - Q.row(neg));
-                    
-                    if (update_i) {
-                        gradQ_.row(pos) += item_deriv; 
-                        if (use_bias)
-                            gradQb_(pos, 0) += logit;
-                    }
+                    // TODO: change to enum class
+                    if (optimizer_ == "adam") {
+                        gradP_.row(u) += logit * (Q.row(pos) - Q.row(neg));
+                        
+                        if (update_i) {
+                            gradQ_.row(pos) += item_deriv; 
+                            if (use_bias)
+                                gradQb_(pos, 0) += logit;
+                        }
 
-                    if (update_j) {
-                        gradQ_.row(neg) -= item_deriv;
-                        if (use_bias)
-                            gradQb_(neg, 0) -= logit;
+                        if (update_j) {
+                            gradQ_.row(neg) -= item_deriv;
+                            if (use_bias)
+                                gradQb_(neg, 0) -= logit;
+                        }
+                    } else { // sgd
+                        auto g = logit * (Q.row(pos) - Q.row(neg)) - reg_u * P.row(u);
+                        if (update_i) {
+                            Q.row(pos) += lr_ * (item_deriv - reg_i * Q.row(pos));
+                            if (use_bias)
+                                Qb(pos, 0) += (logit - reg_b * Qb(pos, 0));
+                        }
+
+                        if (update_j) {
+                            Q.row(neg) -= lr_ * (item_deriv - reg_i * Q.row(neg));
+                            if (use_bias)
+                                Qb(pos, 0) -= (logit - reg_b * Qb(neg, 0));
+                        }
+
+                        P.row(u) += lr_ * g;
                     }
                 }
             }
         }
     }
 
-    for (int i=0; i < end_loop; ++i)
-    {
-        int x = start_x + i;
-        const int u = x;
-        int64_t beg = x == 0 ? 0 : indptr[x - 1];
-        int64_t end = indptr[x];
-        int64_t data_size = end - beg;
-        if (data_size == 0) {
-            continue;
-        }
+	if (optimizer_ == "adam") {
+		for (int i=0; i < end_loop; ++i)
+		{
+			int x = start_x + i;
+			const int u = x;
+			int64_t beg = x == 0 ? 0 : indptr[x - 1];
+			int64_t end = indptr[x];
+			int64_t data_size = end - beg;
+			if (data_size == 0) {
+				continue;
+			}
 
-        for (int64_t idx=0, it = beg; it < end; ++it, ++idx)
-        {
-            const int& pos = positives[it - shifted];
+			for (int64_t idx=0, it = beg; it < end; ++it, ++idx)
+			{
+				const int& pos = positives[it - shifted];
 
-            for(int64_t it2 = it * num_negative_samples;
-                it2 < it * num_negative_samples + num_negative_samples;
-                ++it2)
-            {
-                const int& neg = negatives[it2 - shifted];
-                P_samples_per_coordinates_[u] += 1;
-                Q_samples_per_coordinates_[pos] += 1;
-                Q_samples_per_coordinates_[neg] += 1;
-            }
-        }
-    }
+				for(int64_t it2 = it * num_negative_samples;
+					it2 < it * num_negative_samples + num_negative_samples;
+					++it2)
+				{
+					const int& neg = negatives[it2 - shifted];
+					P_samples_per_coordinates_[u] += 1;
+					Q_samples_per_coordinates_[pos] += 1;
+					Q_samples_per_coordinates_[neg] += 1;
+				}
+			}
+		}
+	}
     return 0.0;
 }
 
@@ -276,58 +314,81 @@ void CBPRMF::update_adam(FactorType& grad, FactorType& momentum, FactorType& vel
 double CBPRMF::update_parameters()
 {
     int num_workers = opt_["num_workers"].int_value();
+    vector<double> complexity(num_workers, 0.0);
+
+    bool use_bias = opt_["use_bias"].bool_value();
+    double reg_u = opt_["reg_u"].number_value();
+    double reg_i = opt_["reg_i"].number_value();
+    double reg_b = opt_["reg_b"].number_value();
 
     Map<MatrixXf> P(P_data_, P_rows_, P_cols_),
                   Q(Q_data_, Q_rows_, Q_cols_),
                   Qb(Qb_data_, Q_rows_, 1);
 
-    bool use_bias = opt_["use_bias"].bool_value();
+    if (optimizer_ == "adam") {
+        double lr = opt_["lr"].number_value();
+        double beta1 = opt_["beta1"].number_value();
+        double beta2 = opt_["beta1"].number_value();
 
-    double reg_u = opt_["reg_u"].number_value();
-    double reg_i = opt_["reg_i"].number_value();
-    double reg_b = opt_["reg_b"].number_value();
-
-    double lr = opt_["lr"].number_value();
-    double beta1 = opt_["beta1"].number_value();
-    double beta2 = opt_["beta1"].number_value();
-
-    vector<double> complexity(num_workers, 0.0);
-    #pragma omp parallel for schedule(static)
-    for(int u=0; u < P_rows_; ++u){
-        if (P_samples_per_coordinates_[u]) {
-            gradP_.row(u) /= P_samples_per_coordinates_[u];
+        #pragma omp parallel for schedule(static)
+        for(int u=0; u < P_rows_; ++u){
+            if (P_samples_per_coordinates_[u]) {
+                gradP_.row(u) /= P_samples_per_coordinates_[u];
+            }
+            complexity[omp_get_thread_num()] += (pow(P.row(u).norm(), 2.0) * reg_u);
+            gradP_.row(u) -= (P.row(u) * (2 * reg_u));
+            update_adam(gradP_, momentumP_, velocityP_, u, beta1, beta2);
+            P.row(u) += (lr * gradP_.row(u));
         }
-        complexity[omp_get_thread_num()] += (pow(P.row(u).norm(), 2.0) * reg_u);
-        gradP_.row(u) -= (P.row(u) * (2 * reg_u));
-        update_adam(gradP_, momentumP_, velocityP_, u, beta1, beta2);
-        P.row(u) += (lr * gradP_.row(u));
+
+        #pragma omp parallel for schedule(static)
+        for (int i=0; i < Q_rows_; ++i) {
+            if (Q_samples_per_coordinates_[i]) {
+                gradQ_.row(i) /= Q_samples_per_coordinates_[i];
+                gradQb_.row(i) /= Q_samples_per_coordinates_[i];
+            }
+            complexity[omp_get_thread_num()] += (pow(Q.row(i).norm(), 2.0) * reg_i);
+            gradQ_.row(i) -= (Q.row(i) * (2 * reg_u));
+            update_adam(gradQ_, momentumQ_, velocityQ_, i, beta1, beta2);
+            Q.row(i) += (lr * gradQ_.row(i));
+
+            if (use_bias) {
+                complexity[omp_get_thread_num()] += (pow(Qb(i, 0), 2.0) * reg_b);
+                gradQb_(i, 0) -= (Qb(i, 0) * (2 * reg_b));
+                update_adam(gradQb_, momentumQb_, velocityQb_, i, beta1, beta2);
+                Qb(i, 0) += (lr * gradQb_(i, 0));
+            }
+        }
+        P_samples_per_coordinates_.assign(P_rows_, 0);
+        Q_samples_per_coordinates_.assign(Q_rows_, 0);
+    } else {
+        #pragma omp parallel for schedule(static)
+        for (int u=0; u < P_rows_; ++u) {
+            complexity[omp_get_thread_num()] += (pow(P.row(u).norm(), 2.0) * reg_u);
+        }
+
+        #pragma omp parallel for schedule(static)
+        for (int i=0; i < Q_rows_; ++i) {
+            complexity[omp_get_thread_num()] += (pow(Q.row(i).norm(), 2.0) * reg_i);
+            if (use_bias)  {
+                complexity[omp_get_thread_num()] += (pow(Qb(i, 0), 2.0) * reg_b);
+            }
+        }
+        double decay = opt_["lr_decay"].number_value();
+        if (decay > 0.0)  {
+            double lr = lr_ * decay;
+            lr = max(opt_["min_lr"].number_value(), lr);
+            lr = max(lr, 0.000001);
+            DEBUG("Leraning rate going down from {} to {}", lr_, lr);
+            lr_ = lr;
+        }
     }
 
-    #pragma omp parallel for schedule(static)
-    for (int i=0; i < Q_rows_; ++i) {
-        if (Q_samples_per_coordinates_[i]) {
-            gradQ_.row(i) /= Q_samples_per_coordinates_[i];
-            gradQb_.row(i) /= Q_samples_per_coordinates_[i];
-        }
-        complexity[omp_get_thread_num()] += (pow(Q.row(i).norm(), 2.0) * reg_i);
-        gradQ_.row(i) -= (Q.row(i) * (2 * reg_u));
-        update_adam(gradQ_, momentumQ_, velocityQ_, i, beta1, beta2);
-        Q.row(i) += (lr * gradQ_.row(i));
-
-        if (use_bias) {
-            complexity[omp_get_thread_num()] += (pow(Qb(i, 0), 2.0) * reg_b);
-            gradQb_(i, 0) -= (Qb(i, 0) * (2 * reg_b));
-            update_adam(gradQb_, momentumQb_, velocityQb_, i, beta1, beta2);
-            Qb(i, 0) += (lr * gradQb_(i, 0));
-        }
-    }
     double _complexity = accumulate(complexity.begin(), complexity.end(), 0.0);
 
     iters_ += 1;
     total_samples_ = 0;  // not good flow..
 
-    P_samples_per_coordinates_.assign(P_rows_, 0);
-    Q_samples_per_coordinates_.assign(Q_rows_, 0);
     return _complexity;
 }
 

@@ -2,6 +2,7 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import abc
+import json
 import pickle
 import struct
 import logging
@@ -122,6 +123,7 @@ class TensorboardExtention(object):
                          'merged_summary_op': None,
                          'session': None,
                          'pbar': None,
+                         'data_root': None,
                          'step': 1})
         return tb
 
@@ -140,6 +142,7 @@ class TensorboardExtention(object):
         if not os.path.isdir(self.opt.tensorboard.root):
             os.makedirs(self.opt.tensorboard.root)
         tb_dir = os.path.join(self.opt.tensorboard.root, self._tb.name)
+        self._tb.data_root = tb_dir
         self._tb.summary_writer = tf.summary.FileWriter(tb_dir)
         if not metrics:
             metrics = self.get_evaluation_metrics()
@@ -168,6 +171,8 @@ class TensorboardExtention(object):
     def finalize_tensorboard(self):
         if not self.opt.tensorboard:
             return
+        with open(os.path.join(self._tb.data_root, 'opt.json'), 'w') as fout:
+            fout.write(json.dumps(self.opt, indent=2))
         self._tb.summary_writer.close()
         self._tb.session.close()
         self._tb = None

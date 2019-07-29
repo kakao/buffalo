@@ -63,7 +63,10 @@ class TestALS(TestBase):
         set_log_level(2)
         opt = AlsOption().get_default_option()
         opt.d = 5
+        opt.num_iters = 20
         opt.validation = aux.Option({'topk': 10})
+        opt.tensorboard = aux.Option({'root': './tb',
+                                      'name': 'als'})
 
         data_opt = MatrixMarketOptions().get_default_option()
         data_opt.input.main = self.ml_100k + 'main'
