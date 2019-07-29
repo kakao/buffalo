@@ -14,7 +14,8 @@ set(SOURCES
 file(GLOB ALGO_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/lib/*.cc)
 file(GLOB MISC_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/lib/misc/*.cc)
 file(GLOB ALS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/lib/algo_impl/als/*.cc)
-add_library(cbuffalo SHARED ${SOURCES} ${ALGO_SRCS} ${ALS_SRCS} ${MISC_SRCS})
+file(GLOB BPR_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/lib/algo_impl/bpr/*.cc)
+add_library(cbuffalo SHARED ${SOURCES} ${ALGO_SRCS} ${ALS_SRCS} ${BPR_SRCS} ${MISC_SRCS})
 include_directories(cbuffalo "/usr/local/include/eigen3")
 
 set_target_properties(cbuffalo PROPERTIES VERSION 0.1.0)

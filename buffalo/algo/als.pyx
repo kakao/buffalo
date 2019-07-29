@@ -186,6 +186,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
     def train(self):
         buf = self._get_buffer()
         rmse, self.validation_result = None, {}
+        self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
         for i in range(self.opt.num_iters):
             start_t = time.time()
