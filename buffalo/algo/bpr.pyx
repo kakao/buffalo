@@ -163,10 +163,10 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
         self.sampling_table_ = np.zeros(header['num_items'], dtype=np.int64)
         if self.opt.sampling_power > 0.0:
             for sz in self.buf.fetch_batch():
-                start_x, next_x, indptr, keys, vals = self.buf.get()
-                for key in keys:
-                    self.sampling_table_[key] += 1
-            self.sampling_table_ *= int(self.opt.sampling_power)
+                *_, keys, vals = self.buf.get()
+                for i in range(sz):
+                    self.sampling_table_[keys[i]] += 1
+            self.sampling_table_ **= int(self.opt.sampling_power)
             for i in range(1, header['num_items']):
                 self.sampling_table_[i] += self.sampling_table_[i - 1]
         else:
