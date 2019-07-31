@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <random>
+#include <unordered_set>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -28,6 +30,8 @@ public:
             Map<MatrixXf>& Q,
             Map<MatrixXf>& Qb);
 
+    void set_cumulative_table(int64_t* cum_table, int size);
+
     void initialize_adam_optimizer();
 
     void initialize_sgd_optimizer();
@@ -35,8 +39,9 @@ public:
     double partial_update(int start_x,
                           int next_x,
                           int64_t* indptr,
-                          Map<VectorXi>& positives,
-                          Map<VectorXi>& negatives);
+                          Map<VectorXi>& positives);
+
+    int get_negative_sample(unordered_set<int>& seen);
 
     double compute_loss(
             Map<VectorXi>& users,
@@ -65,6 +70,10 @@ private:
     double lr_;
     string optimizer_;
 
+    mt19937 rng_;
+
+    int64_t* cum_table_;
+    int cum_table_size_;
     vector<int> P_samples_per_coordinates_;
     vector<int> Q_samples_per_coordinates_;
     FactorType gradP_, gradQ_, gradQb_;
