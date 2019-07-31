@@ -19,6 +19,7 @@ namespace bpr {
 
 CBPRMF::CBPRMF()
 {
+
 }
 
 CBPRMF::~CBPRMF()
@@ -52,6 +53,8 @@ bool CBPRMF::init(string opt_path) {
         int num_workers = opt_["num_workers"].int_value();
         omp_set_num_threads(num_workers);
 		optimizer_ = opt_["optimizer"].string_value();
+
+        rng_.seed(opt_["random_seed"].int_value());
     }
     return ok;
 }
@@ -120,8 +123,10 @@ void CBPRMF::initialize_adam_optimizer()
     gradP_.setZero();
     gradQ_.setZero();
     gradQb_.setZero();
-    P_samples_per_coordinates_.assign(P_rows_, 0);
-    Q_samples_per_coordinates_.assign(Q_rows_, 0);
+    if (opt_["per_coordinate_normalize"].bool_value()) {
+        P_samples_per_coordinates_.assign(P_rows_, 0);
+        Q_samples_per_coordinates_.assign(Q_rows_, 0);
+    }
 }
 
 void CBPRMF::initialize_sgd_optimizer()
@@ -129,19 +134,37 @@ void CBPRMF::initialize_sgd_optimizer()
     lr_ = opt_["lr"].number_value();
 }
 
+
+void CBPRMF::set_cumulative_table(int64_t* cum_table, int size)
+{
+    cum_table_ = cum_table;
+    cum_table_size_ = size;
+}
+
+
+int CBPRMF::get_negative_sample(unordered_set<int>& seen)
+{
+    uniform_int_distribution<int64_t> rng(0, cum_table_[cum_table_size_ - 1] - 1);
+    while (true) {
+        int64_t r = rng(rng_);
+        int neg = (int)(lower_bound(cum_table_, cum_table_ + cum_table_size_, r) - cum_table_);
+        if (seen.find(neg) == seen.end())
+            return neg;
+    }
+}
+
+
 double CBPRMF::partial_update(
         int start_x,
         int next_x,
         int64_t* indptr,
-        Map<VectorXi>& positives,
-        Map<VectorXi>& negatives)
+        Map<VectorXi>& positives)
 {
     if( (next_x - start_x) == 0) {
-        // WARN0("No data to process");
+        WARN0("No data to process");
         return 0.0;
     }
 
-    total_samples_ += negatives.rows();
 
     Map<MatrixXf> P(P_data_, P_rows_, P_cols_),
                   Q(Q_data_, Q_rows_, Q_cols_),
@@ -159,10 +182,12 @@ double CBPRMF::partial_update(
     int num_negative_samples = opt_["num_negative_samples"].int_value();
     // bool evaluation_on_learning = opt_["evaluation_on_learning"].bool_value();
 
+    total_samples_ += positives.rows() * num_negative_samples;
+
     vector<float> errs(num_workers, 0.0);
     int end_loop = next_x - start_x;
     const int64_t shifted = start_x == 0 ? 0 : indptr[start_x - 1];
-
+    bool per_coordinate_normalize = opt_["per_coordinate_normalize"].bool_value();
     #pragma omp parallel
     {
         // diffent seed for each thread and each iterations
@@ -179,16 +204,19 @@ double CBPRMF::partial_update(
                 continue;
             }
 
+            unordered_set<int> seen;
             for (int64_t idx=0, it = beg; it < end; ++it, ++idx)
             {
                 const int& pos = positives[it - shifted];
+                seen.insert(pos);
+            }
 
-                for(int64_t it2 = it * num_negative_samples;
-                    it2 < it * num_negative_samples + num_negative_samples;
-                    ++it2)
+            for(const auto pos : seen)
+            {
+
+                for(int64_t it2=0; it2 < num_negative_samples; ++it2)
                 {
-
-                    const int& neg = negatives[it2 - shifted];
+                    int neg = get_negative_sample(seen);
 
                     float x_uij = (P.row(u) * (Q.row(pos) - Q.row(neg)).transpose())(0, 0);
                     if (use_bias)
@@ -204,6 +232,8 @@ double CBPRMF::partial_update(
                     
                     // TODO: change to enum class
                     if (optimizer_ == "adam") {
+                        if (per_coordinate_normalize)  // critical section
+    					    Q_samples_per_coordinates_[neg] += 1;
                         gradP_.row(u) += logit * (Q.row(pos) - Q.row(neg));
                         
                         if (update_i) {
@@ -238,7 +268,7 @@ double CBPRMF::partial_update(
         }
     }
 
-	if (optimizer_ == "adam") {
+	if (optimizer_ == "adam" and per_coordinate_normalize) {
 		for (int i=0; i < end_loop; ++i)
 		{
 			int x = start_x + i;
@@ -258,10 +288,10 @@ double CBPRMF::partial_update(
 					it2 < it * num_negative_samples + num_negative_samples;
 					++it2)
 				{
-					const int& neg = negatives[it2 - shifted];
+					//const int& neg = negatives[it2 - shifted];
 					P_samples_per_coordinates_[u] += 1;
 					Q_samples_per_coordinates_[pos] += 1;
-					Q_samples_per_coordinates_[neg] += 1;
+					//Q_samples_per_coordinates_[neg] += 1;
 				}
 			}
 		}
@@ -298,7 +328,7 @@ double CBPRMF::compute_loss(Map<VectorXi>& users,
     }
     double l = accumulate(loss.begin(), loss.end(), 0.0);
     l /= (double)loss.size();
-    return -l;
+    return l;
 }
 
 void CBPRMF::update_adam(FactorType& grad, FactorType& momentum, FactorType& velocity, int i, double beta1, double beta2)
@@ -325,6 +355,7 @@ double CBPRMF::update_parameters()
                   Q(Q_data_, Q_rows_, Q_cols_),
                   Qb(Qb_data_, Q_rows_, 1);
 
+    bool per_coordinate_normalize = (opt_["per_coordinate_normalize"].bool_value());
     if (optimizer_ == "adam") {
         double lr = opt_["lr"].number_value();
         double beta1 = opt_["beta1"].number_value();
@@ -332,7 +363,7 @@ double CBPRMF::update_parameters()
 
         #pragma omp parallel for schedule(static)
         for(int u=0; u < P_rows_; ++u){
-            if (P_samples_per_coordinates_[u]) {
+            if (per_coordinate_normalize && P_samples_per_coordinates_[u]) {
                 gradP_.row(u) /= P_samples_per_coordinates_[u];
             }
             complexity[omp_get_thread_num()] += (pow(P.row(u).norm(), 2.0) * reg_u);
@@ -343,7 +374,7 @@ double CBPRMF::update_parameters()
 
         #pragma omp parallel for schedule(static)
         for (int i=0; i < Q_rows_; ++i) {
-            if (Q_samples_per_coordinates_[i]) {
+            if (per_coordinate_normalize && Q_samples_per_coordinates_[i]) {
                 gradQ_.row(i) /= Q_samples_per_coordinates_[i];
                 gradQb_.row(i) /= Q_samples_per_coordinates_[i];
             }
@@ -359,8 +390,10 @@ double CBPRMF::update_parameters()
                 Qb(i, 0) += (lr * gradQb_(i, 0));
             }
         }
-        P_samples_per_coordinates_.assign(P_rows_, 0);
-        Q_samples_per_coordinates_.assign(Q_rows_, 0);
+        if (per_coordinate_normalize) {
+            P_samples_per_coordinates_.assign(P_rows_, 0);
+            Q_samples_per_coordinates_.assign(Q_rows_, 0);
+        }
     } else {
         #pragma omp parallel for schedule(static)
         for (int u=0; u < P_rows_; ++u) {

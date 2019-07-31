@@ -152,7 +152,7 @@ class TensorboardExtention(object):
             self._tb.feed_dict[self._tb.metrics[m]] = 0.0
         self._tb.merged_summary_op = tf.summary.merge_all()
         self._tb.session = tf.Session()
-        self._tb.pbar = Progbar(num_steps, stateful_metrics=self._tb.metrics)
+        self._tb.pbar = Progbar(num_steps, stateful_metrics=self._tb.metrics, verbose=0)
         self._tb_setted = True
 
     def update_tensorboard_data(self, metrics):
@@ -176,8 +176,8 @@ class TensorboardExtention(object):
         self._tb.summary_writer.close()
         self._tb.session.close()
         self._tb = None
-        tf.reset_default_graph()
+        tf.compat.v1.reset_default_graph()
 
     def __del__(self):
         if hasattr(self, '_tb_setted') and self._tb_setted:
-            tf.reset_default_graph()
+            tf.compat.v1.reset_default_graph()

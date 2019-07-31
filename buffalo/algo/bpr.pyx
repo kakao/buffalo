@@ -34,11 +34,11 @@ cdef extern from "buffalo/algo_impl/bpr/bpr.hpp" namespace "bpr":
         void set_factors(Map[MatrixXf]&,
                          Map[MatrixXf]&,
                          Map[MatrixXf]&) nogil except +
+        void set_cumulative_table(int64_t*, int)
         void precompute(int) nogil except +
         double partial_update(int,
                               int,
                               int64_t*,
-                              Map[VectorXi]&,
                               Map[VectorXi]&) nogil except +
         double compute_loss(Map[VectorXi]&,
                             Map[VectorXi]&,
@@ -68,19 +68,22 @@ cdef class PyBPRMF:
                              Map[MatrixXf](Q),
                              Map[MatrixXf](Qb))
 
+    def set_cumulative_table(self,
+                             np.ndarray[np.int64_t, ndim=1] cum_table,
+                             int cum_table_size):
+        self.obj.set_cumulative_table(&cum_table[0], cum_table_size)
+
     @cython.boundscheck(False)
     @cython.wraparound(False)
     def partial_update(self,
                        int start_x,
                        int next_x,
                        np.ndarray[np.int64_t, ndim=1] indptr,
-                       np.ndarray[np.int32_t, ndim=1] positives,
-                       np.ndarray[np.int32_t, ndim=1] negatives):
+                       np.ndarray[np.int32_t, ndim=1] positives):
         return self.obj.partial_update(start_x,
                                        next_x,
                                        &indptr[0],
-                                       Map[VectorXi](positives),
-                                       Map[VectorXi](negatives))
+                                       Map[VectorXi](positives))
 
     def compute_loss(self,
                      np.ndarray[np.int32_t, ndim=1] users,
@@ -157,17 +160,19 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
     def prepare_sampling(self):
         self.logger.info('Preparing sampling ...')
         header = self.data.get_header()
+        self.sampling_table_ = np.zeros(header['num_items'], dtype=np.int64)
         if self.opt.sampling_power > 0.0:
-            self.sampling_weights_ = np.zeros(header['num_items'], dtype=np.float32)
             for sz in self.buf.fetch_batch():
                 start_x, next_x, indptr, keys, vals = self.buf.get()
                 for key in keys:
-                    self.sampling_weights_[key] += 1.0
-            self.sampling_weights_ = self.sampling_weights_ ** self.opt.sampling_power
-            self.sampling_weights_ /= np.sum(self.sampling_weights_)
-            self.sampling_method = 'with_p'
+                    self.sampling_table_[key] += 1
+            self.sampling_table_ *= int(self.opt.sampling_power)
+            for i in range(1, header['num_items']):
+                self.sampling_table_[i] += self.sampling_table_[i - 1]
         else:
-            self.sampling_method = 'uniform'
+            for i in range(1, header['num_items'] + 1):
+                self.sampling_table_[i - 1] = i
+        self.obj.set_cumulative_table(self.sampling_table_, header['num_items'])
 
     def _get_topk_recommendation(self, rows, topk):
         p = self.P[rows]
@@ -258,11 +263,11 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
                 start_x, next_x, indptr, keys, vals = self.buf.get()
 
                 start_t = time.time()
-                negs = self.generate_negative_samples(start_x, next_x, indptr, keys, vals)
+                # negs = self.generate_negative_samples(start_x, next_x, indptr, keys, vals)
                 sampling_t += time.time() - start_t
 
                 start_t = time.time()
-                self.obj.partial_update(start_x, next_x, indptr, keys, negs)
+                self.obj.partial_update(start_x, next_x, indptr, keys)
                 update_t += time.time() - start_t
                 pbar.update(sz)
             pbar.refresh()
