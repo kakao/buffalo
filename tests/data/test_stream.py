@@ -51,7 +51,6 @@ class TestStream(unittest.TestCase):
         self.assertEqual(header['num_users'], 3)
         self.assertEqual(header['num_items'], 6)
 
-        mm.build_idmaps()
         data = [(u, kk) for u, kk in mm.iterate(use_repr_name=True)]
         self.assertEqual(len(data), 9)
         self.assertEqual([kk for _, kk in data], ['apple', 'mango', 'mango', 'apple', 'pie', 'juice', 'pie', 'juice', 'coke'])
@@ -71,7 +70,6 @@ class TestStream(unittest.TestCase):
         self.assertEqual(header['num_users'], 3)
         self.assertEqual(header['num_items'], 6)
 
-        mm.build_idmaps()
         data = [(u, kk, vv) for u, kk, vv in mm.iterate()]
         self.assertEqual(len(data), 7)
         self.assertEqual([uu for uu, _, _ in data], [0, 0, 0, 0, 1, 2, 2])

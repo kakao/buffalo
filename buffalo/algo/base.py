@@ -22,6 +22,9 @@ from buffalo.misc import aux
 class Algo(abc.ABC):
     def __init__(self, *args, **kwargs):
         self.temporary_files = []
+        self._idmanager = aux.Option({'userid': [], 'userid_map': {},
+                                      'itemid': [], 'itemid_map': {},
+                                      'userid_mapped': False, 'itemid_mapped': False})
 
     def __del__(self):
         for path in self.temporary_files:
@@ -43,47 +46,71 @@ class Algo(abc.ABC):
         feat = feat / np.sqrt((feat ** 2).sum(-1) + 1e-8)[..., np.newaxis]
         return feat
 
-    def topk_recommendation(self, keys, topk, encode='utf-8') -> dict:
+    def topk_recommendation(self, keys, topk) -> dict:
         """Return TopK recommendation for each users(keys)
         """
         if not isinstance(keys, list):
             keys = [keys]
-        if not self.data.id_mapped:
-            self.logger.warning('If DataID is not mapped, the results may be empty')
-        rows = [self.data.userid_map[k] for k in keys if k in self.data.userid_map]
+        if not self._idmanager.userid_mapped:
+            self.build_userid_map()
+        if not self._idmanager.itemid_mapped:
+            self.build_itemid_map()
+        rows = [self._idmanager.userid_map[k] for k in keys
+                if k in self._idmanager.userid_map]
         topks = self._get_topk_recommendation(rows, topk)
-        idmap = self.data.get_group('idmap')
-        if not encode:
-            return {idmap['rows'][k]: [idmap['cols'][v] for v in vv]
-                    for k, vv in topks}
-        else:
-            return {idmap['rows'][k].decode(encode, 'ignore'): [idmap['cols'][v].decode(encode, 'ignore') for v in vv]
-                    for k, vv in topks}
+        return {self._idmanager.userids[k]: [self._idmanager.itemids[v] for v in vv]
+                for k, vv in topks}
 
-    def most_similar(self, keys, topk, encode='utf-8') -> dict:
+    def most_similar(self, keys, topk) -> dict:
         """Return Most similar items for each items(keys)
         """
         if not isinstance(keys, list):
             keys = [keys]
-        if not self.data.id_mapped:
-            self.logger.warning('If DataID is not mapped, the results may be empty')
-        cols = [self.data.itemid_map[k] for k in keys if k in self.data.itemid_map]
+        if not self._idmanager.itemid_mapped:
+            self.build_itemid_map()
+        cols = [self._idmanager.itemid_map[k] for k in keys
+                if k in self._idmanager.itemid_map]
         topks = self._get_most_similar(cols, topk)
+        return {self._idmanager.itemids[k]: [self._idmanager.itemids[v] for v in vv]
+                for k, vv in topks}
+
+    def build_itemid_map(self):
         idmap = self.data.get_group('idmap')
-        if not encode:
-            return {idmap['cols'][k]: [idmap['cols'][v] for v in vv]
-                    for k, vv in topks}
+        header = self.data.get_header()
+        if idmap['cols'].shape[0] == 0:
+            self._idmanager.itemids = list(map(str, list(range(header['num_items']))))
+            self._idmanager.itemid_map = {str(i): i for i in range(header['num_items'])}
         else:
-            return {idmap['cols'][k].decode(encode, 'ignore'): [idmap['cols'][v].decode(encode, 'ignore') for v in vv]
-                    for k, vv in topks}
+            self._idmanager.itemids = list(map(lambda x: x.decode('utf-8', 'ignore'), idmap['cols'][::]))
+            self._idmanager.itemid_map = {v: idx
+                                          for idx, v in enumerate(self._idmanager.itemids)}
+        self._idmanager.itemid_mapped = True
+
+    def build_userid_map(self):
+        idmap = self.data.get_group('idmap')
+        header = self.data.get_header()
+        if idmap['rows'].shape[0] == 0:
+            self._idmanager.userids = list(map(str, list(range(header['num_users']))))
+            self._idmanager.userid_map = {str(i): i for i in range(header['num_users'])}
+        else:
+            self._idmanager.userids = list(map(lambda x: x.decode('utf-8', 'ignore'), idmap['rows'][::]))
+            self._idmanager.userid_map = {v: idx
+                                          for idx, v in enumerate(self._idmanager.userids)}
+        self._idmanager.userid_mapped = True
 
 
 class Serializable(abc.ABC):
     def __init__(self, *args, **kwargs):
         pass
 
-    def save(self, path):
+    def save(self, path, with_itemid_map=True, with_userid_map=True, data_fields=[]):
+        if with_itemid_map and not self._idmanager.itemid_mapped:
+            self.build_itemid_map()
+        if with_userid_map and not self._idmanager.userid_mapped:
+            self.build_userid_map()
         data = self._get_data()
+        if data_fields:
+            data = [(k, v) for k, v in data if k in data_fileds]
         with open(path, 'wb') as fout:
             total_objs = len(data)
             fout.write(struct.pack('Q', total_objs))
@@ -95,9 +122,9 @@ class Serializable(abc.ABC):
                 fout.write(struct.pack('Q', len(s)))
                 fout.write(s)
 
-    @abc.abstractmethod
     def _get_data(self):
-        raise NotImplemented
+        data = [('_idmanager', self._idmanager)]
+        return data
 
     def load(self, path):
         with open(path, 'rb') as fin:
