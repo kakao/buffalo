@@ -129,3 +129,39 @@ def pbar(log_level=INFO, **kwargs):
     elif log_level == DEBUG:
         logger_func = logger.debug
     yield tqdm.tqdm(file=TqdmLogger(logger_func), **kwargs)
+
+
+def iter_pbar(log_level=INFO, **kwargs):
+    if 'total' not in kwargs:
+        fmt = '{desc}: {n_fmt}/{total_fmt} {elapsed}<{remaining}'
+    else:
+        fmt = '{l_bar} {elapsed}<{remaining}'
+    if 'bar_format' not in kwargs:
+        kwargs['bar_format'] = fmt
+    if 'desc' not in kwargs:
+        kwargs['desc'] = 'progress'
+    if 'mininterval' not in kwargs:
+        kwargs['mininterval'] = 1
+    kwargs['leave'] = False
+    logger = get_logger('pbar', no_fileno=True)
+    logger_func = logger.info
+    if log_level == INFO:
+        logger_func = logger.info
+    elif log_level == WARN:
+        logger_func = logger.warn
+    elif log_level == DEBUG:
+        logger_func = logger.debug
+    return tqdm.tqdm(file=TqdmLogger(logger_func), **kwargs)
+
+
+class supress_log_level(object):
+    def __init__(self, log_level):
+        self.desire_log_level = log_level
+        self.original_log_level = get_log_level()
+
+    def __enter__(self):
+        set_log_level(self.desire_log_level)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        set_log_level(self.original_log_level)

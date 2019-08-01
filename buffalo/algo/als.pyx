@@ -15,14 +15,16 @@ from eigency.core cimport MatrixXf, Map, VectorXi, VectorXf
 import numpy as np
 cimport numpy as np
 from numpy.linalg import norm
+from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
 from buffalo.data.base import Data
 from buffalo.misc import aux, log
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import AlsOption
-from buffalo.algo.base import Algo, Serializable
-from buffalo.data.buffered_data import BufferedDataMM
+from buffalo.algo.optimize import Optimizable
+from buffalo.data.buffered_data import BufferedDataMatrix
+from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
 
 cdef extern from "buffalo/algo_impl/als/als.hpp" namespace "als":
@@ -48,10 +50,8 @@ cdef class PyALS:
         self.obj = new CALS()
 
     def __dealloc__(self):
-        del self.obj
-
-    def release(self):
         self.obj.release()
+        del self.obj
 
     def init(self, option_path):
         return self.obj.init(option_path)
@@ -83,15 +83,19 @@ cdef class PyALS:
                                        axis)
 
 
-class ALS(Algo, AlsOption, Evaluable, Serializable):
+class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
     """Python implementation for C-ALS.
 
     Implementation of Collaborative Filtering for Implicit Feedback datasets.
 
     Reference: http://yifanhu.net/PUB/cf.pdf"""
     def __init__(self, opt_path, *args, **kwargs):
-        super(ALS, self).__init__(*args, **kwargs)
-        super(AlsOption, self).__init__(*args, **kwargs)
+        Algo.__init__(self, *args, **kwargs)
+        AlsOption.__init__(self, *args, **kwargs)
+        Evaluable.__init__(self, *args, **kwargs)
+        Serializable.__init__(self, *args, **kwargs)
+        Optimizable.__init__(self, *args, **kwargs)
+
         self.logger = log.get_logger('ALS')
         self.opt, self.opt_path = self.get_option(opt_path)
         self.obj = PyALS()
@@ -99,14 +103,17 @@ class ALS(Algo, AlsOption, Evaluable, Serializable):
             'cannot parse option file: %s' % opt_path
         self.data = None
         data = kwargs.get('data')
-        data_opt = kwargs.get('data_opt')
+        data_opt = self.opt.get('data_opt')
+        data_opt = kwargs.get('data_opt', data_opt)
         if data_opt:
             self.data = buffalo.data.load(data_opt)
             self.data.create()
         elif isinstance(data, Data):
             self.data = data
         self.logger.info('ALS(%s)' % json.dumps(self.opt, indent=2))
-        self.logger.info(self.data.show_info())
+        if self.data:
+            self.logger.info(self.data.show_info())
+            assert self.data.data_type in ['matrix']
 
     def set_data(self, data):
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
@@ -119,7 +126,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable):
             if hasattr(self, 'FQ'):
                 del self.FQ
 
-    def init(self):
+    def initialize(self):
         self.init_factors()
 
     def init_factors(self):
@@ -152,19 +159,19 @@ class ALS(Algo, AlsOption, Evaluable, Serializable):
         return rets
 
     def _get_buffer(self):
-        buf = BufferedDataMM()
+        buf = BufferedDataMatrix()
         buf.initialize(self.data)
         return buf
 
-    def _iterate(self, buf, axis='rowwise'):
+    def _iterate(self, buf, group='rowwise'):
         header = self.data.get_header()
-        end = header['num_users'] if axis == 'rowwise' else header['num_items']
-        int_axis = 0 if axis == 'rowwise' else 1
-        self.obj.precompute(int_axis)
+        end = header['num_users'] if group == 'rowwise' else header['num_items']
+        int_group = 0 if group == 'rowwise' else 1
+        self.obj.precompute(int_group)
         err = 0.0
         update_t, feed_t, updated = 0, 0, 0
-        buf.set_axis(axis)
-        with log.pbar(log.DEBUG, desc='%s' % axis,
+        buf.set_group(group)
+        with log.pbar(log.DEBUG, desc='%s' % group,
                       total=header['num_nnz'], mininterval=30) as pbar:
             start_t = time.time()
             for sz in buf.fetch_batch():
@@ -172,29 +179,63 @@ class ALS(Algo, AlsOption, Evaluable, Serializable):
                 feed_t += time.time() - start_t
                 start_x, next_x, indptr, keys, vals = buf.get()
                 start_t = time.time()
-                err += self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_axis)
+                err += self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)
                 update_t += time.time() - start_t
                 pbar.update(sz)
             pbar.refresh()
-        self.logger.debug('updated %s processed(%s) elapsed(data feed: %.3f update: %.3f)' % (axis, updated, feed_t, update_t))
+        self.logger.debug('updated %s processed(%s) elapsed(data feed: %.3f update: %.3f)' % (group, updated, feed_t, update_t))
         return err
 
     def train(self):
         buf = self._get_buffer()
+        best_loss, rmse, self.validation_result = 987654321.0, None, {}
+        self.prepare_evaluation()
+        self.initialize_tensorboard(self.opt.num_iters)
         for i in range(self.opt.num_iters):
             start_t = time.time()
-            self._iterate(buf, axis='rowwise')
-            err = self._iterate(buf, axis='colwise')
+            self._iterate(buf, group='rowwise')
+            err = self._iterate(buf, group='colwise')
             rmse = (err / self.data.get_header()['num_nnz']) ** 0.5
+            if self.opt.save_best and best_loss > rmse and (not self.opt.period or (i + 1) % self.opt.period == 0):
+                best_loss = rmse
+                self.save(self.model_path)
             self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, time.time() - start_t))
+            metrics = {'rmse': rmse}
             if self.opt.validation:
-                self.logger.info(self.show_validation_results())
-        self.obj.release()
+                self.validation_result = self.get_validation_results()
+                self.logger.info(self.validation_result)
+                metrics.update({'val_%s' % k: v
+                                for k, v in self.validation_result.items()})
+            self.update_tensorboard_data(metrics)
+        ret = {'rmse': rmse}
+        ret.update({'val_%s' % k: v
+                    for k, v in self.validation_result.items()})
+        self.finalize_tensorboard()
+        return ret
+
+    def _optimize(self, params):
+        self._optimize_params = params
+        for name, value in params.items():
+            assert name in self.opt, 'Unexepcted parameter: {}'.format(name)
+            setattr(self.opt, name, value)
+        with open(self._temporary_opt_file, 'w') as fout:
+            json.dump(self.opt, fout, indent=2)
+        assert self.obj.init(bytes(self._temporary_opt_file, 'utf-8')),\
+            'cannot parse option file: %s' % self._temporary_opt_file
+        self.logger.info(params)
+        self.initializ()
+        loss = self.train()
+        loss['eval_time'] = time.time()
+        loss['loss'] = loss.get(self.opt.optimize.loss)
+        # TODO: deal with failture of training
+        loss['status'] = HOPT_STATUS_OK
+        self._optimize_loss = loss
+        return loss
 
     def _get_data(self):
         data = [('opt', self.opt),
                 ('Q', self.Q),
                 ('P', self.P)]
-        if hasattr(self, 'FQ'):
-            data.append(('FQ', self.FQ))
-        return data
+
+    def get_evaluation_metrics(self):
+        return ['rmse', 'val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error']

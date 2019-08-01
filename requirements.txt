@@ -1,4 +1,5 @@
 setuptools>=1.3.2
+fire
 pathlib
 numpy
 cython
@@ -6,3 +7,6 @@ eigency
 tqdm
 psutil
 h5py
+hyperopt
+tensorflow
+tensorboard

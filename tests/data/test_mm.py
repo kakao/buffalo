@@ -50,7 +50,7 @@ class TestMatrixMarket(unittest.TestCase):
         self.temp_files.append(opt.data.path)
         self.assertTrue(True)
         db = mm.handle
-        self.assertEqual(sorted(db.keys()), sorted(['header', 'idmap', 'rowwise', 'colwise']))
+        self.assertEqual(sorted(db.keys()), sorted(['vali', 'idmap', 'rowwise', 'colwise']))
         header = mm.get_header()
         self.assertEqual(header['num_nnz'], 5)
         self.assertEqual(header['num_users'], 5)
@@ -73,7 +73,7 @@ class TestMatrixMarket(unittest.TestCase):
         mm.create()
         self.assertTrue(True)
         db = mm.handle
-        self.assertEqual(sorted(db.keys()), sorted(['header', 'idmap', 'rowwise', 'colwise']))
+        self.assertEqual(sorted(db.keys()), sorted(['vali', 'idmap', 'rowwise', 'colwise']))
         header = mm.get_header()
         self.assertEqual(header['num_nnz'], 5)
         self.assertEqual(header['num_users'], 5)
@@ -86,6 +86,10 @@ class TestMatrixMarket(unittest.TestCase):
 
         data = [(u, kk, vv) for u, kk, vv in mm.iterate(axis='colwise')]
         self.assertEqual([int(kk) for _, kk, _ in data], [0, 1, 3, 4, 2])
+
+    def test4_get(self):
+        # TODO: implement
+        pass
 
 if __name__ == '__main__':
     unittest.main()
