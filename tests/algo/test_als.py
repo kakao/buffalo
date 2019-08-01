@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
-import os
 import unittest
 from buffalo.misc import aux
 from buffalo.algo.als import ALS
 from buffalo.misc.log import set_log_level
 from buffalo.algo.options import AlsOption
-from buffalo.data.mm import MatrixMarketOptions
 
 from .base import TestBase
 
@@ -18,9 +16,9 @@ class TestALS(TestBase):
     def test1_is_valid_option(self):
         opt = AlsOption().get_default_option()
         self.assertTrue(AlsOption().is_valid_option(opt))
-        opt['save_best_only'] = 1
+        opt['save_best'] = 1
         self.assertRaises(RuntimeError, AlsOption().is_valid_option, opt)
-        opt['save_best_only'] = False
+        opt['save_best'] = False
         self.assertTrue(AlsOption().is_valid_option(opt))
 
     def test2_init_with_dict(self):
@@ -30,119 +28,40 @@ class TestALS(TestBase):
         self.assertTrue(True)
 
     def test3_init(self):
-        set_log_level(3)
         opt = AlsOption().get_default_option()
-        data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.input.main = self.ml_100k + 'main'
-        data_opt.input.uid = self.ml_100k + 'uid'
-        data_opt.input.iid = self.ml_100k + 'iid'
-        data_opt.data.path = './ml100k.h5py'
-
-        als = ALS(opt, data_opt=data_opt)
-        self.assertTrue(True)
-        als.init_factors()
-        self.assertTrue(als.P.shape, (5, 20))
-        self.assertTrue(als.Q.shape, (3, 20))
+        self._test3_init(ALS, opt)
 
     def test4_train(self):
-        set_log_level(3)
         opt = AlsOption().get_default_option()
         opt.d = 5
-
-        data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.input.main = self.ml_100k + 'main'
-        data_opt.input.uid = self.ml_100k + 'uid'
-        data_opt.input.iid = self.ml_100k + 'iid'
-        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
-
-        als = ALS(opt, data_opt=data_opt)
-        als.init_factors()
-        als.train()
+        self._test4_train(ALS, opt)
 
     def test5_validation(self):
-        set_log_level(1)
         opt = AlsOption().get_default_option()
         opt.d = 5
+        opt.num_iters = 20
         opt.validation = aux.Option({'topk': 10})
-
-        data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.input.main = self.ml_100k + 'main'
-        data_opt.input.uid = self.ml_100k + 'uid'
-        data_opt.input.iid = self.ml_100k + 'iid'
-        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
-
-        als = ALS(opt, data_opt=data_opt)
-        als.init_factors()
-        als.train()
-        results = als.get_validation_results()
-        self.assertTrue(results['ndcg'] > 0.03)
-        self.assertTrue(results['map'] > 0.015)
+        opt.tensorboard = aux.Option({'root': './tb',
+                                      'name': 'als'})
+        self._test5_validation(ALS, opt)
 
     def test6_topk(self):
-        set_log_level(1)
         opt = AlsOption().get_default_option()
         opt.d = 5
         opt.validation = aux.Option({'topk': 10})
-
-        data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.input.main = self.ml_100k + 'main'
-        data_opt.input.uid = self.ml_100k + 'uid'
-        data_opt.input.iid = self.ml_100k + 'iid'
-        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
-
-        als = ALS(opt, data_opt=data_opt)
-        als.init_factors()
-        als.train()
-        als.data.build_idmaps()
-        self.assertTrue(len(als.topk_recommendation('1', 10)['1']), 10)
-        als.fast_similar(True)
-        ret_a = als.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
-        self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
-        als.fast_similar(False)
-        ret_b = als.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
-        self.assertIn('Return_of_the_Jedi_(1983)', ret_b)
-        self.assertEqual(ret_a, ret_b)
+        self._test6_topk(ALS, opt)
 
     def test7_train_ml_20m(self):
-        set_log_level(2)
         opt = AlsOption().get_default_option()
         opt.num_workers = 8
         opt.validation = aux.Option({'topk': 10})
-
-        data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.input.main = self.ml_20m + 'main'
-        data_opt.input.uid = self.ml_20m + 'uid'
-        data_opt.input.iid = self.ml_20m + 'iid'
-        data_opt.data.path = './ml20m.h5py'
-        data_opt.data.use_cache = True
-
-        als = ALS(opt, data_opt=data_opt)
-        als.init_factors()
-        als.train()
+        self._test7_train_ml_20m(ALS, opt)
 
     def test8_serialization(self):
-        set_log_level(1)
         opt = AlsOption().get_default_option()
         opt.d = 5
         opt.validation = aux.Option({'topk': 10})
-
-        data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.input.main = self.ml_100k + 'main'
-        data_opt.input.uid = self.ml_100k + 'uid'
-        data_opt.input.iid = self.ml_100k + 'iid'
-        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
-
-        als = ALS(opt, data_opt=data_opt)
-        als.init_factors()
-        als.train()
-        als.data.build_idmaps()
-        ret_a = als.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
-        self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
-        als.dump('als.bin')
-        als.load('als.bin')
-        os.remove('als.bin')
-        ret_a = als.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
-        self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
+        self._test8_serialization(ALS, opt)
 
 
 if __name__ == '__main__':

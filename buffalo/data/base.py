@@ -142,6 +142,25 @@ class Data(object):
                         yield u, k
                 data_index = end
 
+    def get(self, index, axis='rowwise') -> [int, int, float]:
+        if self.opt.data.internal_data_type == 'matrix':
+            assert axis in ['rowwise', 'colwise'], 'Unexpected data axis: {}'.format(axis)
+            assert self.handle, 'DB is not opened'
+            group = self.handle[axis]
+            begin = 0 if index == 0 else group['indptr'][index - 1]
+            end = group['indptr'][index]
+            keys = group['key'][begin:end]
+            vals = group['val'][begin:end]
+            return (keys, vals)
+        elif self.opt.data.internal_data_type == 'stream':
+            assert axis in ['rowwise'], 'Unexpected date axis: {}'.format(axis)
+            assert self.handle, 'DB is not opened'
+            group = self.handle[axis]
+            begin = 0 if index == 0 else group['indptr'][index - 1]
+            end = group['indptr'][index]
+            keys = group['key'][begin:end]
+            return (keys,)
+
     def __del__(self):
         if self.handle:
             self.handle.close()

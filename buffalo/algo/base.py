@@ -2,14 +2,19 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import abc
+import json
 import pickle
 import struct
+import logging
 import datetime
 
 import numpy as np
 import tensorflow as tf
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 from tensorflow.keras.utils import Progbar
+# what the...
+import absl.logging
+logging.root.removeHandler(absl.logging._absl_handler)
+absl.logging._warn_preinit_stderr = False
 
 from buffalo.misc import aux
 
@@ -77,7 +82,7 @@ class Serializable(abc.ABC):
     def __init__(self, *args, **kwargs):
         pass
 
-    def dump(self, path):
+    def save(self, path):
         data = self._get_data()
         with open(path, 'wb') as fout:
             total_objs = len(data)
@@ -118,6 +123,7 @@ class TensorboardExtention(object):
                          'merged_summary_op': None,
                          'session': None,
                          'pbar': None,
+                         'data_root': None,
                          'step': 1})
         return tb
 
@@ -136,16 +142,17 @@ class TensorboardExtention(object):
         if not os.path.isdir(self.opt.tensorboard.root):
             os.makedirs(self.opt.tensorboard.root)
         tb_dir = os.path.join(self.opt.tensorboard.root, self._tb.name)
-        self._tb.summary_writer = tf.summary.FileWriter(tb_dir)
+        self._tb.data_root = tb_dir
+        self._tb.summary_writer = tf.compat.v1.summary.FileWriter(tb_dir)
         if not metrics:
             metrics = self.get_evaluation_metrics()
         for m in metrics:
-            self._tb.metrics[m] = tf.placeholder(tf.float32)
-            tf.summary.scalar(m, self._tb.metrics[m])
+            self._tb.metrics[m] = tf.compat.v1.placeholder(tf.float32)
+            tf.compat.v1.summary.scalar(m, self._tb.metrics[m])
             self._tb.feed_dict[self._tb.metrics[m]] = 0.0
-        self._tb.merged_summary_op = tf.summary.merge_all()
-        self._tb.session = tf.Session()
-        self._tb.pbar = Progbar(num_steps, stateful_metrics=self._tb.metrics)
+        self._tb.merged_summary_op = tf.compat.v1.summary.merge_all()
+        self._tb.session = tf.compat.v1.Session()
+        self._tb.pbar = Progbar(num_steps, stateful_metrics=self._tb.metrics, verbose=0)
         self._tb_setted = True
 
     def update_tensorboard_data(self, metrics):
@@ -164,11 +171,13 @@ class TensorboardExtention(object):
     def finalize_tensorboard(self):
         if not self.opt.tensorboard:
             return
+        with open(os.path.join(self._tb.data_root, 'opt.json'), 'w') as fout:
+            fout.write(json.dumps(self.opt, indent=2))
         self._tb.summary_writer.close()
         self._tb.session.close()
         self._tb = None
-        tf.reset_default_graph()
+        tf.compat.v1.reset_default_graph()
 
     def __del__(self):
         if hasattr(self, '_tb_setted') and self._tb_setted:
-            tf.reset_default_graph()
+            tf.compat.v1.reset_default_graph()

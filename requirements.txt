@@ -9,3 +9,4 @@ psutil
 h5py
 hyperopt
 tensorflow
+tensorboard

@@ -126,6 +126,9 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
             if hasattr(self, 'FQ'):
                 del self.FQ
 
+    def initialize(self):
+        self.init_factors()
+
     def init_factors(self):
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
@@ -185,13 +188,17 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def train(self):
         buf = self._get_buffer()
-        rmse, self.validation_result = None, {}
+        best_loss, rmse, self.validation_result = 987654321.0, None, {}
+        self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
         for i in range(self.opt.num_iters):
             start_t = time.time()
             self._iterate(buf, group='rowwise')
             err = self._iterate(buf, group='colwise')
             rmse = (err / self.data.get_header()['num_nnz']) ** 0.5
+            if self.opt.save_best and best_loss > rmse and (not self.opt.period or (i + 1) % self.opt.period == 0):
+                best_loss = rmse
+                self.save(self.model_path)
             self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, time.time() - start_t))
             metrics = {'rmse': rmse}
             if self.opt.validation:
@@ -216,7 +223,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
         assert self.obj.init(bytes(self._temporary_opt_file, 'utf-8')),\
             'cannot parse option file: %s' % self._temporary_opt_file
         self.logger.info(params)
-        self.init_factors()
+        self.initializ()
         loss = self.train()
         loss['eval_time'] = time.time()
         loss['loss'] = loss.get(self.opt.optimize.loss)
