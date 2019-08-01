@@ -298,19 +298,12 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
         return loss
 
     def _get_data(self):
-<<<<<<< HEAD
         data = super()._get_data()
         data.extend([('opt', self.opt),
                      ('Q', self.Q),
                      ('Qb', self.Qb),
                      ('P', self.P)])
         return data
-=======
-        return [('opt', self.opt),
-                ('Q', self.Q),
-                ('Qb', self.Qb),
-                ('P', self.P)]
->>>>>>> 86b5cd6ccd5ee6c80f8510739137ad79d3f87015
 
     def get_evaluation_metrics(self):
         return ['val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error', 'prloss']
