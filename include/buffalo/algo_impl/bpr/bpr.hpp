@@ -56,7 +56,7 @@ public:
             double beta1,
             double beta2);
 
-    double update_parameters();
+    void update_parameters();
 
     double distance(size_t p, size_t q);
 

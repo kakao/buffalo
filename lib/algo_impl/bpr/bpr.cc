@@ -177,6 +177,7 @@ double CBPRMF::partial_update(
 
     double reg_u = opt_["reg_u"].number_value();
     double reg_i = opt_["reg_i"].number_value();
+    double reg_j = opt_["reg_j"].number_value();
     double reg_b = opt_["reg_b"].number_value();
 
     int num_negative_samples = opt_["num_negative_samples"].int_value();
@@ -222,6 +223,7 @@ double CBPRMF::partial_update(
                     if (use_bias)
                         x_uij += (Qb(pos, 0) - Qb(neg, 0)); 
 
+                    // TODO: precompute exp table may be helpful
                     x_uij = max(EXPLB, x_uij);
                     x_uij = min(EXPUB, x_uij);
                     float logit = 1.0 / (1.0 + exp(x_uij));
@@ -233,7 +235,10 @@ double CBPRMF::partial_update(
                     // TODO: change to enum class
                     if (optimizer_ == "adam") {
                         if (per_coordinate_normalize)  // critical section
-    					    Q_samples_per_coordinates_[neg] += 1;
+                        {
+                            #pragma omp atomic
+                            Q_samples_per_coordinates_[neg] += 1;
+                        }
                         gradP_.row(u) += logit * (Q.row(pos) - Q.row(neg));
                         
                         if (update_i) {
@@ -256,7 +261,7 @@ double CBPRMF::partial_update(
                         }
 
                         if (update_j) {
-                            Q.row(neg) -= lr_ * (item_deriv - reg_i * Q.row(neg));
+                            Q.row(neg) -= lr_ * (item_deriv - reg_j * Q.row(neg));
                             if (use_bias)
                                 Qb(pos, 0) -= (logit - reg_b * Qb(neg, 0));
                         }
@@ -284,14 +289,10 @@ double CBPRMF::partial_update(
 			{
 				const int& pos = positives[it - shifted];
 
-				for(int64_t it2 = it * num_negative_samples;
-					it2 < it * num_negative_samples + num_negative_samples;
-					++it2)
+				for(int it2=0; it2 < num_negative_samples; ++it2)
 				{
-					//const int& neg = negatives[it2 - shifted];
 					P_samples_per_coordinates_[u] += 1;
 					Q_samples_per_coordinates_[pos] += 1;
-					//Q_samples_per_coordinates_[neg] += 1;
 				}
 			}
 		}
@@ -341,10 +342,9 @@ void CBPRMF::update_adam(FactorType& grad, FactorType& momentum, FactorType& vel
 }
 
 
-double CBPRMF::update_parameters()
+void CBPRMF::update_parameters()
 {
     int num_workers = opt_["num_workers"].int_value();
-    vector<double> complexity(num_workers, 0.0);
 
     bool use_bias = opt_["use_bias"].bool_value();
     double reg_u = opt_["reg_u"].number_value();
@@ -366,7 +366,6 @@ double CBPRMF::update_parameters()
             if (per_coordinate_normalize && P_samples_per_coordinates_[u]) {
                 gradP_.row(u) /= P_samples_per_coordinates_[u];
             }
-            complexity[omp_get_thread_num()] += (pow(P.row(u).norm(), 2.0) * reg_u);
             gradP_.row(u) -= (P.row(u) * (2 * reg_u));
             update_adam(gradP_, momentumP_, velocityP_, u, beta1, beta2);
             P.row(u) += (lr * gradP_.row(u));
@@ -378,13 +377,11 @@ double CBPRMF::update_parameters()
                 gradQ_.row(i) /= Q_samples_per_coordinates_[i];
                 gradQb_.row(i) /= Q_samples_per_coordinates_[i];
             }
-            complexity[omp_get_thread_num()] += (pow(Q.row(i).norm(), 2.0) * reg_i);
             gradQ_.row(i) -= (Q.row(i) * (2 * reg_u));
             update_adam(gradQ_, momentumQ_, velocityQ_, i, beta1, beta2);
             Q.row(i) += (lr * gradQ_.row(i));
 
             if (use_bias) {
-                complexity[omp_get_thread_num()] += (pow(Qb(i, 0), 2.0) * reg_b);
                 gradQb_(i, 0) -= (Qb(i, 0) * (2 * reg_b));
                 update_adam(gradQb_, momentumQb_, velocityQb_, i, beta1, beta2);
                 Qb(i, 0) += (lr * gradQb_(i, 0));
@@ -395,20 +392,8 @@ double CBPRMF::update_parameters()
             Q_samples_per_coordinates_.assign(Q_rows_, 0);
         }
     } else {
-        #pragma omp parallel for schedule(static)
-        for (int u=0; u < P_rows_; ++u) {
-            complexity[omp_get_thread_num()] += (pow(P.row(u).norm(), 2.0) * reg_u);
-        }
-
-        #pragma omp parallel for schedule(static)
-        for (int i=0; i < Q_rows_; ++i) {
-            complexity[omp_get_thread_num()] += (pow(Q.row(i).norm(), 2.0) * reg_i);
-            if (use_bias)  {
-                complexity[omp_get_thread_num()] += (pow(Qb(i, 0), 2.0) * reg_b);
-            }
-        }
         double decay = opt_["lr_decay"].number_value();
-        if (decay > 0.0)  {
+        if (decay > 0.0) {
             double lr = lr_ * decay;
             lr = max(opt_["min_lr"].number_value(), lr);
             lr = max(lr, 0.000001);
@@ -417,12 +402,8 @@ double CBPRMF::update_parameters()
         }
     }
 
-    double _complexity = accumulate(complexity.begin(), complexity.end(), 0.0);
-
     iters_ += 1;
     total_samples_ = 0;  // not good flow..
-
-    return _complexity;
 }
 
 }
