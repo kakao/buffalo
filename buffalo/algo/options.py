@@ -42,7 +42,8 @@ class AlsOption(AlgoOption):
             'adaptive_reg': False,
             'evaluation_on_learning': True,
             'save_factors': False,
-            'save_best_only': False,
+            'save_best': False,
+            'period': 10,
 
             'd': 20,
             'num_iters': 10,
@@ -94,8 +95,8 @@ class BprmfOption(AlgoOption):
         opt.update({
             'use_bias': True,
             'evaluation_on_learning': True,
-            'save_factors': False,
-            'save_best_only': False,
+            'save_best': False,
+            'period': 10,
 
             'num_workers': 1,
             'num_iters': 100,
@@ -104,21 +105,21 @@ class BprmfOption(AlgoOption):
             'update_j': True,
             'reg_u': 0.025,
             'reg_i': 0.025,
+            'reg_j': 0.025,
             'reg_b': 0.025,
 
             'optimizer': 'sgd',
-            'lr': 0.001,
+            'lr': 0.002,
             'lr_decay': 0.0,
             'min_lr': 0.0001,
             'beta1': 0.9,
             'beta2': 0.999,
-            'early_stopping_rounds': 5,
             'batch_size': -1,
+            'early_stopping_rounds': 5,
 
             'random_seed': 0,
             'per_coordinate_normalize': False,
             'num_negative_samples': 1,
-            'negative_sampling_with_replacement': False,
             'sampling_power': 0.0,
 
             'model_path': '',
@@ -127,7 +128,7 @@ class BprmfOption(AlgoOption):
         return Option(opt)
 
     def get_default_optimize_option(self):
-        """Optimization Options for ALS
+        """Optimization Options for BPRMF
         options:
             loss(str): Target loss to optimize.
             max_trials(int, option): Maximum experiments for optimization. If not given, run forever.

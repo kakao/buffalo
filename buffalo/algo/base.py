@@ -82,7 +82,7 @@ class Serializable(abc.ABC):
     def __init__(self, *args, **kwargs):
         pass
 
-    def dump(self, path):
+    def save(self, path):
         data = self._get_data()
         with open(path, 'wb') as fout:
             total_objs = len(data)
@@ -143,15 +143,15 @@ class TensorboardExtention(object):
             os.makedirs(self.opt.tensorboard.root)
         tb_dir = os.path.join(self.opt.tensorboard.root, self._tb.name)
         self._tb.data_root = tb_dir
-        self._tb.summary_writer = tf.summary.FileWriter(tb_dir)
+        self._tb.summary_writer = tf.compat.v1.summary.FileWriter(tb_dir)
         if not metrics:
             metrics = self.get_evaluation_metrics()
         for m in metrics:
-            self._tb.metrics[m] = tf.placeholder(tf.float32)
-            tf.summary.scalar(m, self._tb.metrics[m])
+            self._tb.metrics[m] = tf.compat.v1.placeholder(tf.float32)
+            tf.compat.v1.summary.scalar(m, self._tb.metrics[m])
             self._tb.feed_dict[self._tb.metrics[m]] = 0.0
-        self._tb.merged_summary_op = tf.summary.merge_all()
-        self._tb.session = tf.Session()
+        self._tb.merged_summary_op = tf.compat.v1.summary.merge_all()
+        self._tb.session = tf.compat.v1.Session()
         self._tb.pbar = Progbar(num_steps, stateful_metrics=self._tb.metrics, verbose=0)
         self._tb_setted = True
 

@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 import unittest
+
+import numpy as np
+
 from buffalo.misc import aux
 from buffalo.algo.bpr import BPRMF
 from buffalo.misc.log import set_log_level
 from buffalo.algo.options import BprmfOption
-from buffalo.data.mm import MatrixMarketOptions
 
 from .base import TestBase
 
@@ -15,15 +17,12 @@ class TestBPRMF(TestBase):
         self.assertTrue(True)
 
     def test1_is_valid_option(self):
-        # TODO
-        return
-        """
-        opt = bprOption().get_default_option()
-        self.assertTrue(bprOption().is_valid_option(opt))
-        opt['save_best_only'] = 1
-        self.assertRaises(RuntimeError, bprOption().is_valid_option, opt)
-        opt['save_best_only'] = Fbpre
-        self.assertTrue(bprOption().is_valid_option(opt))"""
+        opt = BprmfOption().get_default_option()
+        self.assertTrue(BprmfOption().is_valid_option(opt))
+        opt['save_best'] = 1
+        self.assertRaises(RuntimeError, BprmfOption().is_valid_option, opt)
+        opt['save_best'] = False
+        self.assertTrue(BprmfOption().is_valid_option(opt))
 
     def test2_init_with_dict(self):
         set_log_level(3)
@@ -32,64 +31,48 @@ class TestBPRMF(TestBase):
         self.assertTrue(True)
 
     def test3_init(self):
-        set_log_level(3)
         opt = BprmfOption().get_default_option()
-        data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.input.main = self.ml_100k + 'main'
-        data_opt.input.uid = self.ml_100k + 'uid'
-        data_opt.input.iid = self.ml_100k + 'iid'
-        data_opt.data.path = './ml100k.h5py'
-
-        bpr = BPRMF(opt, data_opt=data_opt)
-        self.assertTrue(True)
-        bpr.initialize()
-        self.assertTrue(bpr.P.shape, (943, 20))
-        self.assertTrue(bpr.Q.shape, (1682, 20))
-        self.assertTrue(bpr.Qb.shape, (1682, 1))
+        self._test3_init(BPRMF, opt)
 
     def test4_train(self):
-        set_log_level(3)
         opt = BprmfOption().get_default_option()
         opt.d = 5
-
-        data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.input.main = self.ml_100k + 'main'
-        data_opt.input.uid = self.ml_100k + 'uid'
-        data_opt.input.iid = self.ml_100k + 'iid'
-        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
-
-        bpr = BPRMF(opt, data_opt=data_opt)
-        bpr.initialize()
-        bpr.train()
-        self.assertTrue(True)
+        self._test4_train(BPRMF, opt)
 
     def test5_validation(self):
-        set_log_level(3)
+        np.random.seed(7)
         opt = BprmfOption().get_default_option()
         opt.d = 5
-        opt.num_workers = 2
-        opt.optimizer = 'sgd'
+        opt.num_workers = 4
+        opt.num_iters = 100
         opt.lr = 0.001
-        opt.lr_decay = 0.0
-        opt.sampling_power = 0.0
-        opt.num_iters = 1000
-        # opt.update_j = False
+        opt.random_seed = 7
         opt.validation = aux.Option({'topk': 10})
-        opt.tensorboard = aux.Option({'root': './tb',
-                                      'name': 'bpr'})
 
-        data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.input.main = self.ml_100k + 'main'
-        data_opt.input.uid = self.ml_100k + 'uid'
-        data_opt.input.iid = self.ml_100k + 'iid'
-        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
+        self._test5_validation(BPRMF, opt, ndcg=0.03, map=0.02)
 
-        bpr = BPRMF(opt, data_opt=data_opt)
-        bpr.initialize()
-        bpr.train()
-        results = bpr.get_validation_results()
-        print(results)
+    def test6_topk(self):
+        opt = BprmfOption().get_default_option()
+        opt.d = 5
+        opt.lr = 0.002
+        opt.num_iters = 100
+        opt.validation = aux.Option({'topk': 10})
+        self._test6_topk(BPRMF, opt)
 
+    def test7_train_ml_20m(self):
+        opt = BprmfOption().get_default_option()
+        opt.num_workers = 8
+        opt.validation = aux.Option({'topk': 10})
+        self._test7_train_ml_20m(BPRMF, opt)
+
+    def test8_serialization(self):
+        opt = BprmfOption().get_default_option()
+        opt.lr = 0.002
+        opt.num_iters = 100
+        opt.d = 5
+        opt.validation = aux.Option({'topk': 10})
+
+        self._test8_serialization(BPRMF, opt)
 
 if __name__ == '__main__':
     unittest.main()

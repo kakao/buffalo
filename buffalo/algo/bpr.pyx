@@ -43,7 +43,7 @@ cdef extern from "buffalo/algo_impl/bpr/bpr.hpp" namespace "bpr":
         double compute_loss(Map[VectorXi]&,
                             Map[VectorXi]&,
                             Map[VectorXi]&) nogil except +
-        double update_parameters()
+        void update_parameters()
 
 
 cdef class PyBPRMF:
@@ -94,7 +94,7 @@ cdef class PyBPRMF:
                                      Map[VectorXi](negatives))
 
     def update_parameters(self):
-        return self.obj.update_parameters()
+        self.obj.update_parameters()
 
 
 class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
@@ -219,40 +219,11 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
         ]
         self.logger.info('Generated %s loss samples.' % len(users))
 
-    def generate_negative_samples(self, start_x, next_x, indptr, keys, vals):
-        end_loop = next_x - start_x
-        total_positives = keys.shape[0]
-        num_negative_samples = self.opt.num_negative_samples
-        total_negatives = total_positives * num_negative_samples
-        negative_samples = np.zeros(shape=total_negatives, dtype=np.int32, order='F')
-        negative_sample_index = 0
-        shifted = 0 if start_x == 0 else indptr[start_x - 1]
-        for index in range(end_loop):
-            u = start_x + index
-            beg = 0 if u == 0 else indptr[u - 1]
-            end = indptr[u]
-            data_size = end - beg
-            seen = set(keys[shifted + beg: shifted + end])
-            neg_data_size = data_size * num_negative_samples
-            # TODO: deal with self.opt.negative_sampling_with_replacement
-            if self.sampling_method == 'with_p':
-                negs = np.random.choice(range(self.Q.shape[0]),
-                                        size=neg_data_size + data_size,
-                                        replace=False,
-                                        p=self.sampling_weights_)
-            else:  # uniform
-                negs = np.random.choice(range(self.Q.shape[0]),
-                                        size=neg_data_size + data_size,
-                                        replace=False)
-            negs = [n for n in negs if n not in seen]
-            negative_samples[negative_sample_index:negative_sample_index + neg_data_size] = negs[:neg_data_size]
-            negative_sample_index += neg_data_size
-        return negative_samples
 
     def _iterate(self):
         header = self.data.get_header()
         end = header['num_users']
-        update_t, feed_t, sampling_t, updated = 0, 0, 0, 0
+        update_t, feed_t, updated = 0, 0, 0
         self.buf.set_group('rowwise')
         with log.pbar(log.DEBUG,
                       total=header['num_nnz'], mininterval=30) as pbar:
@@ -263,17 +234,12 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
                 start_x, next_x, indptr, keys, vals = self.buf.get()
 
                 start_t = time.time()
-                # negs = self.generate_negative_samples(start_x, next_x, indptr, keys, vals)
-                sampling_t += time.time() - start_t
-
-                start_t = time.time()
                 self.obj.partial_update(start_x, next_x, indptr, keys)
                 update_t += time.time() - start_t
                 pbar.update(sz)
             pbar.refresh()
-        cplex = self.obj.update_parameters()
-        self.logger.debug(f'updated processed({updated}) elapsed(data feed: {feed_t:0.3f} update: {update_t:0.3f} sample: {sampling_t:0.3f})')
-        return cplex
+        self.obj.update_parameters()
+        self.logger.debug(f'updated processed({updated}) elapsed(data feed: {feed_t:0.3f} update: {update_t:0.3f}')
 
     def compute_loss(self):
         return self.obj.compute_loss(self._sub_samples[0],
@@ -285,13 +251,15 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
         self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
         self.sampling_loss_samples()
+        best_loss = 987654321.0
         for i in range(self.opt.num_iters):
             start_t = time.time()
-            cplex = self._iterate()
+            self._iterate()
             loss = self.compute_loss()
-            self.logger.info('Iteration %s: ModelComplexity %.3f LOSS %.3f Elapsed %.3f secs' % (i + 1, cplex, loss, time.time() - start_t))
-            metrics = {'auc': loss}
-            if self.opt.validation:
+
+            self.logger.info('Iteration %s: PR-Loss %.3f Elapsed %.3f secs' % (i + 1, loss, time.time() - start_t))
+            metrics = {'prloss': loss}
+            if self.opt.validation and self.opt.evaluation_on_learning:
                 self.validation_result = self.get_validation_results()
                 self.logger.info('Validation: ' + \
                                  ' '.join([f'{k}:{v:0.5f}'
@@ -299,7 +267,11 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
                 metrics.update({'val_%s' % k: v
                                 for k, v in self.validation_result.items()})
             self.update_tensorboard_data(metrics)
-        ret = {'auc': loss}
+
+            if self.opt.save_best and best_loss > loss and (not self.opt.period or (i + 1) % self.opt.period == 0):
+                best_loss = loss
+                self.save(self.model_path)
+        ret = {'prloss': loss}
         ret.update({'val_%s' % k: v
                     for k, v in self.validation_result.items()})
         self.finalize_tensorboard()
@@ -332,4 +304,4 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
                 ('P', self.P)]
 
     def get_evaluation_metrics(self):
-        return ['val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error', 'auc']
+        return ['val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error', 'prloss']
