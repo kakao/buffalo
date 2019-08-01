@@ -233,9 +233,11 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
         return loss
 
     def _get_data(self):
-        data = [('opt', self.opt),
-                ('Q', self.Q),
-                ('P', self.P)]
+        data = super()._get_data()
+        data.extend([('opt', self.opt),
+                     ('Q', self.Q),
+                     ('P', self.P)])
+        return data
 
     def get_evaluation_metrics(self):
         return ['rmse', 'val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error']

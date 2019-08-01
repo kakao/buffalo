@@ -160,11 +160,12 @@ class TestBase(unittest.TestCase):
         c = cls(opt, data_opt=data_opt)
         c.initialize()
         c.train()
-        c.data.build_idmaps()
+        print(c.most_similar('Star_Wars_(1977)', 10))
         ret_a = c.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
         c.save('model.bin')
         c.load('model.bin')
         os.remove('model.bin')
         ret_a = c.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        print(ret_a)
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)

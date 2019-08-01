@@ -24,8 +24,6 @@ class Data(object):
             self.prepro = getattr(prepro, self.opt.data.value_prepro.name)(self.opt.data.value_prepro)
             self.value_prepro = self.prepro
         self.data_type = None
-        self.id_mapped = False
-        self.userid_map, self.itemid_map = {}, {}
 
     @abc.abstractmethod
     def create_database(self, filename, **kwargs):
@@ -61,33 +59,6 @@ class Data(object):
                            'completed': self.handle.attrs['completed']}
         return self.header
 
-    def build_itemid_map(self):
-        idmap = self.get_group('idmap')
-        header = self.get_header()
-        if idmap['cols'].shape[0] == 0:
-            self.itemids = list(map(str, list(range(header['num_items']))))
-            self.itemid_map = {str(i): i for i in range(header['num_items'])}
-        else:
-            self.itemids = list(map(lambda x: x.decode('utf-8', 'ignore'), idmap['cols'][::]))
-            self.itemid_map = {v: idx
-                               for idx, v in enumerate(self.itemids)}
-
-    def build_userid_map(self):
-        idmap = self.get_group('idmap')
-        header = self.get_header()
-        if idmap['rows'].shape[0] == 0:
-            self.userids = list(map(str, list(range(header['num_users']))))
-            self.userid_map = {str(i): i for i in range(header['num_users'])}
-        else:
-            self.userids = list(map(lambda x: x.decode('utf-8', 'ignore'), idmap['rows'][::]))
-            self.userid_map = {v: idx
-                               for idx, v in enumerate(self.userids)}
-
-    def build_idmaps(self):
-        self.id_mapped = True
-        self.build_itemid_map()
-        self.build_userid_map()
-
     def get_group(self, group_name='rowwise'):
         assert group_name in ['rowwise', 'colwise', 'vali', 'idmap'], 'Unexpected group_name: {}'.format(group_name)
         assert self.handle, 'DB is not opened'
@@ -104,11 +75,15 @@ class Data(object):
             group: which data group
             use_repr_name: return representive name of internal ids
         """
-        if use_repr_name and not self.id_mapped:
-            raise RuntimeError('IDMaps not built')
         userids, itemids = None, None
+        idmap = self.get_group('idmap')
         if use_repr_name:
-            userids, itemids = self.userids, self.itemids
+            userids = lambda x: str(x)
+            if idmap['rows'].shape[0] != 0:
+                userids = lambda x: idmap['rows'][x].decode('utf-8', 'ignore')
+            itemids = lambda x: str(x)
+            if idmap['cols'].shape[0] != 0:
+                itemids = lambda x: idmap['cols'][x].decode('utf-8', 'ignore')
             if axis == 'colwise':
                 userids, itemids = itemids, userids
 
@@ -122,7 +97,7 @@ class Data(object):
                 vals = group['val'][data_index:end]
                 if use_repr_name:
                     for k, v in zip(keys, vals):
-                        yield userids[u], itemids[k], v
+                        yield userids(u), itemids(k), v
                 else:
                     for k, v in zip(keys, vals):
                         yield u, k, v
@@ -136,7 +111,7 @@ class Data(object):
                 keys = group['key'][data_index:end]
                 if use_repr_name:
                     for k in keys:
-                        yield userids[u], itemids[k]
+                        yield userids(u), itemids(k)
                 else:
                     for k in keys:
                         yield u, k
@@ -215,7 +190,7 @@ class Data(object):
         g.attrs['n'] = 0
         if method == 'sample':
             sz = min(self.opt.data.validation.max_samples,
-                    int(num_nnz * self.opt.data.validation.p))
+                     int(num_nnz * self.opt.data.validation.p))
             g.create_dataset('row', (sz,), dtype='int32', maxshape=(sz,))
             g.create_dataset('col', (sz,), dtype='int32', maxshape=(sz,))
             g.create_dataset('val', (sz,), dtype='float32', maxshape=(sz,))
