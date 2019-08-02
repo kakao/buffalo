@@ -110,7 +110,7 @@ class Serializable(abc.ABC):
             self.build_userid_map()
         data = self._get_data()
         if data_fields:
-            data = [(k, v) for k, v in data if k in data_fileds]
+            data = [(k, v) for k, v in data if k in data_fields]
         with open(path, 'wb') as fout:
             total_objs = len(data)
             fout.write(struct.pack('Q', total_objs))
