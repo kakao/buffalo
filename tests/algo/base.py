@@ -167,3 +167,27 @@ class TestBase(unittest.TestCase):
         os.remove('model.bin')
         ret_a = c.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
+
+    def _test9_compact_serialization(self, cls, opt):
+        set_log_level(1)
+
+        data_opt = MatrixMarketOptions().get_default_option()
+        data_opt.input.main = self.ml_100k + 'main'
+        data_opt.input.uid = self.ml_100k + 'uid'
+        data_opt.input.iid = self.ml_100k + 'iid'
+        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
+
+        c = cls(opt, data_opt=data_opt)
+        c.initialize()
+        c.train()
+        ret_a = c.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
+        c.save('model.bin', with_userid_map=False)
+        c = cls(opt)
+        c.load('model.bin', data_fields=['Q', '_idmanager'])
+        ret_a = c.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
+        self.assertFalse(hasattr(c, 'P'))
+        c.fast_similar(True)
+        ret_a = c.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        self.assertIn('Return_of_the_Jedi_(1983)', ret_a)

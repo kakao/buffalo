@@ -126,13 +126,16 @@ class Serializable(abc.ABC):
         data = [('_idmanager', self._idmanager)]
         return data
 
-    def load(self, path):
+    def load(self, path, data_fields=[]):
         with open(path, 'rb') as fin:
             total_objs = struct.unpack('Q', fin.read(8))[0]
             for _ in range(total_objs):
                 name_sz = struct.unpack('Q', fin.read(8))[0]
                 name = fin.read(name_sz).decode('utf8')
                 obj_sz = struct.unpack('Q', fin.read(8))[0]
+                if data_fields and name not in data_fields:
+                    fin.seek(obj_sz, 1)
+                    continue
                 obj = pickle.loads(fin.read(obj_sz))
                 setattr(self, name, obj)
 

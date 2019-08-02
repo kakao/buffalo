@@ -63,6 +63,12 @@ class TestALS(TestBase):
         opt.validation = aux.Option({'topk': 10})
         self._test8_serialization(ALS, opt)
 
+    def test9_compact_serialization(self):
+        opt = AlsOption().get_default_option()
+        opt.d = 5
+        opt.validation = aux.Option({'topk': 10})
+        self._test9_compact_serialization(ALS, opt)
+
 
 if __name__ == '__main__':
     unittest.main()
