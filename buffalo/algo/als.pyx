@@ -115,6 +115,10 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
             self.logger.info(self.data.show_info())
             assert self.data.data_type in ['matrix']
 
+    @staticmethod
+    def new(path, data_fields=[]):
+        return ALS.instantiate(AlsOption, path, data_fields)
+
     def set_data(self, data):
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
         self.data = data

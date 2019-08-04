@@ -126,6 +126,10 @@ class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExte
                                   'dist': None,
                                   'total_word_count': 0})
 
+    @staticmethod
+    def new(path, data_fields=[]):
+        return W2V.instantiate(W2vOption, path, data_fields)
+
     def set_data(self, data):
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
         self.data = data

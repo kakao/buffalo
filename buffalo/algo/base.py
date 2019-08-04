@@ -206,6 +206,13 @@ class Serializable(abc.ABC):
                 obj = pickle.loads(fin.read(obj_sz))
                 setattr(self, name, obj)
 
+    @classmethod
+    def instantiate(cls, cls_opt, path, data_fields):
+        opt = cls_opt().get_default_option()
+        c = cls(opt)
+        c.load(path, data_fields)
+        return c
+
 
 class TensorboardExtention(object):
     @abc.abstractmethod
