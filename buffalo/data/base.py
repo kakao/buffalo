@@ -31,13 +31,16 @@ class Data(object):
 
     def show_info(self):
         header = self.get_header()
-        g = self.get_group('vali')
+        vali_size = 0
+        if self.has_group('vali'):
+            g = self.get_group('vali')
+            vali_size = g['indexes'].shape[0]
         info = '{name} Header({users}, {items}, {nnz}) Validation({vali} samples)'
         info = info.format(name=self.name,
                            users=header['num_users'],
                            items=header['num_items'],
                            nnz=header['num_nnz'],
-                           vali=g['indexes'].shape[0])
+                           vali=vali_size)
         return info
 
     def open(self, data_path):

@@ -79,17 +79,21 @@ class Stream(Data):
             return max_col
 
         uid_path, iid_path, main_path = P['uid_path'], P['iid_path'], P['main_path']
-        with open(uid_path) as fin:
-            num_users = len([1 for _ in fin])
+        if uid_path:
+            with open(uid_path) as fin:
+                num_users = len([1 for _ in fin])
+        else:
+            with open(main_path) as fin:
+                num_users = len([1 for _ in fin])
 
         uid_max_col = len(str(num_users)) + 1
         if uid_path:
             uid_max_col = get_max_column_length(uid_path) + 1
 
 
-        vali_n = self.opt.data.validation.n
+        vali_n = self.opt.data.validation.get('n', 0)
         num_nnz, vali_limit, itemids = 0, 0, set()
-        self.logger.info('gathering itemids ...')
+        self.logger.info(f'gathering itemids from {main_path}...')
         with open(main_path) as fin:
             for line in log.iter_pbar(log_level=log.DEBUG, iterable=fin):
                 data = line.strip().split()
@@ -112,7 +116,7 @@ class Stream(Data):
         iid_max_col = max(len(k) + 1 for k in itemids.keys())
         num_items = len(itemids)
 
-        self.logger.info('found %d itemids' % len(itemids))
+        self.logger.info('Found %d unique itemids' % len(itemids))
 
         try:
             db = self._create_database(data_path,
