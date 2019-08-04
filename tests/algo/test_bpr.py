@@ -74,5 +74,17 @@ class TestBPRMF(TestBase):
 
         self._test8_serialization(BPRMF, opt)
 
+    def test9_compact_serialization(self):
+        opt = BprmfOption().get_default_option()
+        opt.d = 5
+        opt.validation = aux.Option({'topk': 10})
+        self._test9_compact_serialization(BPRMF, opt)
+
+    def test10_fast_most_similar(self):
+        opt = BprmfOption().get_default_option()
+        opt.d = 5
+        opt.validation = aux.Option({'topk': 10})
+        self._test10_fast_most_similar(BPRMF, opt)
+
 if __name__ == '__main__':
     unittest.main()

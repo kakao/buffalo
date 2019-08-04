@@ -35,7 +35,6 @@ cdef extern from "buffalo/algo_impl/bpr/bpr.hpp" namespace "bpr":
                          Map[MatrixXf]&,
                          Map[MatrixXf]&) nogil except +
         void set_cumulative_table(int64_t*, int)
-        void precompute(int) nogil except +
         double partial_update(int,
                               int,
                               int64_t*,
@@ -138,6 +137,14 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
             if hasattr(self, 'FQ'):
                 del self.FQ
 
+    def normalize(self, group='item'):
+        if group == 'item':
+            self.Q = self._normalize(self.Q)
+            self.opt._nrz_Q = True
+        elif group == 'user':
+            self.P = self._normalize(self.P)
+            self.opt._nrz_P = True
+
     def initialize(self):
         assert self.data, 'Data is not setted'
         if self.opt.random_seed:
@@ -179,16 +186,8 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
         topks = np.argsort(p.dot(self.Q.T) + self.Qb.T, axis=1)[:, -topk:][:,::-1]
         return zip(rows, topks)
 
-    def _get_most_similar(self, cols, topk):
-        if hasattr(self, 'FQ'):
-            q = self.FQ[cols]
-            topks = np.argsort(q.dot(self.FQ.T), axis=1)[:, -topk:][:,::-1]
-        else:
-            q = self.Q[cols]
-            dot = q.dot(self.Q.T)
-            dot = dot / (norm(q) * norm(self.Q, axis=1))
-            topks = np.argsort(dot, axis=1)[:, -topk:][:,::-1]
-        return zip(cols, topks)
+    def _get_most_similar_item(self, col, topk):
+        return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q)
 
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.P[r].dot(self.Q[c]) + self.Qb[c][0] for r, c in row_col_pairs}
@@ -219,6 +218,12 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
         ]
         self.logger.info('Generated %s loss samples.' % len(users))
 
+    def _get_feature(self, index, group='item'):
+        if group == 'item':
+            return self.Q[index]
+        elif group == 'user':
+            return self.P[index]
+        return None
 
     def _iterate(self):
         header = self.data.get_header()

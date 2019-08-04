@@ -119,12 +119,13 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
         self.data = data
 
-    def fast_similar(self, onoff=True):
-        if onoff:
-            self.FQ = self.normalize(self.Q)
-        else:
-            if hasattr(self, 'FQ'):
-                del self.FQ
+    def normalize(self, group='item'):
+        if group == 'item':
+            self.Q = self._normalize(self.Q)
+            self.opt._nrz_Q = True
+        elif group == 'user':
+            self.P = self._normalize(self.P)
+            self.opt._nrz_P = True
 
     def initialize(self):
         self.init_factors()
@@ -143,16 +144,8 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
         topks = np.argsort(p.dot(self.Q.T), axis=1)[:, -topk:][:,::-1]
         return zip(rows, topks)
 
-    def _get_most_similar(self, cols, topk):
-        if hasattr(self, 'FQ'):
-            q = self.FQ[cols]
-            topks = np.argsort(q.dot(self.FQ.T), axis=1)[:, -topk:][:,::-1]
-        else:
-            q = self.Q[cols]
-            dot = q.dot(self.Q.T)
-            dot = dot / (norm(q) * norm(self.Q, axis=1))
-            topks = np.argsort(dot, axis=1)[:, -topk:][:,::-1]
-        return zip(cols, topks)
+    def _get_most_similar_item(self, col, topk):
+        return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q)
 
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.P[r].dot(self.Q[c]) for r, c in row_col_pairs}
@@ -231,6 +224,13 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
         loss['status'] = HOPT_STATUS_OK
         self._optimize_loss = loss
         return loss
+
+    def _get_feature(self, index, group='item'):
+        if group == 'item':
+            return self.Q[index]
+        elif group == 'user':
+            return self.P[index]
+        return None
 
     def _get_data(self):
         data = super()._get_data()

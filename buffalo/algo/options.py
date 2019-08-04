@@ -129,27 +129,69 @@ class BprmfOption(AlgoOption):
 
     def get_default_optimize_option(self):
         """Optimization Options for BPRMF
-        options:
-            loss(str): Target loss to optimize.
-            max_trials(int, option): Maximum experiments for optimization. If not given, run forever.
-            min_trials(int, option): Minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
-            deployment(bool): Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
-            start_with_default_parameters(bool): If set to True, the loss value of the default parameter is used as the starting loss to beat.
-            space(dict): Parameter space definition. For more information, pleases reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Pleases see optimize.py to check how we deal with `randint`.k
         """
         opt = super().get_default_optimize_option()
         opt.update({
-            'loss': 'rmse',
+            'loss': 'prloss',
             'max_trials': 100,
             'min_trials': 0,
             'deployment': True,
             'start_with_default_parameters': True,
             'space': {
-                'adaptive_reg': ['choice', ['adaptive_reg', [0, 1]]],
                 'd': ['randint', ['d', 10, 30]],
                 'reg_u': ['uniform', ['reg_u', 0.1, 1]],
-                'reg_i': ['uniform', ['reg_i', 0.1, 1]],
-                'alpha': ['randint', ['alpha', 1, 32]]
+                'reg_i': ['uniform', ['reg_i', 0.1, 1]]
+            }
+        })
+        return Option(opt)
+
+
+class W2vOption(AlgoOption):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def get_default_option(self):
+        opt = super().get_default_option()
+        opt.update({
+            'evaluation_on_learning': False,
+            'save_best': False,
+            'period': 10,
+
+            'num_workers': 1,
+            'num_iters': 3,
+            'd': 20,
+            'window': 5,
+            'min_count': 5,
+            'sample': 0.001,
+
+            'lr': 0.025,
+            'min_lr': 0.0001,
+            'batch_size': -1,
+            'early_stopping_rounds': 5,
+
+            'random_seed': 0,
+            'num_negative_samples': 5,
+
+            'model_path': '',
+            'data_opt': {}
+        })
+        return Option(opt)
+
+    def get_default_optimize_option(self):
+        """Optimization Options for W2V
+        """
+        #
+        opt = super().get_default_optimize_option()
+        opt.update({
+            'loss': 'prloss',
+            'max_trials': 100,
+            'min_trials': 0,
+            'deployment': True,
+            'start_with_default_parameters': True,
+            'space': {
+                'd': ['randint', ['d', 10, 30]],
+                'window': ['randint', ['window', 2, 8]],
+                'num_negative_samples': ['randint', ['alpha', 1, 12]]
             }
         })
         return Option(opt)

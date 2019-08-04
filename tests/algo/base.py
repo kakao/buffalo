@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import time
 import unittest
 
 from buffalo.misc import aux
@@ -61,6 +62,13 @@ class TestBase(unittest.TestCase):
                         uid, iid = uids[uid], iids[iid]
                         fout.write(f'{uid} {iid} {r}\n')
         cls.ml_20m = './ml-20m/'
+        if not os.path.isfile('./text8/main'):
+            with open('./text8/text8') as fin:
+                words = fin.readline().strip().split()
+                with open('./text8/main', 'w') as fout:
+                    for i in range(0, len(words), 1000):
+                        fout.write('%s\n' % ' '.join(words[i:i + 1000]))
+        cls.text8 = './text8/'
         cls.temp_files = []
 
     @classmethod
@@ -123,13 +131,11 @@ class TestBase(unittest.TestCase):
         c = cls(opt, data_opt=data_opt)
         c.initialize()
         c.train()
-        c.data.build_idmaps()
         self.assertTrue(len(c.topk_recommendation('1', 10)['1']), 10)
-        c.fast_similar(True)
-        ret_a = c.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        ret_a = [x for x, _ in c.most_similar('Star_Wars_(1977)')]
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
-        c.fast_similar(False)
-        ret_b = c.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        c.normalize()
+        ret_b = [x for x, _ in c.most_similar('Star_Wars_(1977)')]
         self.assertIn('Return_of_the_Jedi_(1983)', ret_b)
         self.assertEqual(ret_a, ret_b)
 
@@ -160,12 +166,12 @@ class TestBase(unittest.TestCase):
         c = cls(opt, data_opt=data_opt)
         c.initialize()
         c.train()
-        ret_a = c.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        ret_a = [x for x, _ in c.most_similar('Star_Wars_(1977)')]
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
         c.save('model.bin')
         c.load('model.bin')
         os.remove('model.bin')
-        ret_a = c.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        ret_a = [x for x, _ in c.most_similar('Star_Wars_(1977)')]
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
 
     def _test9_compact_serialization(self, cls, opt):
@@ -180,14 +186,42 @@ class TestBase(unittest.TestCase):
         c = cls(opt, data_opt=data_opt)
         c.initialize()
         c.train()
-        ret_a = c.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        ret_a = [x for x, _ in c.most_similar('Star_Wars_(1977)')]
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
         c.save('model.bin', with_userid_map=False)
         c = cls(opt)
         c.load('model.bin', data_fields=['Q', '_idmanager'])
-        ret_a = c.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        ret_a = [x for x, _ in c.most_similar('Star_Wars_(1977)')]
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
         self.assertFalse(hasattr(c, 'P'))
-        c.fast_similar(True)
-        ret_a = c.most_similar('Star_Wars_(1977)', 10)['Star_Wars_(1977)']
+        c.normalize(group='item')
+        ret_a = [x for x, _ in c.most_similar('Star_Wars_(1977)')]
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
+
+    def _test10_fast_most_similar(self, cls, opt):
+        set_log_level(1)
+
+        data_opt = MatrixMarketOptions().get_default_option()
+        data_opt.input.main = self.ml_100k + 'main'
+        data_opt.input.uid = self.ml_100k + 'uid'
+        data_opt.input.iid = self.ml_100k + 'iid'
+        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
+
+        c = cls(opt, data_opt=data_opt)
+        c.initialize()
+        c.train()
+
+        keys = [x for x, _ in c.most_similar('Star_Wars_(1977)', 10)]
+        start_t = time.time()
+        for i in range(100):
+            for key in keys:
+                _ = c.most_similar(key)
+        elapsed_a = time.time() - start_t
+
+        c.normalize(group='item')
+        start_t = time.time()
+        for i in range(100):
+            for key in keys:
+                _ = c.most_similar(key)
+        elapsed_b = time.time() - start_t
+        self.assertTrue(elapsed_a > elapsed_b)
