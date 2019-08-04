@@ -170,11 +170,7 @@ class TestBase(unittest.TestCase):
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
         c.save('model.bin')
         c.load('model.bin')
-<<<<<<< HEAD
-        # os.remove('model.bin')
-=======
         os.remove('model.bin')
->>>>>>> 553c8daa2464898d374bc6590b5ac5d2ea14fb35
         ret_a = [x for x, _ in c.most_similar('Star_Wars_(1977)')]
         self.assertIn('Return_of_the_Jedi_(1983)', ret_a)
 
