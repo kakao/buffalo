@@ -69,6 +69,11 @@ class TestALS(TestBase):
         opt.validation = aux.Option({'topk': 10})
         self._test9_compact_serialization(ALS, opt)
 
+    def test10_fast_most_similar(self):
+        opt = AlsOption().get_default_option()
+        opt.d = 5
+        opt.validation = aux.Option({'topk': 10})
+        self._test10_fast_most_similar(ALS, opt)
 
 if __name__ == '__main__':
     unittest.main()

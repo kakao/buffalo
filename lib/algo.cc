@@ -37,3 +37,9 @@ void Algorithm::decouple(Map<MatrixXf>& mat, float** data, int& rows, int& cols)
     rows = mat.rows();
     cols = mat.cols();
 }
+
+void Algorithm::decouple(Map<FactorTypeRowMajor>& mat, float** data, int& rows, int& cols) {
+    (*data) = mat.data();
+    rows = mat.rows();
+    cols = mat.cols();
+}

@@ -7,6 +7,7 @@ import pickle
 import struct
 import logging
 import datetime
+from contextlib import suppress
 
 import numpy as np
 import tensorflow as tf
@@ -27,11 +28,9 @@ class Algo(abc.ABC):
                                       'userid_mapped': False, 'itemid_mapped': False})
 
     def __del__(self):
-        for path in self.temporary_files:
-            try:
+        with suppress(Exception):
+            for path in self.temporary_files:
                 os.remove(path)
-            except Exception as e:
-                self.logger.warning('Cannot remove temporary file: %s, Error: %s' % (path, e))
 
     def get_option(self, opt_path) -> (aux.Option, str):
         if isinstance(opt_path, (dict, aux.Option)):
@@ -42,9 +41,13 @@ class Algo(abc.ABC):
         self.is_valid_option(opt)
         return (aux.Option(opt), opt_path)
 
-    def normalize(self, feat):
+    def _normalize(self, feat):
         feat = feat / np.sqrt((feat ** 2).sum(-1) + 1e-8)[..., np.newaxis]
         return feat
+
+    @abc.abstractmethod
+    def normalize(self, group='item'):
+        raise NotImplemented
 
     def topk_recommendation(self, keys, topk) -> dict:
         """Return TopK recommendation for each users(keys)
@@ -61,18 +64,51 @@ class Algo(abc.ABC):
         return {self._idmanager.userids[k]: [self._idmanager.itemids[v] for v in vv]
                 for k, vv in topks}
 
-    def most_similar(self, keys, topk) -> dict:
-        """Return Most similar items for each items(keys)
+    def most_similar(self, key, topk=10, group='item'):
+        if group == 'item':
+            if not self._idmanager.itemid_mapped:
+                self.build_itemid_map()
+            return self.most_similar_item(key, topk)
+        return []
+
+    def _get_most_similar_item(self, col, topk, Factor, nrz):
+        if isinstance(col, np.ndarray):
+            q = col
+        else:
+            topk += 1
+            q = Factor[col]
+        if nrz:
+            dot = q.dot(Factor.T)
+            topks = np.argsort(dot)[-topk:][::-1]
+        else:
+            dot = q.dot(Factor.T)
+            dot = dot / (np.linalg.norm(q) * np.linalg.norm(Factor, axis=1))
+            topks = np.argsort(dot)[-topk:][::-1]
+        scores = dot[topks]
+        return topks, scores
+
+    def most_similar_item(self, key, topk=10):
+        """Return most similar items for key
         """
-        if not isinstance(keys, list):
-            keys = [keys]
-        if not self._idmanager.itemid_mapped:
-            self.build_itemid_map()
-        cols = [self._idmanager.itemid_map[k] for k in keys
-                if k in self._idmanager.itemid_map]
-        topks = self._get_most_similar(cols, topk)
-        return {self._idmanager.itemids[k]: [self._idmanager.itemids[v] for v in vv]
-                for k, vv in topks}
+        is_vector = False
+        if isinstance(key, np.ndarray):
+            f = key
+            is_vector = True
+        else:
+            if not self._idmanager.itemid_mapped:
+                self.build_itemid_map()
+            col = self._idmanager.itemid_map.get(key)
+            if not col:
+                return []
+            f = col
+        topks, scores = self._get_most_similar_item(f, topk + 1)
+        if is_vector:
+            return [(self._idmanager.itemids[k], v)
+                    for (k, v) in zip(topks, scores)]
+        else:
+            return [(self._idmanager.itemids[k], v)
+                    for (k, v) in zip(topks, scores)
+                    if k != f]
 
     def build_itemid_map(self):
         idmap = self.data.get_group('idmap')
@@ -97,6 +133,37 @@ class Algo(abc.ABC):
             self._idmanager.userid_map = {v: idx
                                           for idx, v in enumerate(self._idmanager.userids)}
         self._idmanager.userid_mapped = True
+
+    def get_feature(self, name, group='item'):
+        index = None
+        if group == 'item':
+            if not self._idmanager.itemid_mapped:
+                self.build_itemid_map()
+            index = self._idmanager.itemid_map.get(name)
+            if not index:
+                return None
+        elif group == 'user':
+            if not self._idmanager.userid_mapped:
+                self.build_userid_map()
+            index = self._idmanager.userid_map.get(name)
+            if not index:
+                return None
+        return self._get_feature(index, group)
+
+    @abc.abstractmethod
+    def _get_feature(self, index, group='item'):
+        raise NotImplemented
+
+    def get_weighted_feature(self, weights, group='item', min_length=1):
+        if isinstance(weights, dict):
+            feat = [(self.get_feature(k), w) for k, w in weights.items()]
+            feat = [f * w for f, w in feat if f is not None]
+        elif isinstance(weights, list):
+            feat = [self.get_feature(k) for k, w in weights]
+        if len(feat) < min_length:
+            return None
+        feat = np.array(feat, dtype=np.float64).mean(axis=0)
+        return (feat / np.linalg.norm(feat)).astype(np.float32)
 
 
 class Serializable(abc.ABC):
