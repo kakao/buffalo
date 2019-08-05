@@ -45,12 +45,12 @@ bool CALS::parse_option(string opt_path) {
     return ok;
 }
 
-void CALS::initialize_model(Map<MatrixXf>& _P, Map<MatrixXf>& _Q) {
+void CALS::initialize_model(Map<FactorTypeRowMajor>& _P, Map<FactorTypeRowMajor>& _Q) {
     decouple(_P, &P_data_, P_rows_, P_cols_);
     decouple(_Q, &Q_data_, Q_rows_, Q_cols_);
 
-    Map<MatrixXf> P(P_data_, P_rows_, P_cols_);
-    Map<MatrixXf> Q(Q_data_, Q_rows_, Q_cols_);
+    Map<FactorTypeRowMajor> P(P_data_, P_rows_, P_cols_);
+    Map<FactorTypeRowMajor> Q(Q_data_, Q_rows_, Q_cols_);
 
     DEBUG("P({} x {}) Q({} x {}) setted", P.rows(), P.cols(), Q.rows(), Q.cols());
 }
@@ -58,8 +58,8 @@ void CALS::initialize_model(Map<MatrixXf>& _P, Map<MatrixXf>& _Q) {
 
 void CALS::precompute(int axis)
 {
-    Map<MatrixXf> Q(Q_data_, Q_rows_, Q_cols_);   // Q = Q.transpose();
-    Map<MatrixXf> P(P_data_, P_rows_, P_cols_);   // P = P.transpose();
+    Map<FactorTypeRowMajor> Q(Q_data_, Q_rows_, Q_cols_);   // Q = Q.transpose();
+    Map<FactorTypeRowMajor> P(P_data_, P_rows_, P_cols_);   // P = P.transpose();
     if (axis == 0) { // rowwise
         FF_ = Q.transpose() * Q;
     } else  { // colwise
@@ -92,14 +92,21 @@ double CALS::partial_update(
         Q_data = P_data_; Q_rows = P_rows_; Q_cols = P_cols_;
     }
 
-    Map<MatrixXf> P(P_data, P_rows, P_cols),
-                  Q(Q_data, Q_rows, Q_cols);
+    Map<FactorTypeRowMajor> P(P_data, P_rows, P_cols),
+                            Q(Q_data, Q_rows, Q_cols);
 
     int D = opt_["d"].int_value();
+    int num_iteration_for_cg = opt_["num_iteration_for_conjugate_gradient"].int_value();
+    if (num_iteration_for_cg == -1) {
+        // NOTE: According to Eigen docs, the default number of iteration for conjugate gradient decent is twice times number of columns.
+        num_iteration_for_cg = (int)(max(int(sqrt(D)), 3));
+    }
     int num_workers = opt_["num_workers"].int_value();
     bool adaptive_reg = opt_["adaptive_reg"].bool_value();
     bool evaluation_on_learning = opt_["evaluation_on_learning"].bool_value();
+    bool use_conjugate_gradient = opt_["use_conjugate_gradient"].bool_value();
     float alpha = opt_["alpha"].number_value();
+    ConjugateGradient<FactorTypeRowMajor, Lower|Upper> cg[num_workers];
 
     vector<float> errs(num_workers, 0.0);
     int end_loop = next_x - start_x;
@@ -120,10 +127,10 @@ double CALS::partial_update(
                 continue;
             }
 
-            FactorType FiF(D, D); FiF.setZero();
-            FactorType m(D, D); m.setZero();
-            FactorType Fs(data_size, D);
-            FactorType Fs2(data_size, D);
+            FactorTypeRowMajor FiF(D, D); FiF.setZero();
+            FactorTypeRowMajor m(D, D); m.setZero();
+            FactorTypeRowMajor Fs(data_size, D);
+            FactorTypeRowMajor Fs2(data_size, D);
 
             Matrix<float, Dynamic, 1> Fxy;
             Fxy.resize(D, 1);
@@ -141,7 +148,13 @@ double CALS::partial_update(
             for (int d=0; d < D; ++d)
                 m(d, d) += (reg * ada_reg);
 
-            P.row(u).noalias() = m.ldlt().solve(Fxy);
+            if (use_conjugate_gradient) {
+                cg[worker_id].setMaxIterations(num_iteration_for_cg).compute(m);
+                P.row(u).noalias() = cg[worker_id].solve(Fxy);
+            }
+            else{
+                P.row(u).noalias() = m.ldlt().solve(Fxy);
+            }
 
             if (evaluation_on_learning and axis == 1) {  // for only on item side
                 for (int64_t it=beg; it < end; ++it) {

@@ -23,8 +23,8 @@ public:
     bool parse_option(string out_path);
 
     void initialize_model(
-            Map<MatrixXf>& P,
-            Map<MatrixXf>& Q);
+            Map<FactorTypeRowMajor>& P,
+            Map<FactorTypeRowMajor>& Q);
     void precompute(int axis);
     double partial_update(int start_x,
                           int next_x,

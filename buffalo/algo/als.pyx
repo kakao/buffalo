@@ -10,7 +10,7 @@ import cython
 from libcpp cimport bool
 from libc.stdint cimport int64_t
 from libcpp.string cimport string
-from eigency.core cimport MatrixXf, Map, VectorXi, VectorXf
+from eigency.core cimport MatrixXf, Map, VectorXi, VectorXf, FlattenedMapWithOrder, Matrix, RowMajor, Dynamic
 
 import numpy as np
 cimport numpy as np
@@ -31,8 +31,8 @@ cdef extern from "buffalo/algo_impl/als/als.hpp" namespace "als":
     cdef cppclass CALS:
         void release() nogil except +
         bool init(string) nogil except +
-        void initialize_model(Map[MatrixXf]&,
-                              Map[MatrixXf]&) nogil except +
+        void initialize_model(FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor]&,
+                              FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor]&) nogil except +
         void precompute(int) nogil except +
         double partial_update(int,
                               int,
@@ -59,8 +59,8 @@ cdef class PyALS:
     def initialize_model(self,
                     np.ndarray[np.float32_t, ndim=2] P,
                     np.ndarray[np.float32_t, ndim=2] Q):
-        self.obj.initialize_model(Map[MatrixXf](P),
-                                  Map[MatrixXf](Q))
+        self.obj.initialize_model(FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor](P),
+                                  FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor](Q))
 
     def precompute(self, axis):
         self.obj.precompute(axis)
@@ -138,9 +138,11 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
         self.P = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
-                                         size=(header['num_users'], self.opt.d)).astype("float32"), order='F')
+                                         size=(header['num_users'], self.opt.d)).astype("float32"),
+                        order='C')
         self.Q = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
-                                         size=(header['num_items'], self.opt.d)).astype("float32"), order='F')
+                                         size=(header['num_items'], self.opt.d)).astype("float32"),
+                        order='C')
         self.obj.initialize_model(self.P, self.Q)
 
     def _get_topk_recommendation(self, rows, topk):
@@ -191,8 +193,8 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
         for i in range(self.opt.num_iters):
             start_t = time.time()
             self._iterate(buf, group='rowwise')
-            train_t = time.time() - start_t
             err = self._iterate(buf, group='colwise')
+            train_t = time.time() - start_t
             rmse = (err / self.data.get_header()['num_nnz']) ** 0.5
             metrics = {'train_loss': rmse}
             if self.opt.validation and self.opt.evaluation_on_learning and self.periodical(self.opt.evaluation_period, i):
@@ -203,7 +205,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
                 self.logger.info(f'Validation: {val_str} Elased {vali_t:0.3f}')
                 metrics.update({'val_%s' % k: v
                                 for k, v in self.validation_result.items()})
-            self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, time.time() - start_t))
+            self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, train_t))
             self.update_tensorboard_data(metrics)
             if self.opt.save_best and best_loss > rmse and self.periodical(self.opt.save_period, i):
                 best_loss = rmse
