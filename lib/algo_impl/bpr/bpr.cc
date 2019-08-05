@@ -3,23 +3,65 @@
 #include <fstream>
 #include <iostream>
 #include <streambuf>
+#include <sys/time.h>
 
 #include "json11.hpp"
 #include "buffalo/misc/log.hpp"
 #include "buffalo/algo_impl/bpr/bpr.hpp"
 
 
-const float EXPLB = -20.0;
-const float EXPUB = 20.0;
-const float FEPS = 1e-10;
-
+static const float FEPS = 1e-10;
+static const int MAX_EXP = 6;
 
 namespace bpr {
+
+struct job_t
+{
+    int size;
+    double alpha;
+    vector<vector<int>> samples;
+
+    job_t() : size(0), alpha(0.0)
+    {
+    }
+
+    void add(const vector<int>& sample)
+    {
+        samples.push_back(sample);
+        size += (int)sample.size();
+    }
+
+    int total_samples()
+    {
+        return size;
+    }
+};
+
+
+struct progress_t
+{
+    int num_sents;
+    int num_processed_samples;
+    int num_total_samples;
+    double loss;
+    progress_t(int a, int b, int c) :
+        num_sents(a),
+        num_processed_samples(b),
+        num_total_samples(c) {
+    }
+
+    progress_t(int a, int b, int c, double l) :
+        num_sents(a),
+        num_processed_samples(b),
+        num_total_samples(c),
+        loss(l) {
+    }
+};
 
 
 CBPRMF::CBPRMF()
 {
-
+    build_exp_table();
 }
 
 CBPRMF::~CBPRMF()
@@ -65,9 +107,29 @@ bool CBPRMF::parse_option(string opt_path) {
     return ok;
 }
 
-void CBPRMF::set_factors(
+void CBPRMF::build_exp_table()
+{
+    for (int i=0; i < EXP_TABLE_SIZE; ++i) {
+        exp_table_[i] = (float)exp((i / (float)EXP_TABLE_SIZE * 2 - 1) * MAX_EXP);
+        exp_table_[i] = 1.0 / (exp_table_[i] + 1);
+    }
+}
+
+void CBPRMF::launch_workers()
+{
+    int num_workers = opt_["num_workers"].int_value();
+    workers_.clear();
+    for (int i=0; i < num_workers; ++i) {
+        workers_.emplace_back(thread(&CBPRMF::worker, this, i));
+    }
+    progress_manager_ = new thread(&CBPRMF::progress_manager, this);
+}
+
+void CBPRMF::initialize_model(
         Map<MatrixXf>& _P,
-        Map<MatrixXf>& _Q, Map<MatrixXf>& _Qb) 
+        Map<MatrixXf>& _Q,
+        Map<MatrixXf>& _Qb,
+        int64_t num_total_samples) 
 {
     int one = 1;
     decouple(_P, &P_data_, P_rows_, P_cols_);
@@ -91,7 +153,9 @@ void CBPRMF::set_factors(
     DEBUG("Optimizer({}).", optimizer_);
 
     iters_ = 0;
-    total_samples_ = 0;
+
+    int num_iters = opt_["num_iters"].int_value();
+    total_processed_ = (double)num_total_samples * num_iters;
 }
 
 void CBPRMF::initialize_adam_optimizer()
@@ -142,6 +206,54 @@ void CBPRMF::set_cumulative_table(int64_t* cum_table, int size)
 }
 
 
+void CBPRMF::progress_manager()
+{
+    struct timeval start_time, end_time;
+    gettimeofday(&start_time, NULL);
+
+    double alpha = opt_["lr"].number_value();
+    double min_alpha = opt_["min_lr"].number_value();
+    lr_ = alpha;
+    double loss = 0.0;
+
+    long long total_processed_samples = 0;
+    long long processed_samples = 0;
+    const double every_secs = 5.0;
+    while(true)
+    {
+        progress_t p = progress_queue_.pop();
+        if(p.num_sents == -1 && p.num_processed_samples == -1)
+            break;
+
+        total_processed_samples += p.num_total_samples;
+        processed_samples += p.num_processed_samples;
+        loss += p.loss;
+
+        double progress = total_processed_samples / total_processed_;
+        double new_alpha = alpha - (alpha - min_alpha) * progress;
+        new_alpha = max(new_alpha, min_alpha);
+        lr_ = new_alpha;
+
+        gettimeofday(&end_time, NULL);
+        double elapsed = ((end_time.tv_sec  - start_time.tv_sec) * 1000000u + end_time.tv_usec - start_time.tv_usec) / 1.e6;
+        if (elapsed >= every_secs) {
+            loss /= processed_samples;
+            int sps = processed_samples / every_secs;
+            if (optimizer_ == "adam") {
+                INFO("Progress({:0.2f}{}): TrainingLoss({}) {} samples/s",
+                    progress * 100.0, "%", loss, sps);
+            }
+            else {
+                INFO("Progress({:0.2f}{}): TrainingLoss({}) Decayed learning rate {:0.6f}, {} samples/s",
+                    progress * 100.0, "%", loss, lr_, sps);
+            }
+            loss = 0.0;
+            processed_samples = 0;
+            gettimeofday(&start_time, NULL);
+        }
+    }
+}
+
 int CBPRMF::get_negative_sample(unordered_set<int>& seen)
 {
     uniform_int_distribution<int64_t> rng(0, cum_table_[cum_table_size_ - 1] - 1);
@@ -153,8 +265,7 @@ int CBPRMF::get_negative_sample(unordered_set<int>& seen)
     }
 }
 
-
-double CBPRMF::partial_update(
+void CBPRMF::add_jobs(
         int start_x,
         int next_x,
         int64_t* indptr,
@@ -162,15 +273,61 @@ double CBPRMF::partial_update(
 {
     if( (next_x - start_x) == 0) {
         WARN0("No data to process");
-        return 0.0;
+        return;
     }
 
+    int batch_size = opt_["batch_size"].int_value();
+    if (batch_size < 0)
+        batch_size = 10000;
 
+    job_t job;
+    int job_size = 0;
+
+    int end_loop = next_x - start_x;
+    const int64_t shifted = start_x == 0 ? 0 : indptr[start_x - 1];
+    vector<int> S;
+    for (int i=0; i < end_loop; ++i)
+    {
+        int x = start_x + i;
+        const int u = x;
+        int64_t beg = x == 0 ? 0 : indptr[x - 1];
+        int64_t end = indptr[x];
+        int64_t data_size = end - beg;
+        if (data_size == 0) {
+            TRACE("No data exists for {}", u);
+            continue;
+        }
+
+        S.push_back(u);
+        for (int64_t idx=0, it = beg; it < end; ++it, ++idx)
+            S.push_back(positives[it - shifted]);
+
+        if (data_size + job_size <= batch_size) {
+            job.add(S);
+            job_size += (int)S.size();
+        } else {
+            job.alpha = lr_;
+            job_queue_.push(job);
+            job = job_t();
+            job.add(S);
+            job_size = (int)S.size();
+        }
+        S.clear();
+	}
+
+    if (job.size) {
+        job.alpha = lr_;
+        job_queue_.push(job);
+    }
+}
+
+
+void CBPRMF::worker(int worker_id)
+{
     Map<MatrixXf> P(P_data_, P_rows_, P_cols_),
                   Q(Q_data_, Q_rows_, Q_cols_),
                   Qb(Qb_data_, Q_rows_, 1);
 
-    int num_workers = opt_["num_workers"].int_value();
     bool use_bias = opt_["use_bias"].bool_value();
     bool update_i = opt_["update_i"].bool_value();
     bool update_j = opt_["update_j"].bool_value();
@@ -181,41 +338,23 @@ double CBPRMF::partial_update(
     double reg_b = opt_["reg_b"].number_value();
 
     int num_negative_samples = opt_["num_negative_samples"].int_value();
-    // bool evaluation_on_learning = opt_["evaluation_on_learning"].bool_value();
 
-    total_samples_ += positives.rows() * num_negative_samples;
-
-    vector<float> errs(num_workers, 0.0);
-    int end_loop = next_x - start_x;
-    const int64_t shifted = start_x == 0 ? 0 : indptr[start_x - 1];
     bool per_coordinate_normalize = opt_["per_coordinate_normalize"].bool_value();
-    #pragma omp parallel
+    while(true)
     {
-        // diffent seed for each thread and each iterations
-        #pragma omp for schedule(static)
-        for (int i=0; i < end_loop; ++i)
+        job_t job = job_queue_.pop();
+        int processed_samples = 0, total_samples = job.size;
+        if(job.size == -1)
+            break;
+
+        double alpha = job.alpha;
+        for (const auto& _seen : job.samples)
         {
-            int x = start_x + i;
-            const int u = x;
-            int64_t beg = x == 0 ? 0 : indptr[x - 1];
-            int64_t end = indptr[x];
-            int64_t data_size = end - beg;
-            if (data_size == 0) {
-                TRACE("No data exists for {}", u);
-                continue;
-            }
-
-            unordered_set<int> seen;
-            for (int64_t idx=0, it = beg; it < end; ++it, ++idx)
-            {
-                const int& pos = positives[it - shifted];
-                seen.insert(pos);
-            }
-
+            const int u = _seen[0];
+            unordered_set<int> seen(_seen.begin() + 1, _seen.end());
             for(const auto pos : seen)
             {
-
-                for(int64_t it2=0; it2 < num_negative_samples; ++it2)
+                for(int i=0; i < num_negative_samples; ++i)
                 {
                     int neg = get_negative_sample(seen);
 
@@ -223,10 +362,17 @@ double CBPRMF::partial_update(
                     if (use_bias)
                         x_uij += (Qb(pos, 0) - Qb(neg, 0)); 
 
-                    // TODO: precompute exp table may be helpful
-                    x_uij = max(EXPLB, x_uij);
-                    x_uij = min(EXPUB, x_uij);
-                    float logit = 1.0 / (1.0 + exp(x_uij));
+                    float logit = 0.0;
+                    if (MAX_EXP < x_uij) {
+                        logit = 0.0;
+                    }
+                    else if (x_uij < -MAX_EXP) {
+                        logit = 1.0;
+                    }
+                    else {
+                        // get 1.0 - logit(f)
+                        logit = exp_table_[(int)((x_uij + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))];
+                    }
 
                     FactorType item_deriv; 
                     if (update_i or update_j)
@@ -255,49 +401,34 @@ double CBPRMF::partial_update(
                     } else { // sgd
                         auto g = logit * (Q.row(pos) - Q.row(neg)) - reg_u * P.row(u);
                         if (update_i) {
-                            Q.row(pos) += lr_ * (item_deriv - reg_i * Q.row(pos));
+                            Q.row(pos) += alpha * (item_deriv - reg_i * Q.row(pos));
                             if (use_bias)
                                 Qb(pos, 0) += (logit - reg_b * Qb(pos, 0));
                         }
 
                         if (update_j) {
-                            Q.row(neg) -= lr_ * (item_deriv - reg_j * Q.row(neg));
+                            Q.row(neg) -= alpha * (item_deriv - reg_j * Q.row(neg));
                             if (use_bias)
                                 Qb(pos, 0) -= (logit - reg_b * Qb(neg, 0));
                         }
 
-                        P.row(u) += lr_ * g;
+                        P.row(u) += alpha * g;
+                    }
+                }
+
+                if (optimizer_ == "adam" and per_coordinate_normalize) {
+                    P_samples_per_coordinates_[u] += 1;
+                    {
+                        #pragma omp atomic
+                        Q_samples_per_coordinates_[pos] += 1;
                     }
                 }
             }
+            processed_samples += (int)_seen.size() - 1;
         }
-    }
-
-	if (optimizer_ == "adam" and per_coordinate_normalize) {
-		for (int i=0; i < end_loop; ++i)
-		{
-			int x = start_x + i;
-			const int u = x;
-			int64_t beg = x == 0 ? 0 : indptr[x - 1];
-			int64_t end = indptr[x];
-			int64_t data_size = end - beg;
-			if (data_size == 0) {
-				continue;
-			}
-
-			for (int64_t idx=0, it = beg; it < end; ++it, ++idx)
-			{
-				const int& pos = positives[it - shifted];
-
-				for(int it2=0; it2 < num_negative_samples; ++it2)
-				{
-					P_samples_per_coordinates_[u] += 1;
-					Q_samples_per_coordinates_[pos] += 1;
-				}
-			}
-		}
+        progress_queue_.push(
+                progress_t((int)job.samples.size(), processed_samples, total_samples, 0.0));
 	}
-    return 0.0;
 }
 
 double CBPRMF::distance(size_t p, size_t q)
@@ -340,7 +471,6 @@ void CBPRMF::update_adam(FactorType& grad, FactorType& momentum, FactorType& vel
     FactorType v_hat = velocity.row(i) / (1.0 - pow(beta2, iters_ + 1));
     grad.row(i).array() = m_hat.array() / (v_hat.array().sqrt() + FEPS);
 }
-
 
 void CBPRMF::update_parameters()
 {
@@ -391,19 +521,31 @@ void CBPRMF::update_parameters()
             P_samples_per_coordinates_.assign(P_rows_, 0);
             Q_samples_per_coordinates_.assign(Q_rows_, 0);
         }
-    } else {
-        double decay = opt_["lr_decay"].number_value();
-        if (decay > 0.0) {
-            double lr = lr_ * decay;
-            lr = max(opt_["min_lr"].number_value(), lr);
-            lr = max(lr, 0.000001);
-            DEBUG("Leraning rate going down from {} to {}", lr_, lr);
-            lr_ = lr;
-        }
+    } else { // sgd
     }
 
     iters_ += 1;
-    total_samples_ = 0;  // not good flow..
 }
+
+double CBPRMF::join()
+{
+    int num_workers = opt_["num_workers"].int_value();
+    for (int i=0; i < num_workers; ++i) {
+        job_t job;
+        job.size = -1;
+        job_queue_.push(job);
+    }
+
+    for (auto& t : workers_) {
+        t.join();
+    }
+    progress_queue_.push(progress_t(-1, -1, -1));
+    progress_manager_->join();
+    delete progress_manager_;
+    progress_manager_ = nullptr;
+    workers_.clear();
+    return 0.0;
+}
+
 
 }
