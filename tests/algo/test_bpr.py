@@ -44,10 +44,11 @@ class TestBPRMF(TestBase):
         opt = BprmfOption().get_default_option()
         opt.d = 5
         opt.num_workers = 4
-        opt.num_iters = 100
-        opt.lr = 0.001
+        opt.num_iters = 500
         opt.random_seed = 7
         opt.validation = aux.Option({'topk': 10})
+        opt.tensorboard = aux.Option({'root': './tb',
+                                      'name': 'bpr'})
 
         self._test5_validation(BPRMF, opt, ndcg=0.03, map=0.02)
 

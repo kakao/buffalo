@@ -31,17 +31,20 @@ cdef extern from "buffalo/algo_impl/bpr/bpr.hpp" namespace "bpr":
     cdef cppclass CBPRMF:
         void release() nogil except +
         bool init(string) nogil except +
-        void set_factors(Map[MatrixXf]&,
-                         Map[MatrixXf]&,
-                         Map[MatrixXf]&) nogil except +
+        void initialize_model(Map[MatrixXf]&,
+                              Map[MatrixXf]&,
+                              Map[MatrixXf]&,
+                              int64_t) nogil except +
         void set_cumulative_table(int64_t*, int)
-        double partial_update(int,
-                              int,
-                              int64_t*,
-                              Map[VectorXi]&) nogil except +
+        void launch_workers()
+        void add_jobs(int,
+                      int,
+                      int64_t*,
+                      Map[VectorXi]&) nogil except +
         double compute_loss(Map[VectorXi]&,
                             Map[VectorXi]&,
                             Map[VectorXi]&) nogil except +
+        double join()
         void update_parameters()
 
 
@@ -59,13 +62,18 @@ cdef class PyBPRMF:
     def init(self, option_path):
         return self.obj.init(option_path)
 
-    def set_factors(self,
-                    np.ndarray[np.float32_t, ndim=2] P,
-                    np.ndarray[np.float32_t, ndim=2] Q,
-                    np.ndarray[np.float32_t, ndim=2] Qb):
-        self.obj.set_factors(Map[MatrixXf](P),
-                             Map[MatrixXf](Q),
-                             Map[MatrixXf](Qb))
+    def initialize_model(self,
+                         np.ndarray[np.float32_t, ndim=2] P,
+                         np.ndarray[np.float32_t, ndim=2] Q,
+                         np.ndarray[np.float32_t, ndim=2] Qb,
+                         int64_t num_total_samples):
+        self.obj.initialize_model(Map[MatrixXf](P),
+                                  Map[MatrixXf](Q),
+                                  Map[MatrixXf](Qb),
+                                  num_total_samples)
+
+    def launch_workers(self):
+        self.obj.launch_workers()
 
     def set_cumulative_table(self,
                              np.ndarray[np.int64_t, ndim=1] cum_table,
@@ -74,15 +82,15 @@ cdef class PyBPRMF:
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    def partial_update(self,
-                       int start_x,
-                       int next_x,
-                       np.ndarray[np.int64_t, ndim=1] indptr,
-                       np.ndarray[np.int32_t, ndim=1] positives):
-        return self.obj.partial_update(start_x,
-                                       next_x,
-                                       &indptr[0],
-                                       Map[VectorXi](positives))
+    def add_jobs(self,
+                 int start_x,
+                 int next_x,
+                 np.ndarray[np.int64_t, ndim=1] indptr,
+                 np.ndarray[np.int32_t, ndim=1] positives):
+        self.obj.add_jobs(start_x,
+                          next_x,
+                          &indptr[0],
+                          Map[VectorXi](positives))
 
     def compute_loss(self,
                      np.ndarray[np.int32_t, ndim=1] users,
@@ -94,6 +102,9 @@ cdef class PyBPRMF:
 
     def update_parameters(self):
         self.obj.update_parameters()
+
+    def join(self):
+        return self.obj.join()
 
 
 class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
@@ -166,7 +177,7 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
                                          size=(header['num_items'], self.opt.d)).astype("float32"), order='F')
         self.Qb = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
                                           size=(header['num_items'], 1)).astype("float32"), order='F')
-        self.obj.set_factors(self.P, self.Q, self.Qb)
+        self.obj.initialize_model(self.P, self.Q, self.Qb, header['num_nnz'])
 
     def prepare_sampling(self):
         self.logger.info('Preparing sampling ...')
@@ -243,7 +254,7 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
                 start_x, next_x, indptr, keys, vals = self.buf.get()
 
                 start_t = time.time()
-                self.obj.partial_update(start_x, next_x, indptr, keys)
+                self.obj.add_jobs(start_x, next_x, indptr, keys)
                 update_t += time.time() - start_t
                 pbar.update(sz)
             pbar.refresh()
@@ -260,6 +271,7 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
         self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
         self.sampling_loss_samples()
+        self.obj.launch_workers()
         best_loss = 987654321.0
         for i in range(self.opt.num_iters):
             start_t = time.time()
@@ -280,6 +292,8 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
             if self.opt.save_best and best_loss > loss and (not self.opt.period or (i + 1) % self.opt.period == 0):
                 best_loss = loss
                 self.save(self.model_path)
+        loss = self.obj.join()
+
         ret = {'prloss': loss}
         ret.update({'val_%s' % k: v
                     for k, v in self.validation_result.items()})

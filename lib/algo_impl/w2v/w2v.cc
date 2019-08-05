@@ -11,10 +11,8 @@
 #include "buffalo/misc/log.hpp"
 #include "buffalo/algo_impl/w2v/w2v.hpp"
 
-
 static const float EPS = 1e-8;
 static const int MAX_EXP = 6;
-
 
 namespace w2v
 {
