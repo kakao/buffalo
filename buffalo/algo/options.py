@@ -8,11 +8,18 @@ class AlgoOption(InputOptions):
 
     def get_default_option(self):
         opt = {
+            'evaluation_on_learning': True,
+            'save_best': False,
+            'evaluation_period': 1,
+            'save_period': 10,
+
+            'random_seed': 0,
         }
         return opt
 
     def get_default_optimize_option(self):
         opt = {
+            'loss': 'train_loss',
         }
         return opt
 
@@ -40,10 +47,7 @@ class AlsOption(AlgoOption):
         opt = super().get_default_option()
         opt.update({
             'adaptive_reg': False,
-            'evaluation_on_learning': True,
             'save_factors': False,
-            'save_best': False,
-            'period': 10,
 
             'd': 20,
             'num_iters': 10,
@@ -70,7 +74,7 @@ class AlsOption(AlgoOption):
         """
         opt = super().get_default_optimize_option()
         opt.update({
-            'loss': 'rmse',
+            'loss': 'train_loss',
             'max_trials': 100,
             'min_trials': 0,
             'deployment': True,
@@ -94,9 +98,7 @@ class BprmfOption(AlgoOption):
         opt = super().get_default_option()
         opt.update({
             'use_bias': True,
-            'evaluation_on_learning': True,
-            'save_best': False,
-            'period': 10,
+            'evaluation_period': 100,
 
             'num_workers': 1,
             'num_iters': 100,
@@ -117,7 +119,6 @@ class BprmfOption(AlgoOption):
             'batch_size': -1,
             'early_stopping_rounds': 5,
 
-            'random_seed': 0,
             'per_coordinate_normalize': False,
             'num_negative_samples': 1,
             'sampling_power': 0.0,
@@ -132,7 +133,7 @@ class BprmfOption(AlgoOption):
         """
         opt = super().get_default_optimize_option()
         opt.update({
-            'loss': 'prloss',
+            'loss': 'train_loss',
             'max_trials': 100,
             'min_trials': 0,
             'deployment': True,
@@ -154,8 +155,6 @@ class W2vOption(AlgoOption):
         opt = super().get_default_option()
         opt.update({
             'evaluation_on_learning': False,
-            'save_best': False,
-            'period': 10,
 
             'num_workers': 1,
             'num_iters': 3,
@@ -169,7 +168,6 @@ class W2vOption(AlgoOption):
             'batch_size': -1,
             'early_stopping_rounds': 5,
 
-            'random_seed': 0,
             'num_negative_samples': 5,
 
             'model_path': '',
@@ -183,7 +181,7 @@ class W2vOption(AlgoOption):
         #
         opt = super().get_default_optimize_option()
         opt.update({
-            'loss': 'prloss',
+            'loss': 'train_loss',
             'max_trials': 100,
             'min_trials': 0,
             'deployment': True,

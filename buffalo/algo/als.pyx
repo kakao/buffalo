@@ -193,18 +193,18 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
             self._iterate(buf, group='rowwise')
             err = self._iterate(buf, group='colwise')
             rmse = (err / self.data.get_header()['num_nnz']) ** 0.5
-            if self.opt.save_best and best_loss > rmse and (not self.opt.period or (i + 1) % self.opt.period == 0):
+            if self.opt.save_best and best_loss > rmse and (not self.opt.save_period or (i + 1) % self.opt.save_period == 0):
                 best_loss = rmse
                 self.save(self.model_path)
             self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, time.time() - start_t))
-            metrics = {'rmse': rmse}
+            metrics = {'train_loss': rmse}
             if self.opt.validation:
                 self.validation_result = self.get_validation_results()
                 self.logger.info(self.validation_result)
                 metrics.update({'val_%s' % k: v
                                 for k, v in self.validation_result.items()})
             self.update_tensorboard_data(metrics)
-        ret = {'rmse': rmse}
+        ret = {'train_loss': rmse}
         ret.update({'val_%s' % k: v
                     for k, v in self.validation_result.items()})
         self.finalize_tensorboard()

@@ -277,24 +277,26 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
             start_t = time.time()
             self._iterate()
             loss = self.compute_loss()
+            train_t = time.time() - start_t
 
-            self.logger.info('Iteration %s: PR-Loss %.3f Elapsed %.3f secs' % (i + 1, loss, time.time() - start_t))
-            metrics = {'prloss': loss}
+            metrics = {'train_loss': loss}
             if self.opt.validation and self.opt.evaluation_on_learning:
+                start_t = time.time()
                 self.validation_result = self.get_validation_results()
-                self.logger.info('Validation: ' + \
-                                 ' '.join([f'{k}:{v:0.5f}'
-                                           for k, v in self.validation_result.items()]))
+                vali_t = time.time() - star_t
+                val_str = ' '.join([f'{k}:{v:0.5f}' for k, v in self.validation_result.items()])
+                self.logger.info(f'Validation: {val_str} Elased {vali_t:0.3f}')
                 metrics.update({'val_%s' % k: v
                                 for k, v in self.validation_result.items()})
+            self.logger.info('Iteration %s: PR-Loss %.3f Elapsed %.3f secs' % (i + 1, loss, time.time() - start_t))
             self.update_tensorboard_data(metrics)
 
-            if self.opt.save_best and best_loss > loss and (not self.opt.period or (i + 1) % self.opt.period == 0):
+            if self.opt.save_best and best_loss > loss and (not self.opt.save_period or (i + 1) % self.opt.save_period == 0):
                 best_loss = loss
                 self.save(self.model_path)
         loss = self.obj.join()
 
-        ret = {'prloss': loss}
+        ret = {'train_loss': loss}
         ret.update({'val_%s' % k: v
                     for k, v in self.validation_result.items()})
         self.finalize_tensorboard()
