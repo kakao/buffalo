@@ -45,7 +45,7 @@ bool CALS::parse_option(string opt_path) {
     return ok;
 }
 
-void CALS::set_factors(Map<MatrixXf>& _P, Map<MatrixXf>& _Q) {
+void CALS::initialize_model(Map<MatrixXf>& _P, Map<MatrixXf>& _Q) {
     decouple(_P, &P_data_, P_rows_, P_cols_);
     decouple(_Q, &Q_data_, Q_rows_, Q_cols_);
 

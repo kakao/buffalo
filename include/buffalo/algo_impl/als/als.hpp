@@ -22,7 +22,7 @@ public:
     bool init(string opt_path);
     bool parse_option(string out_path);
 
-    void set_factors(
+    void initialize_model(
             Map<MatrixXf>& P,
             Map<MatrixXf>& Q);
     void precompute(int axis);

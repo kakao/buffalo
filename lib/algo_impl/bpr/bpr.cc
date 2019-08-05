@@ -547,5 +547,11 @@ double CBPRMF::join()
     return 0.0;
 }
 
+void CBPRMF::wait_until_done()
+{
+    while (job_queue_.get_size() > 0) {
+        this_thread::sleep_for(chrono::milliseconds(100));
+    }
+}
 
 }

@@ -54,6 +54,8 @@ public:
 
     void worker(int worker_id);
 
+    void wait_until_done();
+
     int get_negative_sample(unordered_set<int>& seen);
 
     double compute_loss(

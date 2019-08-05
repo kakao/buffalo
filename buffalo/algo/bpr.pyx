@@ -45,6 +45,7 @@ cdef extern from "buffalo/algo_impl/bpr/bpr.hpp" namespace "bpr":
                             Map[VectorXi]&,
                             Map[VectorXi]&) nogil except +
         double join()
+        void wait_until_done()
         void update_parameters()
 
 
@@ -105,6 +106,9 @@ cdef class PyBPRMF:
 
     def join(self):
         return self.obj.join()
+
+    def wait_until_done(self):
+        self.obj.wait_until_done()
 
 
 class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
@@ -267,11 +271,6 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
                                      self._sub_samples[2])
 
     def train(self):
-        def periodical(period, current):
-            if not period or (current + 1) % period == 0:
-                return True
-            return False
-
         rmse, self.validation_result = None, {}
         self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
@@ -281,14 +280,15 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
         for i in range(self.opt.num_iters):
             start_t = time.time()
             self._iterate()
+            self.obj.wait_until_done()
             loss = self.compute_loss()
             train_t = time.time() - start_t
 
             metrics = {'train_loss': loss}
-            if self.opt.validation and self.opt.evaluation_on_learning and periodical(self.opt.evaluation_period, i):
+            if self.opt.validation and self.opt.evaluation_on_learning and self.periodical(self.opt.evaluation_period, i):
                 start_t = time.time()
                 self.validation_result = self.get_validation_results()
-                vali_t = time.time() - star_t
+                vali_t = time.time() - start_t
                 val_str = ' '.join([f'{k}:{v:0.5f}' for k, v in self.validation_result.items()])
                 self.logger.info(f'Validation: {val_str} Elased {vali_t:0.3f}')
                 metrics.update({'val_%s' % k: v
@@ -296,7 +296,7 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
             self.logger.info('Iteration %s: PR-Loss %.3f Elapsed %.3f secs' % (i + 1, loss, time.time() - start_t))
             self.update_tensorboard_data(metrics)
 
-            if self.opt.save_best and best_loss > loss and periodical(self.opt.save_period, i):
+            if self.opt.save_best and best_loss > loss and self.periodical(self.opt.save_period, i):
                 best_loss = loss
                 self.save(self.model_path)
         loss = self.obj.join()

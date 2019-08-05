@@ -31,8 +31,8 @@ cdef extern from "buffalo/algo_impl/als/als.hpp" namespace "als":
     cdef cppclass CALS:
         void release() nogil except +
         bool init(string) nogil except +
-        void set_factors(Map[MatrixXf]&,
-                         Map[MatrixXf]&) nogil except +
+        void initialize_model(Map[MatrixXf]&,
+                              Map[MatrixXf]&) nogil except +
         void precompute(int) nogil except +
         double partial_update(int,
                               int,
@@ -56,11 +56,11 @@ cdef class PyALS:
     def init(self, option_path):
         return self.obj.init(option_path)
 
-    def set_factors(self,
+    def initialize_model(self,
                     np.ndarray[np.float32_t, ndim=2] P,
                     np.ndarray[np.float32_t, ndim=2] Q):
-        self.obj.set_factors(Map[MatrixXf](P),
-                             Map[MatrixXf](Q))
+        self.obj.initialize_model(Map[MatrixXf](P),
+                                  Map[MatrixXf](Q))
 
     def precompute(self, axis):
         self.obj.precompute(axis)
@@ -141,7 +141,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
                                          size=(header['num_users'], self.opt.d)).astype("float32"), order='F')
         self.Q = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
                                          size=(header['num_items'], self.opt.d)).astype("float32"), order='F')
-        self.obj.set_factors(self.P, self.Q)
+        self.obj.initialize_model(self.P, self.Q)
 
     def _get_topk_recommendation(self, rows, topk):
         p = self.P[rows]
@@ -191,19 +191,23 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
         for i in range(self.opt.num_iters):
             start_t = time.time()
             self._iterate(buf, group='rowwise')
+            train_t = time.time() - start_t
             err = self._iterate(buf, group='colwise')
             rmse = (err / self.data.get_header()['num_nnz']) ** 0.5
-            if self.opt.save_best and best_loss > rmse and (not self.opt.save_period or (i + 1) % self.opt.save_period == 0):
-                best_loss = rmse
-                self.save(self.model_path)
-            self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, time.time() - start_t))
             metrics = {'train_loss': rmse}
-            if self.opt.validation:
+            if self.opt.validation and self.opt.evaluation_on_learning and self.periodical(self.opt.evaluation_period, i):
+                start_t = time.time()
                 self.validation_result = self.get_validation_results()
-                self.logger.info(self.validation_result)
+                vali_t = time.time() - start_t
+                val_str = ' '.join([f'{k}:{v:0.5f}' for k, v in self.validation_result.items()])
+                self.logger.info(f'Validation: {val_str} Elased {vali_t:0.3f}')
                 metrics.update({'val_%s' % k: v
                                 for k, v in self.validation_result.items()})
+            self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, time.time() - start_t))
             self.update_tensorboard_data(metrics)
+            if self.opt.save_best and best_loss > rmse and self.periodical(self.opt.save_period, i):
+                best_loss = rmse
+                self.save(self.model_path)
         ret = {'train_loss': rmse}
         ret.update({'val_%s' % k: v
                     for k, v in self.validation_result.items()})
