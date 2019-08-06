@@ -52,7 +52,7 @@ def test(algo_name, database):
         for lib_name in ['buffalo', 'implicit']:
             data = sorted([(k, v) for k, v in results[lib_name].items()
                         if k.startswith(f)],
-                        key=lambda x: x[0])
+                        key=lambda x: (len(x[0]), x[0]))
             rows = [v for _, v in data]
             headers = ['method'] + [k for k, _ in data]
             table.append([lib_name] + rows)
