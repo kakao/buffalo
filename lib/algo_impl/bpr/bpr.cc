@@ -95,8 +95,6 @@ bool CBPRMF::init(string opt_path) {
         int num_workers = opt_["num_workers"].int_value();
         omp_set_num_threads(num_workers);
 		optimizer_ = opt_["optimizer"].string_value();
-
-        rng_.seed(opt_["random_seed"].int_value());
     }
     return ok;
 }
@@ -337,7 +335,12 @@ void CBPRMF::worker(int worker_id)
     double reg_j = opt_["reg_j"].number_value();
     double reg_b = opt_["reg_b"].number_value();
 
+    mt19937 RNG(opt_["random_seed"].int_value() + worker_id);
     int num_negative_samples = opt_["num_negative_samples"].int_value();
+    uniform_int_distribution<int64_t> rng1(0, cum_table_[cum_table_size_ - 1] - 1);
+    uniform_int_distribution<int64_t> rng2(0, Q_rows_ - 1);
+    double sample_power = opt_["sampling_power"].number_value();
+    int uniform_sampling = sample_power == 0.0 ? 1 : 0;
 
     bool per_coordinate_normalize = opt_["per_coordinate_normalize"].bool_value();
     while(true)
@@ -356,7 +359,18 @@ void CBPRMF::worker(int worker_id)
             {
                 for(int i=0; i < num_negative_samples; ++i)
                 {
-                    int neg = get_negative_sample(seen);
+                    int neg = 0;
+                    if (uniform_sampling) {
+                        neg = rng2(RNG);
+                    }
+                    else {
+                        while (true) {
+                            int64_t r = rng1(RNG);
+                            neg = (int)(lower_bound(cum_table_, cum_table_ + cum_table_size_, r) - cum_table_);
+                            if (seen.find(neg) == seen.end())
+                                break;
+                        }
+                    }
 
                     float x_uij = (P.row(u) * (Q.row(pos) - Q.row(neg)).transpose())(0, 0);
                     if (use_bias)

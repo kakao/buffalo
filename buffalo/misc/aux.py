@@ -2,10 +2,13 @@
 import os
 import abc
 import json
+import atexit
 import psutil
 import warnings
 import tempfile
 import subprocess
+
+_temporary_files = []
 
 
 class Option(dict):
@@ -90,6 +93,7 @@ class InputOptions(abc.ABC):
             str_opt = json.dumps(opt)
             tmp = tempfile.NamedTemporaryFile(mode='w', dir=opt.get('tmp_dir', '/tmp/'), delete=False)
             tmp.write(str_opt)
+            _temporary_files.append(tmp.name)
             return tmp.name
 
 
@@ -133,4 +137,12 @@ def get_temporary_file(write_mode='w'):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", ResourceWarning)
         w = tempfile.NamedTemporaryFile(mode=write_mode, delete=False)
+        _temporary_files.append(w.name)
         return w.name
+
+
+@atexit.register
+def __cleanup_tempory_files():
+    for path in _temporary_files:
+        if os.path.isfile(path):
+            os.remove(path)

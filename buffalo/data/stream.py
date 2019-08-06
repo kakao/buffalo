@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
 import warnings
-import tempfile
 import traceback
 from collections import Counter
 
@@ -183,8 +182,9 @@ class Stream(Data):
         users = db['idmap']['rows'][:]
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", ResourceWarning)
+            file_path = aux.get_temporary_file()
             with open(stream_main_path) as fin,\
-                tempfile.NamedTemporaryFile(mode='w', delete=False) as w:
+                open(file_path, 'w') as w:
                 total_index = 0
                 internal_data_type = self.opt.data.internal_data_type
                 for line_idx, data in enumerate(fin):
@@ -248,7 +248,6 @@ class Stream(Data):
                 self.logger.debug(f'Working data is created on {tmp_main}')
                 self.logger.info('Building data part...')
                 self._build_data(db, tmp_main, validation_data)
-                self.temp_files.append(tmp_main)
                 db.attrs['completed'] = 1
                 db.close()
                 self.handle = h5py.File(data_path, 'r')

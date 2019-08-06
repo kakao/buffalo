@@ -103,9 +103,10 @@ double CALS::partial_update(
     }
     int num_workers = opt_["num_workers"].int_value();
     bool adaptive_reg = opt_["adaptive_reg"].bool_value();
-    bool evaluation_on_learning = opt_["evaluation_on_learning"].bool_value();
+    bool compute_loss_on_training = opt_["compute_loss_on_training"].bool_value();
     bool use_conjugate_gradient = opt_["use_conjugate_gradient"].bool_value();
     float alpha = opt_["alpha"].number_value();
+
     ConjugateGradient<FactorTypeRowMajor, Lower|Upper> cg[num_workers];
 
     vector<float> errs(num_workers, 0.0);
@@ -156,7 +157,7 @@ double CALS::partial_update(
                 P.row(u).noalias() = m.ldlt().solve(Fxy);
             }
 
-            if (evaluation_on_learning and axis == 1) {  // for only on item side
+            if (compute_loss_on_training and axis == 1) {  // for only on item side
                 for (int64_t it=beg; it < end; ++it) {
                     const int& c = keys[it - shifted];
                     const float& v = vals[it - shifted];

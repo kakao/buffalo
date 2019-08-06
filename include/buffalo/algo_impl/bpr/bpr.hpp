@@ -89,7 +89,6 @@ private:
     string optimizer_;
     double total_processed_;
 
-    mt19937 rng_;
 
     int64_t* cum_table_;
     int cum_table_size_;

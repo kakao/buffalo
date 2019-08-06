@@ -7,7 +7,6 @@ import pickle
 import struct
 import logging
 import datetime
-from contextlib import suppress
 
 import numpy as np
 import tensorflow as tf
@@ -22,20 +21,13 @@ from buffalo.misc import aux
 
 class Algo(abc.ABC):
     def __init__(self, *args, **kwargs):
-        self.temporary_files = []
         self._idmanager = aux.Option({'userid': [], 'userid_map': {},
                                       'itemid': [], 'itemid_map': {},
                                       'userid_mapped': False, 'itemid_mapped': False})
 
-    def __del__(self):
-        with suppress(Exception):
-            for path in self.temporary_files:
-                os.remove(path)
-
     def get_option(self, opt_path) -> (aux.Option, str):
         if isinstance(opt_path, (dict, aux.Option)):
             opt_path = self.create_temporary_option_from_dict(opt_path)
-            self.temporary_files.append(opt_path)
         opt = aux.Option(opt_path)
         opt_path = opt_path
         self.is_valid_option(opt)
@@ -165,6 +157,11 @@ class Algo(abc.ABC):
         feat = np.array(feat, dtype=np.float64).mean(axis=0)
         return (feat / np.linalg.norm(feat)).astype(np.float32)
 
+    def periodical(self, period, current):
+        if not period or (current + 1) % period == 0:
+            return True
+        return False
+
 
 class Serializable(abc.ABC):
     def __init__(self, *args, **kwargs):
@@ -281,12 +278,3 @@ class TensorboardExtention(object):
         self._tb.session.close()
         self._tb = None
         tf.compat.v1.reset_default_graph()
-
-    def __del__(self):
-        if hasattr(self, '_tb_setted') and self._tb_setted:
-            tf.compat.v1.reset_default_graph()
-
-    def periodical(self, period, current):
-        if not period or (current + 1) % period == 0:
-            return True
-        return False

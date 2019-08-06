@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
 import warnings
-import tempfile
 import traceback
 
 import h5py
@@ -29,7 +28,6 @@ class MatrixMarketOptions(DataOption):
                     'max_samples': 500
                 },
                 'batch_mb': 1024,
-                'validation_p': 0.1,
                 'use_cache': False,
                 'tmp_dir': '/tmp/',
                 'path': './mm.h5py'
@@ -141,7 +139,8 @@ class MatrixMarket(Data):
         vali_lines = []
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", ResourceWarning)
-            with tempfile.NamedTemporaryFile(mode='w', delete=False) as w:
+            file_path = aux.get_temporary_file()
+            with open(file_path, 'w') as w:
                 fin = open(source_path, mode='r')
                 for _ in range(ignore_lines):
                     fin.readline()
@@ -152,6 +151,7 @@ class MatrixMarket(Data):
                     else:
                         w.write(line)
                 w.close()
+                fin.close()
                 return w.name, vali_lines
 
     def create(self) -> h5py.File:
@@ -185,7 +185,6 @@ class MatrixMarket(Data):
                 self.logger.debug(f'Working data is created on {tmp_main}')
                 self.logger.info('Building data part...')
                 self._build_data(db, tmp_main, validation_data)
-                self.temp_files.append(tmp_main)
                 db.attrs['completed'] = 1
                 db.close()
                 self.handle = h5py.File(data_path, 'r')

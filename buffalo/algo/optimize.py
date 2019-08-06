@@ -15,9 +15,6 @@ class Optimizable(object):
         self._temporary_opt_file = aux.get_temporary_file()
         self.optimize_after_callback_fn = kwargs.get('optimize_after_callback_fn')
 
-    def __del__(self):
-        os.remove(self._temporary_opt_file)
-
     def _get_space(self, options):
         spaces = {}
         for param_name, data in options.items():
@@ -75,7 +72,7 @@ class Optimizable(object):
                         self.logger.info('Saving model... to {}'.format(self.opt.model_path))
                         self.dump(self.opt.model_path)
                 if self.optimize_after_callback_fn:
-                    self.optimize_after_callback_fn(self._optimization_info)
+                    self.optimize_after_callback_fn(self)
                 pbar.update(1)
                 self.logger.debug('Params({}) Losses({})'.format(self._optimize_params, self._optimize_loss))
             tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick

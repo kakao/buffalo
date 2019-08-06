@@ -281,7 +281,7 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
             start_t = time.time()
             self._iterate()
             self.obj.wait_until_done()
-            loss = self.compute_loss()
+            loss = self.compute_loss() if self.opt.compute_loss_on_training else 0.0
             train_t = time.time() - start_t
 
             metrics = {'train_loss': loss}
