@@ -198,19 +198,20 @@ class Stream(Data):
                 _w, _c = line.strip().split()
                 if probe != _w:
                     appearances[probe] = len(chunk)
-                    for _c, cnt in Counter(chunk).items():
-                        if probe < _c:
+                    for __c, cnt in Counter(chunk).items():
+                        if probe < __c:
                             continue
                         pmi = np.log(cnt) + np.log(D) - \
-                            np.log(appearances[probe]) - np.log(appearances[_c])
+                            np.log(appearances[probe]) - np.log(appearances[__c])
                         sppmi = pmi - np.log(k)
                         if sppmi > 0:
-                            w.write(f"{probe} {_c} {sppmi}\n")
-                            w.write(f"{_c} {probe} {sppmi}\n")
+                            w.write(f"{probe} {__c} {sppmi}\n")
+                            w.write(f"{__c} {probe} {sppmi}\n")
                             nnz += 2
                     probe, chunk = _w, []
                 chunk.append(_c)
         aux.psort(w.name)
+        self.logger.info(f"convert from {working_data_path} to {w.name}")
         db.create_group("sppmi")
         db.attrs["sppmi_nnz"] = nnz
         self.logger.info(f"sppmi nnz: {nnz}")
@@ -282,6 +283,7 @@ class Stream(Data):
                                    break
                                _w, _c = train_data[i], train_data[j]
                                w_sppmi.write(f'{_w} {_c}\n')
+                               w_sppmi.write(f'{_c} {_w}\n')
                     for col, val in Counter(vali_data).items():
                         vali_lines.append(f'{user} {col} {val}')
                 if with_sppmi:
