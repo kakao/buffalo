@@ -47,6 +47,11 @@ class StreamOptions(DataOption):
                     'n': 1,  # if set sample, ignored
                     'max_samples': 500
                 },
+                'sppmi': {
+                    'enabled': True,
+                    'windows': 5,
+                    'k': 10
+                },
                 'batch_mb': 1024,
                 'use_cache': False,
                 'tmp_dir': '/tmp/',
@@ -149,18 +154,20 @@ class Stream(Data):
 
     def _build_data(self, db, working_data_path, validation_data):
         self.prepro.pre(db)
-
+        max_sz = max(db.attrs['num_users'], db.attrs['num_items'])
         if self.opt.data.internal_data_type == 'stream':
             self._build_compressed_triplets(db['rowwise'], working_data_path,
                                             num_lines=db.attrs['num_nnz'],
-                                            max_key=db.attrs['num_users'])
+                                            max_key=db.attrs['num_users'],
+                                            max_sz=max_sz)
             self.prepro.post(db['rowwise'])
             self.fill_validation_data(db, validation_data)
         elif self.opt.data.internal_data_type == 'matrix':
             aux.psort(working_data_path, key=1)
             self._build_compressed_triplets(db['rowwise'], working_data_path,
                                             num_lines=db.attrs['num_nnz'],
-                                            max_key=db.attrs['num_users'])
+                                            max_key=db.attrs['num_users'],
+                                            max_sz=max_sz)
             self.prepro.post(db['rowwise'])
 
             self.fill_validation_data(db, validation_data)
@@ -169,10 +176,47 @@ class Stream(Data):
             self._build_compressed_triplets(db['colwise'], working_data_path,
                                             num_lines=db.attrs['num_nnz'],
                                             max_key=db.attrs['num_items'],
+                                            max_sz=max_sz,
                                             switch_row_col=True)
             self.prepro.post(db['rowwise'])
 
-    def _create_working_data(self, db, stream_main_path, itemids):
+    def _build_sppmi(self, db, working_data_path, k):
+        str_to_int = {str(i + 1): i for i in range(db["num_items"])}
+        appearances = {}
+        nnz = 0
+        with open(working_data_path, "r") as fin, \
+            tempfile.NamedTemporaryFile(mode='w', delete=False) as w:
+            D = sum(1 for line in fin)
+            fin.seek(0)
+            probe, chunk = "junk", []
+            for line in fin:
+                _w, _c = line.strip().split()
+                if probe != _w:
+                    appearances[probe] = len(chunk)
+                    for (__w, __c), cnt in Counter(chunk).items():
+                        if __w < __c:
+                            continue
+                        pmi = math.log(cnt) + math.log(D) - \
+                            math.log(appearances[__w]) - math.log(appearances[__c])
+                        sppmi = pmi - math.log(k)
+                        if sppmi > 0:
+                            w.write(f"{__w} {__c} {sppmi}\n")
+                            w.write(f"{__c} {__w} {sppmi}\n")
+                            nnz += 2
+                    probe, chunk = _w, []
+                chunk.append((_w, _c))
+        aux.psort(w.name)
+        db.create_group("sppmi")
+        db.attrs["sppmi_nnz"] = nnz
+        sz = db["num_items"]
+        db["sppmi"].create_dataset("indptr", (sz,), dtype='int64', maxshape=(sz,))
+        db["sppmi"].create_dataset("key", (nnz,), dtype='int32', maxshape=(nnz,))
+        db["sppmi"].create_dataset("val", (nnz,), dtype='float32', maxshape=(nnz,))
+        self._build_compressed_triplets(db['sppmi'], w.name, num_lines=nnz, max_key=sz, max_sz=sz)
+        self.temp_files.append(w.name)
+
+    def _create_working_data(self, db, stream_main_path, itemids,
+                             with_sppmi=False, windows=5):
         vali_method = None if 'vali' not in db else db['vali'].attrs['method']
         vali_indexes, vali_n = set(), 0
         if vali_method == 'sample':
@@ -181,8 +225,11 @@ class Stream(Data):
             vali_n = db['vali'].attrs['n']
         vali_lines = []
         users = db['idmap']['rows'][:]
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", ResourceWarning)
+            if with_sppmi:
+                w_sppmi = tempfile.NamedTemporaryFile(mode='w', delete=False)
             with open(stream_main_path) as fin,\
                 tempfile.NamedTemporaryFile(mode='w', delete=False) as w:
                 total_index = 0
@@ -220,9 +267,21 @@ class Stream(Data):
                     else:
                         for col, val in Counter(train_data).items():
                             w.write(f'{user} {col} {val}\n')
+                    if with_sppmi:
+                       sz = len(train_data)
+                       for i in range(sz):
+                           beg, end = i + 1, i + windows + 1
+                           for j in range(beg, end):
+                               if j >= sz:
+                                   break
+                               _w, _c = train_data[i], train_data[j]
+                               w_sppmi.write(f'{_w} {_c}\n')
                     for col, val in Counter(vali_data).items():
                         vali_lines.append(f'{user} {col} {val}')
-                return w.name, vali_lines
+                if with_sppmi:
+                    w_sppmi.close()
+                    return w.name, vali_lines, _w.name
+                return w.name, vali_lines, None
 
     def create(self) -> h5py.File:
         stream_main_path = self.opt.input.main
@@ -242,13 +301,20 @@ class Stream(Data):
                                        {'main_path': stream_main_path,
                                         'uid_path': stream_uid_path,
                                         'iid_path': stream_iid_path})
+            _opt = self.opt.data
+            with_sppmi, windows, k = \
+                _opt.sppmi.enabled, _opt.sppmi.windows, _opt.sppmi.k
             try:
                 self.logger.info('Creating working data...')
-                tmp_main, validation_data = self._create_working_data(db, stream_main_path, itemids)
+                tmp_main, validation_data, tmp_sppmi = \
+                    self._create_working_data(db, stream_main_path, itemids, with_sppmi, windows)
                 self.logger.debug(f'Working data is created on {tmp_main}')
                 self.logger.info('Building data part...')
                 self._build_data(db, tmp_main, validation_data)
                 self.temp_files.append(tmp_main)
+                if with_sppmi:
+                    self._build_sppmi(db, tmp_sppmi, k)
+                    self.temp_files.append(tmp_sppmi)
                 db.attrs['completed'] = 1
                 db.close()
                 self.handle = h5py.File(data_path, 'r')

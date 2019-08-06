@@ -220,8 +220,10 @@ class Data(object):
         db['vali']['col'][:] = [int(c) - 1 for _, c, _ in validation_data]  # 0-based
         db['vali']['val'][:] = [self.value_prepro(float(v)) for _, _, v in validation_data]
 
-    def _build_compressed_triplets(self, db, mm_path, num_lines, max_key, data_chunk_size=1000000, switch_row_col=False):
+    def _build_compressed_triplets(self, db, mm_path, num_lines, max_key, max_sz,
+                                   data_chunk_size=1000000, switch_row_col=False):
         # NOTE: this part is the bottle-neck, can we do better?
+        str_to_int = {str(i + 1): i for i in range(max_sz)}
         with open(mm_path) as fin:
             prev_key, data_index, data_rear_index = 0, 0, 0
             chunk, data_chunk = [], []
@@ -229,8 +231,8 @@ class Data(object):
                 tkns = line.strip().split()
                 if tkns[0] == '%' or len(tkns) != 3:
                     continue
-                u, i, v = int(tkns[0]) - 1, int(tkns[1]) - 1, float(tkns[2])
-                v = self.value_prepro(v)
+                u, i = map(str_to_int.get, tkns[: 2])
+                v = self.value_prepro(float(tkns[2]))
                 if switch_row_col:
                     u, i = i, u
                 if prev_key != u:

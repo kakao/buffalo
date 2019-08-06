@@ -116,9 +116,11 @@ class MatrixMarket(Data):
     def _build_data(self, db, working_data_path, validation_data):
         aux.psort(working_data_path, key=1)
         self.prepro.pre(db)
+        max_sz = max(db.attrs["num_users"], db.attrs["num_items"])
         self._build_compressed_triplets(db['rowwise'], working_data_path,
                                         num_lines=db.attrs['num_nnz'],
-                                        max_key=db.attrs['num_users'])
+                                        max_key=db.attrs['num_users'],
+                                        max_sz=max_sz)
         self.prepro.post(db['rowwise'])
 
         self.fill_validation_data(db, validation_data)
@@ -128,6 +130,7 @@ class MatrixMarket(Data):
         self._build_compressed_triplets(db['colwise'], working_data_path,
                                         num_lines=db.attrs['num_nnz'],
                                         max_key=db.attrs['num_items'],
+                                        max_sz=max_sz,
                                         switch_row_col=True)
         self.prepro.post(db['colwise'])
 
