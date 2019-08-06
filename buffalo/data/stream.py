@@ -31,6 +31,10 @@ class StreamOptions(DataOption):
             internal_data_type: "stream" or "matrix"
                 stream: Data file treated as is(i.e. streaming data)
                 matrix: Translate data file into sparse matrix format(it lose sequential information, but more compact for data size).
+            sppmi:
+                enabled: whether generate sppmi matrix or not
+                windows: window size to set relation between word and context
+                k: sppmi shift k (serves as negative sampling size in w2v model)
     """
     def get_default_option(self) -> aux.Option:
         opt = {
@@ -50,7 +54,7 @@ class StreamOptions(DataOption):
                 'sppmi': {
                     'enabled': True,
                     'windows': 5,
-                    'k': 10
+                    'k': 1
                 },
                 'batch_mb': 1024,
                 'use_cache': False,
@@ -181,9 +185,10 @@ class Stream(Data):
             self.prepro.post(db['rowwise'])
 
     def _build_sppmi(self, db, working_data_path, k):
-        str_to_int = {str(i + 1): i for i in range(db["num_items"])}
+        self.logger.info(f"build sppmi (shift k: {k})")
         appearances = {}
         nnz = 0
+        aux.psort(working_data_path, key=1)
         with open(working_data_path, "r") as fin, \
             tempfile.NamedTemporaryFile(mode='w', delete=False) as w:
             D = sum(1 for line in fin)
@@ -193,22 +198,23 @@ class Stream(Data):
                 _w, _c = line.strip().split()
                 if probe != _w:
                     appearances[probe] = len(chunk)
-                    for (__w, __c), cnt in Counter(chunk).items():
-                        if __w < __c:
+                    for _c, cnt in Counter(chunk).items():
+                        if probe < _c:
                             continue
-                        pmi = math.log(cnt) + math.log(D) - \
-                            math.log(appearances[__w]) - math.log(appearances[__c])
-                        sppmi = pmi - math.log(k)
+                        pmi = np.log(cnt) + np.log(D) - \
+                            np.log(appearances[probe]) - np.log(appearances[_c])
+                        sppmi = pmi - np.log(k)
                         if sppmi > 0:
-                            w.write(f"{__w} {__c} {sppmi}\n")
-                            w.write(f"{__c} {__w} {sppmi}\n")
+                            w.write(f"{probe} {_c} {sppmi}\n")
+                            w.write(f"{_c} {probe} {sppmi}\n")
                             nnz += 2
                     probe, chunk = _w, []
-                chunk.append((_w, _c))
+                chunk.append(_c)
         aux.psort(w.name)
         db.create_group("sppmi")
         db.attrs["sppmi_nnz"] = nnz
-        sz = db["num_items"]
+        self.logger.info(f"sppmi nnz: {nnz}")
+        sz = db.attrs["num_items"]
         db["sppmi"].create_dataset("indptr", (sz,), dtype='int64', maxshape=(sz,))
         db["sppmi"].create_dataset("key", (nnz,), dtype='int32', maxshape=(nnz,))
         db["sppmi"].create_dataset("val", (nnz,), dtype='float32', maxshape=(nnz,))
@@ -280,7 +286,7 @@ class Stream(Data):
                         vali_lines.append(f'{user} {col} {val}')
                 if with_sppmi:
                     w_sppmi.close()
-                    return w.name, vali_lines, _w.name
+                    return w.name, vali_lines, w_sppmi.name
                 return w.name, vali_lines, None
 
     def create(self) -> h5py.File:
@@ -301,9 +307,8 @@ class Stream(Data):
                                        {'main_path': stream_main_path,
                                         'uid_path': stream_uid_path,
                                         'iid_path': stream_iid_path})
-            _opt = self.opt.data
-            with_sppmi, windows, k = \
-                _opt.sppmi.enabled, _opt.sppmi.windows, _opt.sppmi.k
+            _opt = self.opt.data.sppmi
+            with_sppmi, windows, k = _opt.enabled, _opt.windows, _opt.k
             try:
                 self.logger.info('Creating working data...')
                 tmp_main, validation_data, tmp_sppmi = \

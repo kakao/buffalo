@@ -45,7 +45,10 @@ class TestStream(unittest.TestCase):
         self.temp_files.append(opt.data.path)
         self.assertTrue(True)
         db = mm.handle
-        self.assertEqual(sorted(db.keys()), sorted(['idmap', 'rowwise', 'colwise', 'vali']))
+        if opt.data.sppmi.enabled:
+            self.assertEqual(sorted(db.keys()), sorted(['idmap', 'rowwise', 'colwise', 'vali', 'sppmi']))
+        else:
+            self.assertEqual(sorted(db.keys()), sorted(['idmap', 'rowwise', 'colwise', 'vali']))
         header = mm.get_header()
         self.assertEqual(header['num_nnz'], 9)  # due to validation samples
         self.assertEqual(header['num_users'], 3)
@@ -64,7 +67,10 @@ class TestStream(unittest.TestCase):
         mm.create()
         self.assertTrue(True)
         db = mm.handle
-        self.assertEqual(sorted(db.keys()), sorted(['idmap', 'rowwise', 'colwise', 'vali']))
+        if opt.data.sppmi.enabled:
+            self.assertEqual(sorted(db.keys()), sorted(['idmap', 'rowwise', 'colwise', 'vali', 'sppmi']))
+        else:
+            self.assertEqual(sorted(db.keys()), sorted(['idmap', 'rowwise', 'colwise', 'vali']))
         header = mm.get_header()
         self.assertEqual(header['num_nnz'], 7)  # due to validation samples
         self.assertEqual(header['num_users'], 3)
