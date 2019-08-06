@@ -15,6 +15,7 @@ This benchmark can be reproduce with main.py.
 | implicit | 38.947   | 53.3205  | 70.2035 | 56.5195 | 76.7012 | 90.9826 | 74.1561 | 92.2424 | 105.24   | 85.6067 | 138.357  | 130.04  |
 
 Buffalo is faster up to 8 times.
+![](benchmark1.png)
 
 - The number of threads
 
@@ -24,3 +25,5 @@ Buffalo is faster up to 8 times.
 | implicit | 90.0916 | 68.9974 | 59.0597 | 58.3854 | 58.1543  |
 
 This showed that Buffalo library can better utilize the CPU. 
+
+![](benchmark2.png)
