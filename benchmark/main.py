@@ -16,7 +16,7 @@ def _get_elapsed_time(algo_name, database, lib, repeat, **options):
 
 def _test(algo_name, database, lib):
     results = {}
-    repeat = 1
+    repeat = 3
     options = {'als': {'num_workers': 8,
                        'compute_loss_on_training': False,
                        'use_conjugate_gradient': True,
@@ -33,8 +33,8 @@ def _test(algo_name, database, lib):
         results[f'D={d}'] = elapsed
         print(f'D={d} {elapsed}')
 
-    opt['d'] = 40
-    for num_workers in [1, 2, 4, 8, 16]:
+    opt['d'] = 32
+    for num_workers in [1, 2, 4, 6, 12]:
         opt['num_workers'] = num_workers
         elapsed = _get_elapsed_time(algo_name, database, lib, repeat, **opt)
         results[f'T={num_workers}'] = elapsed
@@ -42,14 +42,17 @@ def _test(algo_name, database, lib):
     return results
 
 
-def test(algo_name, database):
+def test(algo_name, database, libs=['buffalo', 'implicit']):
     assert algo_name in ['als', 'bpr']
-    results = {'buffalo': _test(algo_name, database, BuffaloLib()),
-               'implicit': _test(algo_name, database, ImplicitLib())}
+    if isinstance(libs, str):
+        libs = [libs]
+    R = {'buffalo': _test(algo_name, database, BuffaloLib()),
+         'implicit': _test(algo_name, database, ImplicitLib())}
+    results = {l: R[l] for l in libs}
 
     for f in ['D', 'T']:
         table = []
-        for lib_name in ['buffalo', 'implicit']:
+        for lib_name in libs:
             data = sorted([(k, v) for k, v in results[lib_name].items()
                         if k.startswith(f)],
                         key=lambda x: (len(x[0]), x[0]))

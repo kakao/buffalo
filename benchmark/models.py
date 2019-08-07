@@ -116,3 +116,22 @@ class BuffaloLib(Benchmark):
         bpr.train()
         elapsed = time.time() - start_t
         return elapsed
+
+
+def db_to_coo(db):
+    from scipy.sparse import coo_matrix
+    V = db.attrs['num_items']
+    U = db.attrs['num_users']
+    col = db['rowwise']['key'][::]
+    data = db['rowwise']['val'][::]
+    indptr = db['rowwise']['indptr'][::]
+    real_size = indptr[-1]
+    col = col[:real_size]
+    data = data[:real_size]
+    row = np.zeros(col.shape, dtype=np.int32)
+    start, row_id = 0, 0
+    for end in indptr:
+        row[start:end] = row_id
+        row_id += 1
+        start = end
+    return coo_matrix((data, (row, col)), (U, V))
