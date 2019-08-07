@@ -11,9 +11,23 @@
 
 namespace cfr {
 
+CCFR::CCFR(int dim, int num_threads, int num_cg_max_iters,
+        float alpha, float l, float cg_tolerance,
+        float reg_u, float reg_i, float reg_c,
+        bool compute_loss, string optimizer){
+    dim_ = dim; num_threads_ = num_threads; num_cg_max_iters_ = num_cg_max_iters;
+    alpha_ = alpha; l_ = l; cg_tolerance_ = cg_tolerance;
+    reg_u_ = reg_u; reg_i_ = reg_i; reg_c_ = reg_c;
+    compute_loss_ = compute_loss;
 
-CCFR::CCFR()
-{}
+    if (optimizer == "llt") optimizer_code_ = 0;
+    else if (optimizer == "ldlt") optimizer_code_ = 1;
+    else if (optimizer == "manual_cgd") optimizer_code_ = 2;
+    else if (optimizer == "eigen_cgd") optimizer_code_ = 3;
+
+    FF_.resize(dim_, dim_);
+    omp_set_num_threads(num_threads_);
+}
 
 CCFR::~CCFR()
 {
@@ -23,21 +37,6 @@ CCFR::~CCFR()
     new (&Ib_) Map<VectorType>(nullptr, 0);
     new (&Cb_) Map<VectorType>(nullptr, 0);
     FF_.resize(0, 0);
-}
-
-bool CCFR::init(string opt_path) {
-    bool ok = Algorithm::parse_option(opt_path, opt_);
-    if (ok) {
-        num_threads_ = opt_["num_workers"].int_value();
-        dim_ = opt_["d"].int_value();
-        alpha_ = opt_["alpha"].float_value();
-        l_ = opt_["l"].float_value();
-        reg_u_ = opt_["reg_u"].float_value();
-        reg_i_ = opt_["reg_i"].float_value();
-        reg_c_ = opt_["reg_c"].float_value();
-        FF_.resize(dim_, dim_);
-    }
-    return ok;
 }
 
 void CCFR::set_embedding(float* data, int size, string obj_type) {
@@ -55,13 +54,13 @@ void CCFR::set_embedding(float* data, int size, string obj_type) {
 }
 
 
-void CALS::precompute(string obj_type)
+void CCFR::precompute(string obj_type)
 {
     if (obj_type == "user") FF_ = P_.transpose() * P_;
     else if (obj_type == "item") FF_ = Q_.transpose() * Q_;
 }
 
-void CCFR::partial_update_user(int start_x, int next_x,
+double CCFR::partial_update_user(int start_x, int next_x,
         int64_t* indptr, int* keys, float* vals)
 {
     if( (next_x - start_x) == 0) {
@@ -71,6 +70,7 @@ void CCFR::partial_update_user(int start_x, int next_x,
 
     int end_loop = next_x - start_x;
     const int64_t shifted = indptr[0];
+    vector<double> losses(num_threads_, 0.0);
     #pragma omp parallel
     {
         int _thread = omp_get_thread_num();
@@ -109,10 +109,12 @@ void CCFR::partial_update_user(int start_x, int next_x,
             
             for (int d=0; d < dim_; ++d)
                 A(d, d) += reg_u_;
-            _leastsquare(U_.row(x), A, y);
-
+            _leastsquare(U_, x, A, y);
+            if (compute_loss_)
+                losses[_thread] += U_.row(x).dot(U_.row(x));
         }
     }
+    return reg_u_ * accumulate(losses.begin(), losses.end(), 0.0);
 }
 
 double CCFR::partial_update_item(int start_x, int next_x,
@@ -124,11 +126,11 @@ double CCFR::partial_update_item(int start_x, int next_x,
         return;
     }
     
-    double losses(num_threads_);
+    vector<double> losses(num_threads_, 0.0);
     int end_loop = next_x - start_x;
     const int64_t shifted_u = indptr_u[0];
     const int64_t shifted_c = indptr_c[0];
-
+    
     #pragma omp parallel
     {
         int _thread = omp_get_thread_num();
@@ -168,7 +170,8 @@ double CCFR::partial_update_item(int start_x, int next_x,
                     loss += (-dot * dot + (1 + vs(idx)) * (dot - 1) * (dot - 1))
                 }
             }
-            losses[_thread] += loss * l_;
+            if (compute_loss_)
+                losses[_thread] += loss * l_;
             VectorType y = (1 + vs) * Fs; 
             A += Fs.transpose() * (Fs.array().colwise() * vs.transpose().array());
             
@@ -190,14 +193,17 @@ double CCFR::partial_update_item(int start_x, int next_x,
                     loss += err * err;
                 }
             }
-            losses[_thread] += loss;
+            if (compute_loss_){
+                losses[_thread] += loss;
+                losses[_thread] += reg_i_ * I_.row(x).dot(I_.row(x));
+            }
             A += Fs.transpose() * Fs;
             y += vs * Fs;
             
             for (int d=0; d < dim_; ++d)
                 A(d, d) += reg_i_;
             
-            _leastsquare(I_.row(x), A, y);
+            _leastsquare(I_, x, A, y);
             // update bias
             float b = 0;
             for (int idx=0, it = beg_c; it < end_c; ++it, ++idx) {
@@ -211,14 +217,14 @@ double CCFR::partial_update_item(int start_x, int next_x,
     return accumulate(losses.begin(), losses.end(), 0.0);
 }
 
-void CCFR::partial_update_context(int start_x, int next_x,
+double CCFR::partial_update_context(int start_x, int next_x,
         int64_t* indptr, int* keys, float* vals)
 {
     if( (next_x - start_x) == 0) {
         WARN0("No data to process");
         return;
     }
-
+    vector<double> losses(num_threads_, 0.0);
     int end_loop = next_x - start_x;
     const int64_t shifted = indptr[0];
     #pragma omp parallel
@@ -255,7 +261,9 @@ void CCFR::partial_update_context(int start_x, int next_x,
 
             for (int d=0; d < dim_; ++d)
                 A(d, d) += reg_c_;
-            _leastsquare(C_.row(x), A, y);
+            if (compute_loss_)
+                losses[_thread] += C_.row(x).dot(C_.row());
+            _leastsquare(C_, x, A, y);
             // update bias
             float b = 0;
             for (int idx=0, it = beg; it < end; ++it, ++idx) {
@@ -267,35 +275,46 @@ void CCFR::partial_update_context(int start_x, int next_x,
 
         }
     }
+    return reg_c_ * accumulate(losses.begin(), losses.end(), 0.0);
 }
 
-void _leastsquare(VectorType& x, MatrixType& A, VectorType& y){
-    switch(optimizer_code_){
-        case 0:
-            x.noalias() = A.llt().solve(y);
+void CCFR::_leastsquare(MatrixType& x, int idx, MatrixType& A, VectorType& y){
+    VectorType r, p;
+    float rs_old, rs_new, alpha, beta;
+    ConjugateGradient<MatrixType, Lower|Upper> cg;
+    // use switch statement instead of if statement just for the clearity of the code
+    // no performance improvement
+    switch (optimizer_code_){
+        case 0: // llt
+            x.row(idx).noalias() = A.llt().solve(y.transpose());
             break;
-        case 1:
-            x.noalias() = A.ldlt().solve(y);
+        case 1: // ldlt
+            x.row(idx).noalias() = A.ldlt().solve(y.transpose());
             break;
-        case 2:
-            VectorType rold = y - x * A;
-            VectorType p = rold;
-            for (int i=0; i<num_cg_max_iters_; ++i){
-                float rold_norm = r.dot(r);
-                float alpha = rold_norm / (p * A).dot(p);
-                x.noalias() += alpha * p;
+        case 2: 
+            // manual implementation of conjugate gradient descent
+            // no preconditioning
+            // thus faster in case of small number of iterations than eigen implementation
+            r = y - x.row(idx) * A;
+            if (y.dot(y) < r.dot(r)){
+                x.row(idx).setZero(); r = y;
+            }
+            p = r;
+            for (int it=0; it<num_cg_max_iters_; ++it){
+                rs_old = r.dot(r);
+                alpha = rs_old / (p * A).dot(p);
+                x.row(idx).noalias() += alpha * p;
                 r.noalias() -= alpha * (p * A);
-                float rnew_norm = r.dot(r);
-                if (rnew_norm < cg_tolerance_)
+                rs_new = r.dot(r);
+                if (rs_new < cg_tolerance_)
                     break;
-                float beta = rnew_norm / rold_norm;
+                beta = rs_new / rs_old;
                 p.noalias() = r + beta * p;
             }
             break;
-        case 3:
-            ConjugateGradient<MatrixTeyp, Lower|Upper> cg;
+        case 3: // eigen implementation of conjugate gradient descent
             cg.setMaxIteration(num_iteration_for_cg_).compute(A);
-            x.noalias() = cg.solve(y);
+            x.row(idx).noalias() = cg.solve(y.transpose());
             break;
         default:
             break;
