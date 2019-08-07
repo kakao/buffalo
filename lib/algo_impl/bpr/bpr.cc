@@ -124,9 +124,9 @@ void CBPRMF::launch_workers()
 }
 
 void CBPRMF::initialize_model(
-        Map<MatrixXf>& _P,
-        Map<MatrixXf>& _Q,
-        Map<MatrixXf>& _Qb,
+        Map<FactorTypeRowMajor>& _P,
+        Map<FactorTypeRowMajor>& _Q,
+        Map<FactorTypeRowMajor>& _Qb,
         int64_t num_total_samples) 
 {
     int one = 1;
@@ -134,9 +134,9 @@ void CBPRMF::initialize_model(
     decouple(_Q, &Q_data_, Q_rows_, Q_cols_);
     decouple(_Qb, &Qb_data_, Q_rows_, one);
 
-    Map<MatrixXf> P(P_data_, P_rows_, P_cols_);
-    Map<MatrixXf> Q(Q_data_, Q_rows_, Q_cols_);
-    Map<MatrixXf> Qb(Qb_data_, Q_rows_, one);
+    Map<FactorTypeRowMajor> P(P_data_, P_rows_, P_cols_);
+    Map<FactorTypeRowMajor> Q(Q_data_, Q_rows_, Q_cols_);
+    Map<FactorTypeRowMajor> Qb(Qb_data_, Q_rows_, one);
 
     DEBUG("P({} x {}) Q({} x {}) Qb({} x {}) setted.",
             P.rows(), P.cols(),
@@ -252,17 +252,6 @@ void CBPRMF::progress_manager()
     }
 }
 
-int CBPRMF::get_negative_sample(unordered_set<int>& seen)
-{
-    uniform_int_distribution<int64_t> rng(0, cum_table_[cum_table_size_ - 1] - 1);
-    while (true) {
-        int64_t r = rng(rng_);
-        int neg = (int)(lower_bound(cum_table_, cum_table_ + cum_table_size_, r) - cum_table_);
-        if (seen.find(neg) == seen.end())
-            return neg;
-    }
-}
-
 void CBPRMF::add_jobs(
         int start_x,
         int next_x,
@@ -322,9 +311,9 @@ void CBPRMF::add_jobs(
 
 void CBPRMF::worker(int worker_id)
 {
-    Map<MatrixXf> P(P_data_, P_rows_, P_cols_),
-                  Q(Q_data_, Q_rows_, Q_cols_),
-                  Qb(Qb_data_, Q_rows_, 1);
+    Map<FactorTypeRowMajor> P(P_data_, P_rows_, P_cols_),
+                            Q(Q_data_, Q_rows_, Q_cols_),
+                            Qb(Qb_data_, Q_rows_, 1);
 
     bool use_bias = opt_["use_bias"].bool_value();
     bool update_i = opt_["update_i"].bool_value();
@@ -388,7 +377,7 @@ void CBPRMF::worker(int worker_id)
                         logit = exp_table_[(int)((x_uij + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))];
                     }
 
-                    FactorType item_deriv; 
+                    FactorTypeRowMajor item_deriv; 
                     if (update_i or update_j)
                         item_deriv = logit * P.row(u);
                     
@@ -447,9 +436,9 @@ void CBPRMF::worker(int worker_id)
 
 double CBPRMF::distance(size_t p, size_t q)
 {
-    Map<MatrixXf> P(P_data_, P_rows_, P_cols_),
-                  Q(Q_data_, Q_rows_, Q_cols_),
-                  Qb(Qb_data_, Q_rows_, 1);
+    Map<FactorTypeRowMajor> P(P_data_, P_rows_, P_cols_),
+                            Q(Q_data_, Q_rows_, Q_cols_),
+                            Qb(Qb_data_, Q_rows_, 1);
     bool use_bias = opt_["use_bias"].bool_value();
 
     float ret = (P.row(p) * Q.row(q).transpose())(0, 0);
@@ -477,12 +466,15 @@ double CBPRMF::compute_loss(Map<VectorXi>& users,
     return l;
 }
 
-void CBPRMF::update_adam(FactorType& grad, FactorType& momentum, FactorType& velocity, int i, double beta1, double beta2)
+void CBPRMF::update_adam(
+        FactorTypeRowMajor& grad,
+        FactorTypeRowMajor& momentum,
+        FactorTypeRowMajor& velocity, int i, double beta1, double beta2)
 {
     momentum.row(i) = beta1 * momentum.row(i) + (1.0 - beta1) * grad.row(i);
     velocity.row(i).array() = beta2 * velocity.row(i).array() + (1.0 - beta2) * grad.row(i).array().pow(2.0);
-    FactorType m_hat = momentum.row(i) / (1.0 - pow(beta1, iters_ + 1));
-    FactorType v_hat = velocity.row(i) / (1.0 - pow(beta2, iters_ + 1));
+    FactorTypeRowMajor m_hat = momentum.row(i) / (1.0 - pow(beta1, iters_ + 1));
+    FactorTypeRowMajor v_hat = velocity.row(i) / (1.0 - pow(beta2, iters_ + 1));
     grad.row(i).array() = m_hat.array() / (v_hat.array().sqrt() + FEPS);
 }
 
@@ -495,9 +487,9 @@ void CBPRMF::update_parameters()
     double reg_i = opt_["reg_i"].number_value();
     double reg_b = opt_["reg_b"].number_value();
 
-    Map<MatrixXf> P(P_data_, P_rows_, P_cols_),
-                  Q(Q_data_, Q_rows_, Q_cols_),
-                  Qb(Qb_data_, Q_rows_, 1);
+    Map<FactorTypeRowMajor> P(P_data_, P_rows_, P_cols_),
+                            Q(Q_data_, Q_rows_, Q_cols_),
+                            Qb(Qb_data_, Q_rows_, 1);
 
     bool per_coordinate_normalize = (opt_["per_coordinate_normalize"].bool_value());
     if (optimizer_ == "adam") {
