@@ -91,6 +91,60 @@ class AlsOption(AlgoOption):
         })
         return Option(opt)
 
+class CFROption(AlgoOption):
+    def __init__(self, *args, **kwargs):
+        super(CFROption, self).__init__(*args, **kwargs)
+
+    def get_default_option(self):
+        opt = super().get_default_option()
+        opt.update({
+            'save_factors': False,
+            'dim': 20,
+            'num_iters': 10,
+            'num_threadss': 1,
+            'early_stopping_rounds': 5,
+            'compute_loss': True,
+            'cg_tolerance': 1e-10,
+            'reg_u': 0.1,
+            'reg_i': 0.1,
+            'reg_c': 0.1,
+            'alpha': 8,
+            'l': 1.0
+            'optimizer': 'manual_cgd'
+            'num_cg_max_iters': 3,
+            'model_path': '',
+            'data_opt': {}
+        })
+        return Option(opt)
+
+    def get_default_optimize_option(self):
+        """Optimization Options for ALS
+        options:
+            loss(str): Target loss to optimize.
+            max_trials(int, option): Maximum experiments for optimization. If not given, run forever.
+            min_trials(int, option): Minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
+            deployment(bool): Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
+            start_with_default_parameters(bool): If set to True, the loss value of the default parameter is used as the starting loss to beat.
+            space(dict): Parameter space definition. For more information, pleases reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Pleases see optimize.py to check how we deal with `randint`.k
+        """
+        opt = super().get_default_optimize_option()
+        opt.update({
+            'loss': 'train_loss',
+            'max_trials': 100,
+            'min_trials': 0,
+            'deployment': True,
+            'start_with_default_parameters': True,
+            'space': {
+                'd': ['randint', ['d', 10, 30]],
+                'reg_u': ['uniform', ['reg_u', 0.1, 1]],
+                'reg_i': ['uniform', ['reg_i', 0.1, 1]],
+                'reg_c': ['uniform', ['reg_i', 0.1, 1]],
+                'alpha': ['randint', ['alpha', 1, 32]]
+                'l': ['randint', ['alpha', 1, 32]]
+            }
+        })
+        return Option(opt)
+
 
 class BprmfOption(AlgoOption):
     def __init__(self, *args, **kwargs):

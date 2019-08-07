@@ -7,10 +7,10 @@ import logging
 
 import tqdm
 import cython
-from libcpp cimport bool
 from libc.stdint cimport int64_t
 from libcpp.string cimport string
 from libcpp.vector cimport vector
+from libcpp cimport bool as bool_t
 
 import numpy as np
 cimport numpy as np
@@ -29,7 +29,10 @@ from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
 cdef extern from "buffalo/algo_impl/cfr.hpp" namespace "cfr":
     cdef cppclass CCFR:
-        bool init(string, int) nogil except +
+        CCFR(int dim, int num_threads, int num_cg_max_iters,
+             float alpha, float l, float cg_tolerance,
+             float reg_u, float reg_i, float reg_c,
+             bool_t compute_loss, string optimizer);
         void set_embedding(float*, int, string) nogil except +
         void precompute(string) nogil except +
         double partial_update_user(int, int,
@@ -43,20 +46,20 @@ cdef extern from "buffalo/algo_impl/cfr.hpp" namespace "cfr":
 
 cdef class CyCFR:
     """CCFR object holder"""
-    cdef CGALSNode* obj  # C-ALS object
+    cdef CCFR* obj  # C-ALS object
 
-    def __cinit__(self):
-        self.obj = new CGALSNode()
+    def __cinit__(self, dim, num_threads, num_cg_max_iters,
+                  alpha, l, cg_tolerance, reg_u, reg_i, reg_c,
+                  compute_loss, optimizer):
+        self.obj = new CCFR(dim ,num_threads, num_cg_max_iters,
+                            alpha, l, cg_tolerance, reg_u, reg_i, reg_c,
+                            compute_loss, optimizer)
 
     def __dealloc__(self):
-        self.obj.release()
         del self.obj
 
-    def init(self, option_path):
-        return self.obj.init(option_path)
-
-    def precompute(self):
-        self.obj.precompute()
+    def precompute(self, obj_type):
+        self.obj.precompute(obj_type)
 
     def set_embedding(self,
                       np.ndarray[np.float32_t, ndim=2] F, obj_type):
@@ -68,7 +71,8 @@ cdef class CyCFR:
                             np.ndarray[np.int64_t, ndim=1] indptrs,
                             np.ndarray[np.int32_t, ndim=1] keys,
                             np.ndarray[np.float32_t, ndim=1] vals):
-        return self.obj.partial_update(start_x, next_x, &indptrs[0], &keys[0], &vals[0])
+        return self.obj.partial_update_user(start_x, next_x,
+                                            &indptrs[0], &keys[0], &vals[0])
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -79,6 +83,15 @@ cdef class CyCFR:
                             np.ndarray[np.int64_t, ndim=1] indptrs_c,
                             np.ndarray[np.int32_t, ndim=1] keys_c,
                             np.ndarray[np.float32_t, ndim=1] vals_c):
-        return self.obj.partial_update(start_x, next_x,
-                                       &indptrs_u[0], &keys_u[0], &vals_u[0],
-                                       &indptrs_c[0], &keys_c[0], &vals_c[0])
+        return self.obj.partial_update_item(start_x, next_x,
+                                            &indptrs_u[0], &keys_u[0], &vals_u[0],
+                                            &indptrs_c[0], &keys_c[0], &vals_c[0])
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    def partial_update_context(self, int start_x, int next_x,
+                               np.ndarray[np.int64_t, ndim=1] indptrs,
+                               np.ndarray[np.int32_t, ndim=1] keys,
+                               np.ndarray[np.float32_t, ndim=1] vals):
+        return self.obj.partial_update_context(start_x, next_x,
+                                               &indptrs[0], &keys[0], &vals[0])
