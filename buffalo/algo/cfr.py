@@ -36,6 +36,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.logger = log.get_logger('CFR')
 
         self.opt, self.opt_path = self.get_option(opt_path)
+        # put options into cython class with type assertion
         for k, dt in [("dim", int), ("num_threads", int), ("num_cg_max_iters", int),
                       ("alpha", float), ("l", float), ("cg_tolerance", float),
                       ("reg_u", float), ("reg_i", float), ("reg_c", float),
@@ -136,6 +137,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         return err
 
     def compute_scale(self):
+        # scaling loss for convenience in monitoring
         num_users = self.data.get_header("num_users")
         num_items = self.data.get_header("num_items")
         num_nnz = self.data.get_header("num_nnz")

@@ -282,7 +282,7 @@ void CCFR::_leastsquare(MatrixType& x, int idx, MatrixType& A, VectorType& y){
     VectorType r, p;
     float rs_old, rs_new, alpha, beta;
     ConjugateGradient<MatrixType, Lower|Upper> cg;
-    // use switch statement instead of if statement just for the clearity of the code
+    // use switch statement instead of if statement just for the clarity of the code
     // no performance improvement
     switch (optimizer_code_){
         case 0: // llt
@@ -306,6 +306,7 @@ void CCFR::_leastsquare(MatrixType& x, int idx, MatrixType& A, VectorType& y){
                 x.row(idx).noalias() += alpha * p;
                 r.noalias() -= alpha * (p * A);
                 rs_new = r.dot(r);
+                // stop iteration if rs_new is sufficiently small
                 if (rs_new < cg_tolerance_)
                     break;
                 beta = rs_new / rs_old;
