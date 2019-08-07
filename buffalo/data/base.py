@@ -59,11 +59,12 @@ class Data(object):
             self.header = {'num_nnz': self.handle.attrs['num_nnz'],
                            'num_users': self.handle.attrs['num_users'],
                            'num_items': self.handle.attrs['num_items'],
+                           'sppmi_nnz': self.handle.attrs['sppmi_nnz'],
                            'completed': self.handle.attrs['completed']}
         return self.header
 
     def get_group(self, group_name='rowwise'):
-        assert group_name in ['rowwise', 'colwise', 'vali', 'idmap'], 'Unexpected group_name: {}'.format(group_name)
+        assert group_name in ['rowwise', 'colwise', 'vali', 'idmap', 'sppmi'], 'Unexpected group_name: {}'.format(group_name)
         assert self.handle, 'DB is not opened'
         group = self.handle[group_name]
         return group
@@ -223,6 +224,11 @@ class Data(object):
     def _build_compressed_triplets(self, db, mm_path, num_lines, max_key, max_sz,
                                    data_chunk_size=1000000, switch_row_col=False):
         # NOTE: this part is the bottle-neck, can we do better?
+        '''
+        str_to_int = [str(i + 1) for i in range(max_sz)]
+        str_to_int.sort()
+        str_to_int = {k: idx for idx, k in enumerate(str_to_int)}
+        '''
         str_to_int = {str(i + 1): i for i in range(max_sz)}
         with open(mm_path) as fin:
             prev_key, data_index, data_rear_index = 0, 0, 0
