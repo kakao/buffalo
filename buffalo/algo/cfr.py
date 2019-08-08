@@ -111,7 +111,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def _get_buffer(self):
         buf = BufferedDataMatrix()
-        buf.initialize(self.data, with_head=True)
+        buf.initialize(self.data, indptr_head=True)
         return buf
 
     def _iterate(self, buf, group='user'):
