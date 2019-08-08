@@ -11,6 +11,7 @@ from contextlib import suppress
 
 import numpy as np
 import tensorflow as tf
+tf.logging.set_verbosity(tf.logging.ERROR)
 from tensorflow.keras.utils import Progbar
 # what the...
 import absl.logging
