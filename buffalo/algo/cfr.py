@@ -111,30 +111,47 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def _get_buffer(self):
         buf = BufferedDataMatrix()
-        buf.initialize(self.data)
+        buf.initialize(self.data, with_head=True)
         return buf
 
     def _iterate(self, buf, group='user'):
+        assert group in ["user", "item", "context"], f"group {group} is not properly provided"
         header = self.data.get_header()
         end = header['num_users'] if group == 'user' else header['num_items']
         self.obj.precompute(group)
         err = 0.0
         update_t, feed_t, updated = 0, 0, 0
-        buf.set_group(group)
+        buf_map = {"user": "rowwise", "item": "colwise", "context": "sppmi"}
+        buf.set_group(buf_map[group])
+        total = header['sppmi_nnz'] if group == "context" else header["num_nnz"]
         with log.pbar(log.DEBUG, desc='%s' % group,
-                      total=header['num_nnz'], mininterval=30) as pbar:
+                      total=total, mininterval=30) as pbar:
             start_t = time.time()
             for sz in buf.fetch_batch():
                 updated += sz
                 feed_t += time.time() - start_t
                 start_x, next_x, indptr, keys, vals = buf.get()
                 start_t = time.time()
-                err += self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)
+                err += self.partial_update(group, start_x, next_x,
+                                           indptr[start_x: next_x+1], keys, vals)
                 update_t += time.time() - start_t
                 pbar.update(sz)
             pbar.refresh()
         self.logger.debug('updated %s processed(%s) elapsed(data feed: %.3f update: %.3f)' % (group, updated, feed_t, update_t))
         return err
+
+    def partial_update(self, group, start_x, next_x, indptr, keys, vals):
+        if group == "user":
+            return self.obj.partial_update_user(start_x, next_x, indptr, keys, vals)
+        elif group == "item":
+            db = self.data.get_group("sppmi")
+            _indptr = db['indptr'][start_x: next_x+1]
+            _keys = db['key'][indptr[0]: indptr[-1]]
+            _vals = db['val'][indptr[0]: indptr[-1]]
+            return self.obj.partial_update_item(start_x, next_x, indptr, keys, vals,
+                                                _indptr, _keys, _vals)
+        elif group == "context":
+            return self.obj.partial_update_context(start_x, next_x, indptr, keys, vals)
 
     def compute_scale(self):
         # scaling loss for convenience in monitoring

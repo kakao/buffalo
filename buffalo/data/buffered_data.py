@@ -39,7 +39,7 @@ class BufferedDataMatrix(BufferedData):
         self.group = 'rowwise'
         self.major = {'rowwise': {}, 'colwise': {}}
 
-    def initialize(self, data):
+    def initialize(self, data, with_head=False):
         self.data = data
         # 16 bytes(indptr8, keys4, vals4)
         limit = max(int(((self.data.opt.data.batch_mb * 1000 * 1000) / 16.)), 64)
@@ -54,7 +54,12 @@ class BufferedDataMatrix(BufferedData):
             m['start_x'] = 0
             m['next_x'] = 0
             m['max_x'] = header['num_users'] if G == 'rowwise' else header['num_items']
-            m['indptr'] = group['indptr'][::]
+            if with_head:
+                m['indptr'] = np.empty(m['max_x'] + 1, dtype=np.int64)
+                m['indptr'][0] = 0
+                m['indptr'][1:] = group['indptr'][:]
+            else:
+                m['indptr'] = group['indptr'][::]
             minimum_required_batch_size = max([m['indptr'][i] - m['indptr'][i - 1]
                                                for i in range(1, len(m['indptr']))])
             m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='F')
