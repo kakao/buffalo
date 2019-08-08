@@ -42,9 +42,9 @@ private:
     float alpha_, l_, cg_tolerance_, reg_u_, reg_i_, reg_c_;
     bool compute_loss_;
     char optimizer_code_;
-    Map<MatrixType> U_, I_, C_;
+    Map<MatrixType> U_(nullptr, 0, 0), I_(nullptr, 0, 0), C_(nullptr, 0, 0);
     MatrixType FF_;
-    Map<VectorType> Ib_, Cb_;
+    Map<VectorType> Ib_(nullptr, 0), Cb_(nullptr, 0);
 };
 
 }
