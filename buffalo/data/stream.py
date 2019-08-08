@@ -80,13 +80,24 @@ class Stream(Data):
         self.data_type = 'stream'
 
     def _create(self, data_path, P):
+        def get_max_column_length(fname):
+            with open(fname) as fin:
+                max_col = 0
+                for l in fin:
+                    max_col = max(max_col, len(l))
+            return max_col
         uid_path, iid_path, main_path = P['uid_path'], P['iid_path'], P['main_path']
         if uid_path:
             with open(uid_path) as fin:
-                num_users = sum(1 for _ in fin)
+                num_users = len([1 for _ in fin])
         else:
             with open(main_path) as fin:
-                num_users = sum(1 for _ in fin)
+                num_users = len([1 for _ in fin])
+
+        uid_max_col = len(str(num_users)) + 1
+        if uid_path:
+            uid_max_col = get_max_column_length(uid_path) + 1
+
         vali_n = self.opt.data.validation.get('n', 0)
         num_nnz, vali_limit, itemids = 0, 0, set()
         self.logger.info(f'gathering itemids from {main_path}...')
@@ -126,17 +137,17 @@ class Stream(Data):
             # if not given, assume id as is
             if uid_path:
                 with open(uid_path) as fin:
-                    idmap['rows'][:] = np.loadtxt(fin, dtype='S0')
+                    idmap['rows'][:] = np.loadtxt(fin, dtype=f'S{uid_max_col}')
             else:
                 idmap['rows'][:] = np.array([str(i) for i in range(1, num_users + 1)],
-                                            dtype='S0')
+                                            dtype=f'S{uid_max_col}')
             if iid_path:
                 with open(iid_path) as fin:
-                    idmap['cols'][:] = np.loadtxt(fin, dtype='S0')
+                    idmap['cols'][:] = np.loadtxt(fin, dtype=f'S{iid_max_col}')
             else:
                 cols = sorted(itemids.items(), key=lambda x: x[1])
                 cols = [k for k, _ in cols]
-                idmap['cols'][:] = np.array(cols, dtype='S0')
+                idmap['cols'][:] = np.array(cols, dtype=f'S{iid_max_col}')
         except Exception as e:
             self.logger.error('Cannot create db: %s' % (str(e)))
             self.logger.error(traceback.format_exc())
@@ -182,7 +193,7 @@ class Stream(Data):
             fin.seek(0)
             probe, chunk = "junk", []
             for line in fin:
-                _w, _c = line.strip().split()
+                _w, _c = map(int, line.strip().split())
                 if probe != _w:
                     appearances[probe] = len(chunk)
                     for __c, cnt in Counter(chunk).items():

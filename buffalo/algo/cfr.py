@@ -37,17 +37,18 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
         self.opt, self.opt_path = self.get_option(opt_path)
         # put options into cython class with type assertion
-        for k, dt in [("dim", int), ("num_threads", int), ("num_cg_max_iters", int),
+        for k, dt in [("dim", int), ("num_workers", int), ("num_cg_max_iters", int),
                       ("alpha", float), ("l", float), ("cg_tolerance", float),
                       ("reg_u", float), ("reg_i", float), ("reg_c", float),
                       ("compute_loss", bool), ("optimizer", str)]:
             assert isinstance(self.opt.get(k), dt), f"{k} should be {dt} type"
         assert self.opt.optimizer in ["llt", "ldlt", "manual_cgd", "eigen_cgd"], \
             f"optimizer ({self.opt.optimizer}) is not properly provided"
-        self.obj = CyCFR(self.opt.dim, self.opt.num_threads, self.opt.num_cg_max_iters,
+
+        self.obj = CyCFR(self.opt.dim, self.opt.num_workers, self.opt.num_cg_max_iters,
                          self.opt.alpha, self.opt.l, self.opt.cg_tolerance,
-                         self.opt.reg_u, self.opt.reg_i. self.opt.reg_c,
-                         self.opt.compute_loss, self.opt.optimizer)
+                         self.opt.reg_u, self.opt.reg_i, self.opt.reg_c,
+                         self.opt.compute_loss, self.opt.optimizer.encode("utf8"))
 
         self.data = None
         data = kwargs.get('data')
@@ -61,7 +62,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.logger.info('CFR (%s)' % json.dumps(self.opt, indent=2))
         if self.data:
             self.logger.info(self.data.show_info())
-            assert self.data.data_type in ['matrix']
+            assert self.data.data_type in ['stream']
 
     @staticmethod
     def new(path, data_fields=[]):
@@ -88,14 +89,14 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
         self.U = np.random.normal(scale=1.0/(self.opt.dim ** 2),
-                                  size=(header['num_users'], self.opt.dim)).astype("float32"),
+                                  size=(header['num_users'], self.opt.dim)).astype("float32")
         self.I = np.random.normal(scale=1.0/(self.opt.dim ** 2),
-                                  size=(header['num_items'], self.opt.dim)).astype("float32"),
+                                  size=(header['num_items'], self.opt.dim)).astype("float32")
         self.C = np.random.normal(scale=1.0/(self.opt.dim ** 2),
-                                  size=(header['num_items'], self.opt.dim)).astype("float32"),
-        self.obj.set_embedding(self.U, self.U.shape[0], "user")
-        self.obj.set_embedding(self.I, self.I.shape[0], "item")
-        self.obj.set_embedding(self.C, self.C.shape[0], "context")
+                                  size=(header['num_items'], self.opt.dim)).astype("float32")
+        self.obj.set_embedding(self.U, "user".encode("utf8"))
+        self.obj.set_embedding(self.I, "item".encode("utf8"))
+        self.obj.set_embedding(self.C, "context".encode("utf8"))
 
     def _get_topk_recommendation(self, rows, topk):
         u = self.U[rows]

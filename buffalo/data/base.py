@@ -34,7 +34,7 @@ class Data(object):
         vali_size = 0
         if self.has_group('vali'):
             g = self.get_group('vali')
-            vali_size = g['indexes'].shape[0]
+            vali_size = g.attrs['num_samples']
         info = '{name} Header({users}, {items}, {nnz}) Validation({vali} samples)'
         info = info.format(name=self.name,
                            users=header['num_users'],

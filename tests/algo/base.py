@@ -14,32 +14,59 @@ class TestBase(unittest.TestCase):
         if not os.path.isdir('ml-100k/'):
             raise RuntimeError('Cannot find the ./ml-100k directory')
         if not os.path.isfile('./ml-100k/main'):
+            in_path = "./ml-100k/u.data"
+            out_path = "./ml-100k/stream"
+            aux.psort(in_path, field_seperator="\t", key=4)
+            aux.psort(in_path, field_seperator="\t", key=1)
+
             with open('./ml-100k/main', 'w') as fout:
                 fout.write('%%MatrixMarket matrix coordinate integer general\n%\n%\n943 1682 80000\n')
-                with open('./ml-100k/u1.base') as fin:
+                with open('./ml-100k/u.data') as fin:
                     for line in fin:
                         u, i, v, ts = line.strip().split('\t')
                         fout.write('%s %s %s\n' % (u, i, v))
-
+            iids = []
             with open('./ml-100k/iid', 'w') as fout:
                 with open('./ml-100k/u.item', encoding='ISO-8859-1') as fin:
-                    for line in fin:
-                        fout.write('%s\n' % line.strip().split('|')[1].replace(' ', '_'))
+                    iids = [line.strip().split('|')[1].replace(' ', '_') for line in fin]
+                iids = [f"{idx}.{key}" for idx, key in enumerate(iids)]
+                fout.write("\n".join(iids))
 
             with open('./ml-100k/uid', 'w') as fout:
                 for line in open('./ml-100k/u.user'):
                     userid = line.strip().split('|')[0]
                     fout.write('%s\n' % userid)
+
+            probe, bag = None, []
+            with open(in_path, "r") as fin, open(out_path, "w") as fout:
+                for line in fin:
+                    u, i, v, ts = line.strip().split("\t")
+                    if not probe:
+                        probe = u
+                    elif probe != u:
+                        fout.write(" ".join(bag) + "\n")
+                        probe, bag = u, []
+                    bag.append(iids[int(i) - 1])
+                fout.write(" ".join(bag))
         cls.ml_100k = './ml-100k/'
         if not os.path.isdir('ml-20m'):
             raise RuntimeError('Cannot find the ./ml-20m directory')
 
         if not os.path.isfile('./ml-20m/main'):
             uids, iids = {}, {}
-            with open('./ml-20m/ratings.csv') as fin:
+            in_path = "./ml-20m/ratings.csv"
+            _in_path = "./ml-20m/ratings.tsv"
+            with open(in_path, "r") as fin, open(_in_path, "w") as fout:
+                for line in fin:
+                    fout.write(line.replace(",", "\t"))
+            in_path = _in_path
+            out_path = "./ml-20m/stream"
+            aux.psort(in_path, field_seperator="\t", key=4)
+            aux.psort(in_path, field_seperator="\t", key=1)
+            with open('./ml-20m/ratings.tsv') as fin:
                 fin.readline()
                 for line in fin:
-                    uid = line.split(',')[0]
+                    uid = line.split("\t")[0]
                     if uid not in uids:
                         uids[uid] = len(uids) + 1
             with open('./ml-20m/uid', 'w') as fout:
@@ -50,17 +77,31 @@ class TestBase(unittest.TestCase):
                 for line in fin:
                     iid = line.split(',')[0]
                     iids[iid] = len(iids) + 1
+
+            iids_lst = sorted(iids, key=iids.get)
             with open('./ml-20m/iid', 'w') as fout:
-                for iid, _ in sorted(iids.items(), key=lambda x: x[1]):
-                    fout.write('%s\n' % iid)
+                fout.write("\n".join(iids_lst))
+
             with open('./ml-20m/main', 'w') as fout:
                 fout.write('%%MatrixMarket matrix coordinate real general\n%\n%\n138493 27278 20000263\n')
-                with open('./ml-20m/ratings.csv') as fin:
+                with open('./ml-20m/ratings.tsv') as fin:
                     fin.readline()
                     for line in fin:
-                        uid, iid, r, *_ = line.split(',')
+                        uid, iid, r, *_ = line.split('\t')
                         uid, iid = uids[uid], iids[iid]
                         fout.write(f'{uid} {iid} {r}\n')
+            probe, bag = None, []
+            with open(in_path, "r") as fin, open(out_path, "w") as fout:
+                fin.readline()
+                for line in fin:
+                    u, i, v, ts = line.strip().split("\t")
+                    if not probe:
+                        probe = u
+                    elif probe != u:
+                        fout.write(" ".join(bag) + "\n")
+                        probe, bag = u, []
+                    bag.append(i)
+                fout.write(" ".join(bag))
         cls.ml_20m = './ml-20m/'
         if not os.path.isfile('./text8/main'):
             with open('./text8/text8') as fin:
