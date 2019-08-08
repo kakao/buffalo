@@ -37,14 +37,17 @@ class BufferedDataMatrix(BufferedData):
     def __init__(self):
         super(BufferedDataMatrix, self).__init__()
         self.group = 'rowwise'
-        self.major = {'rowwise': {}, 'colwise': {}}
+        self.major = {'rowwise': {}, 'colwise': {}, 'sppmi': {}}
 
-    def initialize(self, data, indptr_head=False):
+    def initialize(self, data, order='F', with_sppmi=False):
         self.data = data
         # 16 bytes(indptr8, keys4, vals4)
         limit = max(int(((self.data.opt.data.batch_mb * 1000 * 1000) / 16.)), 64)
         minimum_required_batch_size = 0
-        for G in ['rowwise', 'colwise']:
+        Gs = ['rowwise', 'colwise']
+        if with_sppmi:
+            Gs.append('sppmi')
+        for G in Gs:
             lim = int(limit / 2)
             group = data.get_group(G)
             header = data.get_header()
@@ -54,16 +57,11 @@ class BufferedDataMatrix(BufferedData):
             m['start_x'] = 0
             m['next_x'] = 0
             m['max_x'] = header['num_users'] if G == 'rowwise' else header['num_items']
-            if indptr_head:
-                m['indptr'] = np.empty(m['max_x'] + 1, dtype=np.int64)
-                m['indptr'][0] = 0
-                m['indptr'][1:] = group['indptr'][:]
-            else:
-                m['indptr'] = group['indptr'][::]
+            m['indptr'] = group['indptr'][::]
             minimum_required_batch_size = max([m['indptr'][i] - m['indptr'][i - 1]
                                                for i in range(1, len(m['indptr']))])
-            m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='F')
-            m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order='F')
+            m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order=order)
+            m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order=order)
         if minimum_required_batch_size > int(limit / 2):
             self.logger.warning('Increased batch size due to '
                                 'minimum required batch size is %d for the data, but %d given. '
@@ -73,8 +71,8 @@ class BufferedDataMatrix(BufferedData):
                 m = self.major[G]
                 lim = minimum_required_batch_size + 1
                 m['limit'] = lim
-                m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='F')
-                m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order='F')
+                m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order=order)
+                m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order=order)
 
     def fetch_batch(self):
         m = self.major[self.group]
@@ -110,12 +108,12 @@ class BufferedDataMatrix(BufferedData):
             yield size
 
     def set_group(self, group):
-        assert group in ['rowwise', 'colwise'], 'Unexpected group: {}'.format(group)
+        assert group in ['rowwise', 'colwise', 'sppmi'], 'Unexpected group: {}'.format(group)
         self.group = group
 
     def reset(self):
         for m in self.major.valus():
-            m['index'], m['start_x'], m['next_x'] = 0, 0
+            m['index'], m['start_x'], m['next_x'] = 0, 0, 0
 
     def get(self):
         m = self.major[self.group]
@@ -136,7 +134,7 @@ class BufferedDataStream(BufferedData):
         self.major = {'rowwise': {}}
         self.group = 'rowwise'
 
-    def initialize(self, data):
+    def initialize(self, data, order='F'):
         self.data = data
         assert self.data.data_type == 'stream'
         # 12 bytes(indptr8, keys4)
@@ -164,7 +162,7 @@ class BufferedDataStream(BufferedData):
             m = self.major[G]
             lim = minimum_required_batch_size + 1
             m['limit'] = lim
-            m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='F')
+            m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order=order)
 
     def fetch_batch(self):
         m = self.major[self.group]
@@ -199,12 +197,12 @@ class BufferedDataStream(BufferedData):
             yield size
 
     def set_group(self, group):
-        assert group in ['rowwise'], 'Unexpected group: {}'.format(group)
+        assert group in ['rowwise', 'sppmi'], 'Unexpected group: {}'.format(group)
         self.group = group
 
     def reset(self):
         for m in self.major.valus():
-            m['index'], m['start_x'], m['next_x'] = 0, 0
+            m['index'], m['start_x'], m['next_x'] = 0, 0, 0
 
     def get(self):
         m = self.major[self.group]

@@ -94,9 +94,15 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
                                   size=(header['num_items'], self.opt.dim)).astype("float32")
         self.C = np.random.normal(scale=1.0/(self.opt.dim ** 2),
                                   size=(header['num_items'], self.opt.dim)).astype("float32")
+        self.Ib = np.random.normal(scale=1.0/(self.opt.dim ** 2),
+                                   size=(header['num_items'], 1)).astype("float32")
+        self.Cb = np.random.normal(scale=1.0/(self.opt.dim ** 2),
+                                   size=(header['num_items'], 1)).astype("float32")
         self.obj.set_embedding(self.U, "user".encode("utf8"))
         self.obj.set_embedding(self.I, "item".encode("utf8"))
         self.obj.set_embedding(self.C, "context".encode("utf8"))
+        self.obj.set_embedding(self.Ib, "item_bias".encode("utf8"))
+        self.obj.set_embedding(self.Cb, "context_bias".encode("utf8"))
 
     def _get_topk_recommendation(self, rows, topk):
         u = self.U[rows]
@@ -112,19 +118,22 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def _get_buffer(self):
         buf = BufferedDataMatrix()
-        buf.initialize(self.data, indptr_head=True)
+        buf.initialize(self.data, order='C', with_sppmi=True)
         return buf
 
     def _iterate(self, buf, group='user'):
         assert group in ["user", "item", "context"], f"group {group} is not properly provided"
         header = self.data.get_header()
         end = header['num_users'] if group == 'user' else header['num_items']
-        self.obj.precompute(group)
         err = 0.0
         update_t, feed_t, updated = 0, 0, 0
         buf_map = {"user": "rowwise", "item": "colwise", "context": "sppmi"}
         buf.set_group(buf_map[group])
-        total = header['sppmi_nnz'] if group == "context" else header["num_nnz"]
+        total = self.data.handle.attrs["sppmi_nnz"] if group == "context" else header["num_nnz"]
+        if group == "user":
+            self.obj.precompute("item".encode("utf8"))
+        elif group == "item":
+            self.obj.precompute("user".encode("utf8"))
         with log.pbar(log.DEBUG, desc='%s' % group,
                       total=total, mininterval=30) as pbar:
             start_t = time.time()
@@ -133,8 +142,11 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
                 feed_t += time.time() - start_t
                 start_x, next_x, indptr, keys, vals = buf.get()
                 start_t = time.time()
+                _indptr = np.empty(next_x - start_x + 1, dtype=np.int64)
+                _indptr[0] = 0 if start_x == 0 else indptr[start_x - 1]
+                _indptr[1:] = indptr[start_x: next_x]
                 err += self.partial_update(group, start_x, next_x,
-                                           indptr[start_x: next_x+1], keys, vals)
+                                           _indptr, keys, vals)
                 update_t += time.time() - start_t
                 pbar.update(sz)
             pbar.refresh()
@@ -146,9 +158,11 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
             return self.obj.partial_update_user(start_x, next_x, indptr, keys, vals)
         elif group == "item":
             db = self.data.get_group("sppmi")
-            _indptr = db['indptr'][start_x: next_x+1]
-            _keys = db['key'][indptr[0]: indptr[-1]]
-            _vals = db['val'][indptr[0]: indptr[-1]]
+            _indptr = np.empty(next_x - start_x + 1, dtype=np.int64)
+            _indptr[0] = 0 if start_x == 0 else db['inpdtr'][start_x - 1]
+            _indptr[1:] = db['indptr'][start_x: next_x]
+            _keys = db['key'][_indptr[0]: _indptr[-1]]
+            _vals = db['val'][_indptr[0]: _indptr[-1]]
             return self.obj.partial_update_item(start_x, next_x, indptr, keys, vals,
                                                 _indptr, _keys, _vals)
         elif group == "context":
@@ -156,10 +170,9 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def compute_scale(self):
         # scaling loss for convenience in monitoring
-        num_users = self.data.get_header("num_users")
-        num_items = self.data.get_header("num_items")
-        num_nnz = self.data.get_header("num_nnz")
-        sppmi_nnz = self.data.get_header("sppmi_nnz")
+        handle = self.data.handle
+        num_users, num_items, num_nnz, sppmi_nnz = \
+            [handle.attrs[k] for k in ["num_users", "num_items", "num_nnz", "sppmi_nnz"]]
         alpha = self.opt.alpha
         l = self.opt.l
         chunk_size = 100000
@@ -168,7 +181,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         for offset in range(0, num_nnz, chunk_size):
             limit = min(num_nnz, offset + chunk_size)
             vsum += np.sum(db["val"][offset: limit])
-        return l * (alpha * vsum + num_users * num_items) + num_sppmi
+        return l * (alpha * vsum + num_users * num_items) + sppmi_nnz
 
     def train(self):
         buf = self._get_buffer()
@@ -192,7 +205,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
                 self.logger.info(f'Validation: {val_str} Elased {vali_t:0.3f}')
                 metrics.update({'val_%s' % k: v
                                 for k, v in self.validation_result.items()})
-            self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, train_t))
+            self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, loss, train_t))
             self.update_tensorboard_data(metrics)
             if self.opt.save_best and best_loss > loss and self.periodical(self.opt.save_period, i):
                 best_loss = loss

@@ -62,7 +62,7 @@ void CCFR::set_embedding(float* data, int size, string obj_type) {
     else if (obj_type == "item_bias")
         new (&Ib_) Map<VectorType>(data, size);
     else if (obj_type == "context_bias")
-        new (&Ib_) Map<VectorType>(data, size);
+        new (&Cb_) Map<VectorType>(data, size);
     DEBUG("{} setted (size: {})", obj_type, size);
 }
 
@@ -115,7 +115,7 @@ double CCFR::partial_update_user(int start_x, int next_x,
             MatrixType _Fs = Fs.array().colwise() * coeff.transpose().array();
             A.noalias() += Fs.transpose() * _Fs;
             coeff.array() += 1;
-            y.noalias() += coeff * Fs; 
+            y.noalias() = coeff * Fs; 
             
             // multiplicate relative weight over item-context relation
             A.array() *= l_;
@@ -144,7 +144,6 @@ double CCFR::partial_update_item(int start_x, int next_x,
     int end_loop = next_x - start_x;
     const int64_t shifted_u = indptr_u[0];
     const int64_t shifted_c = indptr_c[0];
-    
     #pragma omp parallel
     {
         int _thread = omp_get_thread_num();
@@ -163,7 +162,6 @@ double CCFR::partial_update_item(int start_x, int next_x,
             const int beg_c = indptr_c[i] - shifted_c;
             const int end_c = indptr_c[i+1] - shifted_c;
             const int data_size_c = end_c - beg_c;
-            
             if (data_size_u == 0 and data_size_c == 0) {
                 TRACE("No data exists for {}", x);
                 continue;
@@ -191,6 +189,7 @@ double CCFR::partial_update_item(int start_x, int next_x,
             coeff.array() += 1;
             y.noalias() = coeff * Fs; 
             
+            
             // multiplicate relative weight over item-context relation
             A.array() *= l_;
             y.array() *= l_;
@@ -213,13 +212,14 @@ double CCFR::partial_update_item(int start_x, int next_x,
                 losses[_thread] += loss;
                 losses[_thread] += reg_i_ * I_.row(x).dot(I_.row(x));
             }
-            A += Fs.transpose() * Fs;
-            y += coeff * Fs;
+            A.noalias() += Fs.transpose() * Fs;
+            y.noalias() += coeff * Fs;
             
             for (int d=0; d < dim_; ++d)
                 A(d, d) += reg_i_;
             
             _leastsquare(I_, x, A, y);
+            
             // update bias
             float b = 0;
             for (int idx=0, it = beg_c; it < end_c; ++it, ++idx) {
@@ -273,7 +273,7 @@ double CCFR::partial_update_context(int start_x, int next_x,
                 coeff(idx) = v - Cb_(x) - Ib_(c); 
             }
             A = Fs.transpose() * Fs;
-            y += coeff * Fs;
+            y = coeff * Fs;
 
             for (int d=0; d < dim_; ++d)
                 A(d, d) += reg_c_;

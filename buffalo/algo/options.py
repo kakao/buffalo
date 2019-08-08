@@ -101,16 +101,16 @@ class CFROption(AlgoOption):
             'save_factors': False,
             'dim': 20,
             'num_iters': 10,
-            'num_threadss': 1,
+            'num_workers': 1,
             'early_stopping_rounds': 5,
             'compute_loss': True,
             'cg_tolerance': 1e-10,
             'reg_u': 0.1,
             'reg_i': 0.1,
             'reg_c': 0.1,
-            'alpha': 8,
-            'l': 1.0
-            'optimizer': 'manual_cgd'
+            'alpha': 8.0,
+            'l': 1.0,
+            'optimizer': 'manual_cgd',
             'num_cg_max_iters': 3,
             'model_path': '',
             'data_opt': {}
@@ -139,7 +139,7 @@ class CFROption(AlgoOption):
                 'reg_u': ['uniform', ['reg_u', 0.1, 1]],
                 'reg_i': ['uniform', ['reg_i', 0.1, 1]],
                 'reg_c': ['uniform', ['reg_i', 0.1, 1]],
-                'alpha': ['randint', ['alpha', 1, 32]]
+                'alpha': ['randint', ['alpha', 1, 32]],
                 'l': ['randint', ['alpha', 1, 32]]
             }
         })

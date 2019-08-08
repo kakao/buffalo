@@ -59,7 +59,6 @@ class Data(object):
             self.header = {'num_nnz': self.handle.attrs['num_nnz'],
                            'num_users': self.handle.attrs['num_users'],
                            'num_items': self.handle.attrs['num_items'],
-                           'sppmi_nnz': self.handle.attrs['sppmi_nnz'],
                            'completed': self.handle.attrs['completed']}
         return self.header
 
