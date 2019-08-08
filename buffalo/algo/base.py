@@ -247,14 +247,14 @@ class TensorboardExtention(object):
             os.makedirs(self.opt.tensorboard.root)
         tb_dir = os.path.join(self.opt.tensorboard.root, self._tb.name)
         self._tb.data_root = tb_dir
-        self._tb.summary_writer = tf..summary.FileWriter(tb_dir)
+        self._tb.summary_writer = tf.summary.FileWriter(tb_dir)
         if not metrics:
             metrics = self.get_evaluation_metrics()
         for m in metrics:
             self._tb.metrics[m] = tf.placeholder(tf.float32)
             tf.summary.scalar(m, self._tb.metrics[m])
             self._tb.feed_dict[self._tb.metrics[m]] = 0.0
-        self._tb.merged_summary_op = tf..summary.merge_all()
+        self._tb.merged_summary_op = tf.summary.merge_all()
         self._tb.session = tf.Session()
         self._tb.pbar = Progbar(num_steps, stateful_metrics=self._tb.metrics, verbose=0)
         self._tb_setted = True
