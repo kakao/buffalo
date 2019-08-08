@@ -6,12 +6,26 @@
 
 #include "json11.hpp"
 #include "buffalo/misc/log.hpp"
-#include "buffalo/algo_impl/als/als.hpp"
+#include "buffalo/algo_impl/cfr/_cfr.hpp"
 
 
 namespace cfr {
+CCFR::CCFR(): 
+    U_(nullptr, 0, 0), I_(nullptr, 0, 0), C_(nullptr, 0, 0),
+    Ib_(nullptr, 0), Cb_(nullptr, 0)
+    {}
 
-CCFR::CCFR(int dim, int num_threads, int num_cg_max_iters,
+CCFR::~CCFR()
+{
+    new (&U_) Map<MatrixType>(nullptr, 0, 0);
+    new (&I_) Map<MatrixType>(nullptr, 0, 0);
+    new (&C_) Map<MatrixType>(nullptr, 0, 0);
+    new (&Ib_) Map<VectorType>(nullptr, 0);
+    new (&Cb_) Map<VectorType>(nullptr, 0);
+    FF_.resize(0, 0);
+}
+
+void CCFR::get_option(int dim, int num_threads, int num_cg_max_iters,
         float alpha, float l, float cg_tolerance,
         float reg_u, float reg_i, float reg_c,
         bool compute_loss, string optimizer){
@@ -27,16 +41,6 @@ CCFR::CCFR(int dim, int num_threads, int num_cg_max_iters,
 
     FF_.resize(dim_, dim_);
     omp_set_num_threads(num_threads_);
-}
-
-CCFR::~CCFR()
-{
-    new (&U_) Map<MatrixType>(nullptr, 0, 0);
-    new (&I_) Map<MatrixType>(nullptr, 0, 0);
-    new (&C_) Map<MatrixType>(nullptr, 0, 0);
-    new (&Ib_) Map<VectorType>(nullptr, 0);
-    new (&Cb_) Map<VectorType>(nullptr, 0);
-    FF_.resize(0, 0);
 }
 
 void CCFR::set_embedding(float* data, int size, string obj_type) {
@@ -56,16 +60,16 @@ void CCFR::set_embedding(float* data, int size, string obj_type) {
 
 void CCFR::precompute(string obj_type)
 {
-    if (obj_type == "user") FF_ = P_.transpose() * P_;
-    else if (obj_type == "item") FF_ = Q_.transpose() * Q_;
+    if (obj_type == "user") FF_ = U_.transpose() * U_;
+    else if (obj_type == "item") FF_ = I_.transpose() * I_;
 }
 
 double CCFR::partial_update_user(int start_x, int next_x,
-        int64_t* indptr, int* keys, float* vals)
+        int64_t* indptr, int32_t* keys, float* vals)
 {
     if( (next_x - start_x) == 0) {
         WARN0("No data to process");
-        return;
+        return 0.0;
     }
 
     int end_loop = next_x - start_x;
@@ -89,7 +93,7 @@ double CCFR::partial_update_user(int start_x, int next_x,
 
             MatrixType A(dim_, dim_);
             MatrixType Fs(data_size, dim_);
-            VectorType vs(data_size);
+            VectorType coeff(data_size);
             VectorType y(dim_);
             
             A = FF_;
@@ -97,15 +101,16 @@ double CCFR::partial_update_user(int start_x, int next_x,
                 const int& c = keys[it];
                 const float& v = vals[it];
                 Fs.row(idx) = I_.row(c);
-                vs(idx) = v * alpha; 
+                coeff(idx) = v * alpha_; 
             }
-
-            VectorType y = (1 + vs) * Fs; 
-            A += Fs.transpose() * (Fs.array().colwise() * vs.transpose().array());
+            MatrixType _Fs = Fs.array().colwise() * coeff.transpose().array();
+            A += Fs.transpose() * _Fs;
+            coeff.array() += 1;
+            VectorType y = coeff * Fs; 
             
             // multiplicate relative weight over item-context relation
-            A.noalias() *= l_;
-            y.noalias() *= l_;
+            A.array() *= l_;
+            y.array() *= l_;
             
             for (int d=0; d < dim_; ++d)
                 A(d, d) += reg_u_;
@@ -118,12 +123,12 @@ double CCFR::partial_update_user(int start_x, int next_x,
 }
 
 double CCFR::partial_update_item(int start_x, int next_x,
-        int64_t* indptr_u, int* keys_u, float* vals_u,
-        int64_t* indptr_c, int* keys_c, float* vals_c)
+        int64_t* indptr_u, int32_t* keys_u, float* vals_u,
+        int64_t* indptr_c, int32_t* keys_c, float* vals_c)
 {
     if( (next_x - start_x) == 0) {
         WARN0("No data to process");
-        return;
+        return 0.0;
     }
     
     vector<double> losses(num_threads_, 0.0);
@@ -151,43 +156,45 @@ double CCFR::partial_update_item(int start_x, int next_x,
             const int data_size_c = end_c - beg_c;
             
             if (data_size_u == 0 and data_size_c == 0) {
-                TRACE("No data exists for {}", u);
+                TRACE("No data exists for {}", x);
                 continue;
             }
 
             // computing for the part of user-item relation
             A = FF_;
             MatrixType Fs(data_size_u, dim_);
-            VectorType vs(data_size_u);
+            VectorType coeff(data_size_u);
             float loss = compute_loss_? (I_.row(x) * FF_).dot(I_.row(x)): 0;
             for (int idx=0, it = beg_u; it < end_u; ++it, ++idx) {
                 const int& c = keys_u[it];
                 const float& v = vals_u[it];
                 Fs.row(idx) = U_.row(c);
-                vs(idx) = v * alpha;
+                coeff(idx) = v * alpha_;
                 if (compute_loss_){
                     float dot = I_.row(x).dot(U_.row(c));
-                    loss += (-dot * dot + (1 + vs(idx)) * (dot - 1) * (dot - 1))
+                    loss += (-dot * dot + (1 + coeff(idx)) * (dot - 1) * (dot - 1));
                 }
             }
             if (compute_loss_)
                 losses[_thread] += loss * l_;
-            VectorType y = (1 + vs) * Fs; 
-            A += Fs.transpose() * (Fs.array().colwise() * vs.transpose().array());
+            MatrixType _Fs = Fs.array().colwise() * coeff.transpose().array();
+            A += Fs.transpose() * _Fs;
+            coeff.array() += 1;
+            VectorType y = coeff * Fs; 
             
             // multiplicate relative weight over item-context relation
-            A.noalias() *= l_;
-            y.noalias() *= l_;
+            A.array() *= l_;
+            y.array() *= l_;
             // computing for the part of item-context relation
             Fs.resize(data_size_c, dim_);
-            vs.resize(data_size_c);
+            coeff.resize(data_size_c);
             
-            loss = 0.0
-            for (int idx=0, it = beg_c; it < end_c; ++it, ++idx) {
+            loss = 0.0;
+            for (int idx=0, it=beg_c; it < end_c; ++it, ++idx) {
                 const int& c = keys_c[it];
                 const float& v = vals_c[it];
                 Fs.row(idx) = C_.row(c);
-                vs(idx) = v - Ib_(x) - Cb_(c); 
+                coeff(idx) = v - Ib_(x) - Cb_(c); 
                 if (compute_loss_){
                     float err = v - I_.row(x).dot(C_.row(c)) - Ib_(x) - Cb_(c);
                     loss += err * err;
@@ -198,7 +205,7 @@ double CCFR::partial_update_item(int start_x, int next_x,
                 losses[_thread] += reg_i_ * I_.row(x).dot(I_.row(x));
             }
             A += Fs.transpose() * Fs;
-            y += vs * Fs;
+            y += coeff * Fs;
             
             for (int d=0; d < dim_; ++d)
                 A(d, d) += reg_i_;
@@ -218,11 +225,11 @@ double CCFR::partial_update_item(int start_x, int next_x,
 }
 
 double CCFR::partial_update_context(int start_x, int next_x,
-        int64_t* indptr, int* keys, float* vals)
+        int64_t* indptr, int32_t* keys, float* vals)
 {
     if( (next_x - start_x) == 0) {
         WARN0("No data to process");
-        return;
+        return 0.0;
     }
     vector<double> losses(num_threads_, 0.0);
     int end_loop = next_x - start_x;
@@ -248,21 +255,21 @@ double CCFR::partial_update_context(int start_x, int next_x,
             }
 
             MatrixType Fs(data_size, dim_);
-            VectorType vs(data_size);
+            VectorType coeff(data_size);
             
             for (int idx=0, it = beg; it < end; ++it, ++idx) {
                 const int& c = keys[it];
                 const float& v = vals[it];
                 Fs.row(idx) = I_.row(c);
-                vs(idx) = v - Cb_(x) - Ib_(c); 
+                coeff(idx) = v - Cb_(x) - Ib_(c); 
             }
             A = Fs.transpose() * Fs;
-            y += vs * Fs;
+            y += coeff * Fs;
 
             for (int d=0; d < dim_; ++d)
                 A(d, d) += reg_c_;
             if (compute_loss_)
-                losses[_thread] += C_.row(x).dot(C_.row());
+                losses[_thread] += C_.row(x).dot(C_.row(x));
             _leastsquare(C_, x, A, y);
             // update bias
             float b = 0;
@@ -278,7 +285,7 @@ double CCFR::partial_update_context(int start_x, int next_x,
     return reg_c_ * accumulate(losses.begin(), losses.end(), 0.0);
 }
 
-void CCFR::_leastsquare(MatrixType& x, int idx, MatrixType& A, VectorType& y){
+void CCFR::_leastsquare(Map<MatrixType>& X, int idx, MatrixType& A, VectorType& y){
     VectorType r, p;
     float rs_old, rs_new, alpha, beta;
     ConjugateGradient<MatrixType, Lower|Upper> cg;
@@ -286,24 +293,24 @@ void CCFR::_leastsquare(MatrixType& x, int idx, MatrixType& A, VectorType& y){
     // no performance improvement
     switch (optimizer_code_){
         case 0: // llt
-            x.row(idx).noalias() = A.llt().solve(y.transpose());
+            X.row(idx).noalias() = A.llt().solve(y.transpose());
             break;
         case 1: // ldlt
-            x.row(idx).noalias() = A.ldlt().solve(y.transpose());
+            X.row(idx).noalias() = A.ldlt().solve(y.transpose());
             break;
         case 2: 
             // manual implementation of conjugate gradient descent
             // no preconditioning
             // thus faster in case of small number of iterations than eigen implementation
-            r = y - x.row(idx) * A;
+            r = y - X.row(idx) * A;
             if (y.dot(y) < r.dot(r)){
-                x.row(idx).setZero(); r = y;
+                X.row(idx).setZero(); r = y;
             }
             p = r;
             for (int it=0; it<num_cg_max_iters_; ++it){
                 rs_old = r.dot(r);
                 alpha = rs_old / (p * A).dot(p);
-                x.row(idx).noalias() += alpha * p;
+                X.row(idx).noalias() += alpha * p;
                 r.noalias() -= alpha * (p * A);
                 rs_new = r.dot(r);
                 // stop iteration if rs_new is sufficiently small
@@ -314,8 +321,8 @@ void CCFR::_leastsquare(MatrixType& x, int idx, MatrixType& A, VectorType& y){
             }
             break;
         case 3: // eigen implementation of conjugate gradient descent
-            cg.setMaxIteration(num_iteration_for_cg_).compute(A);
-            x.row(idx).noalias() = cg.solve(y.transpose());
+            cg.setMaxIterations(num_cg_max_iters_).compute(A);
+            X.row(idx).noalias() = cg.solve(y.transpose());
             break;
         default:
             break;

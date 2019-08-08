@@ -69,6 +69,16 @@ extensions = [
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
+    Extension(name="buffalo.algo._cfr",
+              sources=['buffalo/algo/_cfr.cpp'],
+              include_dirs=['./include',
+                            numpy_include_dirs,
+                            '3rd/json11',
+                            '3rd/spdlog/include',
+                            site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
+              libraries=['gomp', 'cbuffalo'],
+              library_dirs=['/usr/local/lib64'],
+              extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo.bpr",
               sources=['buffalo/algo/bpr.cpp'],
               include_dirs=['./include',
@@ -146,7 +156,8 @@ class BuildExtention(build_ext, object):
         ext_files = ['buffalo/algo/als.pyx',
                      'buffalo/algo/bpr.pyx',
                      'buffalo/algo/w2v.pyx',
-                     'buffalo/misc/log.pyx']
+                     'buffalo/misc/log.pyx',
+                     'buffalo/algo/_cfr.pyx']
         for path in ext_files:
             from Cython.Build import cythonize
             cythonize(path)

@@ -7,10 +7,10 @@ import logging
 
 import tqdm
 import cython
-from libc.stdint cimport int64_t
 from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libcpp cimport bool as bool_t
+from libc.stdint cimport int32_t, int64_t
 
 import numpy as np
 cimport numpy as np
@@ -27,21 +27,22 @@ from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
 
-cdef extern from "buffalo/algo_impl/cfr.hpp" namespace "cfr":
+cdef extern from "buffalo/algo_impl/cfr/_cfr.hpp" namespace "cfr":
     cdef cppclass CCFR:
-        CCFR(int dim, int num_threads, int num_cg_max_iters,
-             float alpha, float l, float cg_tolerance,
-             float reg_u, float reg_i, float reg_c,
-             bool_t compute_loss, string optimizer);
+        CCFR() nogil except +
+        void get_option(int dim, int num_threads, int num_cg_max_iters,
+                        float alpha, float l, float cg_tolerance,
+                        float reg_u, float reg_i, float reg_c,
+                        bool_t compute_loss, string optimizer) nogil except +
         void set_embedding(float*, int, string) nogil except +
         void precompute(string) nogil except +
         double partial_update_user(int, int,
-                                   int64_t*, int*, float*) nogil except +
+                                   int64_t*, int32_t*, float*) nogil except +
         double partial_update_item(int, int,
-                                   int64_t*, int*, float*,
-                                   int64_t*, int*, float*) nogil except +
+                                   int64_t*, int32_t*, float*,
+                                   int64_t*, int32_t*, float*) nogil except +
         double partial_update_context(int, int,
-                                      int64_t*, int*, float*) nogil except +
+                                      int64_t*, int32_t*, float*) nogil except +
 
 
 cdef class CyCFR:
@@ -51,7 +52,8 @@ cdef class CyCFR:
     def __cinit__(self, dim, num_threads, num_cg_max_iters,
                   alpha, l, cg_tolerance, reg_u, reg_i, reg_c,
                   compute_loss, optimizer):
-        self.obj = new CCFR(dim ,num_threads, num_cg_max_iters,
+        self.obj = new CCFR()
+        self.obj.get_option(dim ,num_threads, num_cg_max_iters,
                             alpha, l, cg_tolerance, reg_u, reg_i, reg_c,
                             compute_loss, optimizer)
 
@@ -63,7 +65,7 @@ cdef class CyCFR:
 
     def set_embedding(self,
                       np.ndarray[np.float32_t, ndim=2] F, obj_type):
-        self.obj.set_factors(&F[0, 0], F.shape[0], obj_type)
+        self.obj.set_embedding(&F[0, 0], F.shape[0], obj_type)
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
