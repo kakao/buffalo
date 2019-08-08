@@ -8,5 +8,4 @@ tqdm
 psutil
 h5py
 hyperopt
-tensorflow
-tensorboard
+tensorflow==1.14.0

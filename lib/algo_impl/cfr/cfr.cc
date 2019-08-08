@@ -6,29 +6,18 @@
 
 #include "json11.hpp"
 #include "buffalo/misc/log.hpp"
-#include "buffalo/algo_impl/cfr/_cfr.hpp"
+#include "buffalo/algo_impl/cfr/cfr.hpp"
 
 
 namespace cfr {
-CCFR::CCFR(): 
-    U_(nullptr, 0, 0), I_(nullptr, 0, 0), C_(nullptr, 0, 0),
-    Ib_(nullptr, 0), Cb_(nullptr, 0)
-    {}
 
-CCFR::~CCFR()
-{
-    new (&U_) Map<MatrixType>(nullptr, 0, 0);
-    new (&I_) Map<MatrixType>(nullptr, 0, 0);
-    new (&C_) Map<MatrixType>(nullptr, 0, 0);
-    new (&Ib_) Map<VectorType>(nullptr, 0);
-    new (&Cb_) Map<VectorType>(nullptr, 0);
-    FF_.resize(0, 0);
-}
-
-void CCFR::get_option(int dim, int num_threads, int num_cg_max_iters,
+CCFR::CCFR(int dim, int num_threads, int num_cg_max_iters,
         float alpha, float l, float cg_tolerance,
         float reg_u, float reg_i, float reg_c,
-        bool compute_loss, string optimizer){
+        bool compute_loss, string optimizer): 
+    U_(nullptr, 0, 0), I_(nullptr, 0, 0), C_(nullptr, 0, 0),
+    Ib_(nullptr, 0), Cb_(nullptr, 0)
+{
     dim_ = dim; num_threads_ = num_threads; num_cg_max_iters_ = num_cg_max_iters;
     alpha_ = alpha; l_ = l; cg_tolerance_ = cg_tolerance;
     reg_u_ = reg_u; reg_i_ = reg_i; reg_c_ = reg_c;
@@ -41,6 +30,26 @@ void CCFR::get_option(int dim, int num_threads, int num_cg_max_iters,
 
     FF_.resize(dim_, dim_);
     omp_set_num_threads(num_threads_);
+}
+
+CCFR::~CCFR()
+{
+    new (&U_) Map<MatrixType>(nullptr, 0, 0);
+    new (&I_) Map<MatrixType>(nullptr, 0, 0);
+    new (&C_) Map<MatrixType>(nullptr, 0, 0);
+    new (&Ib_) Map<VectorType>(nullptr, 0);
+    new (&Cb_) Map<VectorType>(nullptr, 0);
+    FF_.resize(0, 0);
+}
+
+// implementation of inherited virtual functions
+bool CCFR::init(string opt_path){
+    return parse_option(opt_path);
+}
+
+// implementation of inherited virtual functions
+bool CCFR::parse_option(string opt_path){
+    return Algorithm::parse_option(opt_path, opt_);
 }
 
 void CCFR::set_embedding(float* data, int size, string obj_type) {
@@ -104,9 +113,9 @@ double CCFR::partial_update_user(int start_x, int next_x,
                 coeff(idx) = v * alpha_; 
             }
             MatrixType _Fs = Fs.array().colwise() * coeff.transpose().array();
-            A += Fs.transpose() * _Fs;
+            A.noalias() += Fs.transpose() * _Fs;
             coeff.array() += 1;
-            VectorType y = coeff * Fs; 
+            y.noalias() += coeff * Fs; 
             
             // multiplicate relative weight over item-context relation
             A.array() *= l_;
@@ -178,9 +187,9 @@ double CCFR::partial_update_item(int start_x, int next_x,
             if (compute_loss_)
                 losses[_thread] += loss * l_;
             MatrixType _Fs = Fs.array().colwise() * coeff.transpose().array();
-            A += Fs.transpose() * _Fs;
+            A.noalias() += Fs.transpose() * _Fs;
             coeff.array() += 1;
-            VectorType y = coeff * Fs; 
+            y.noalias() = coeff * Fs; 
             
             // multiplicate relative weight over item-context relation
             A.array() *= l_;

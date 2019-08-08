@@ -27,10 +27,9 @@ from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
 
-cdef extern from "buffalo/algo_impl/cfr/_cfr.hpp" namespace "cfr":
+cdef extern from "buffalo/algo_impl/cfr/cfr.hpp" namespace "cfr":
     cdef cppclass CCFR:
-        CCFR() nogil except +
-        void get_option(int dim, int num_threads, int num_cg_max_iters,
+        CCFR(int dim, int num_threads, int num_cg_max_iters,
                         float alpha, float l, float cg_tolerance,
                         float reg_u, float reg_i, float reg_c,
                         bool_t compute_loss, string optimizer) nogil except +
@@ -52,8 +51,7 @@ cdef class CyCFR:
     def __cinit__(self, dim, num_threads, num_cg_max_iters,
                   alpha, l, cg_tolerance, reg_u, reg_i, reg_c,
                   compute_loss, optimizer):
-        self.obj = new CCFR()
-        self.obj.get_option(dim ,num_threads, num_cg_max_iters,
+        self.obj = new CCFR(dim ,num_threads, num_cg_max_iters,
                             alpha, l, cg_tolerance, reg_u, reg_i, reg_c,
                             compute_loss, optimizer)
 

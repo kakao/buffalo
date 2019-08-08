@@ -247,15 +247,15 @@ class TensorboardExtention(object):
             os.makedirs(self.opt.tensorboard.root)
         tb_dir = os.path.join(self.opt.tensorboard.root, self._tb.name)
         self._tb.data_root = tb_dir
-        self._tb.summary_writer = tf.compat.v1.summary.FileWriter(tb_dir)
+        self._tb.summary_writer = tf..summary.FileWriter(tb_dir)
         if not metrics:
             metrics = self.get_evaluation_metrics()
         for m in metrics:
-            self._tb.metrics[m] = tf.compat.v1.placeholder(tf.float32)
-            tf.compat.v1.summary.scalar(m, self._tb.metrics[m])
+            self._tb.metrics[m] = tf.placeholder(tf.float32)
+            tf.summary.scalar(m, self._tb.metrics[m])
             self._tb.feed_dict[self._tb.metrics[m]] = 0.0
-        self._tb.merged_summary_op = tf.compat.v1.summary.merge_all()
-        self._tb.session = tf.compat.v1.Session()
+        self._tb.merged_summary_op = tf..summary.merge_all()
+        self._tb.session = tf.Session()
         self._tb.pbar = Progbar(num_steps, stateful_metrics=self._tb.metrics, verbose=0)
         self._tb_setted = True
 
@@ -280,11 +280,11 @@ class TensorboardExtention(object):
         self._tb.summary_writer.close()
         self._tb.session.close()
         self._tb = None
-        tf.compat.v1.reset_default_graph()
+        tf.reset_default_graph()
 
     def __del__(self):
         if hasattr(self, '_tb_setted') and self._tb_setted:
-            tf.compat.v1.reset_default_graph()
+            tf.reset_default_graph()
 
     def periodical(self, period, current):
         if not period or (current + 1) % period == 0:

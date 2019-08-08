@@ -21,13 +21,12 @@ namespace cfr {
 
 class CCFR : public Algorithm {
 public:
-    CCFR();
+    CCFR(int dim, int num_threads, int num_cg_max_iters,
+         float alpha, float l, float cg_tolerance,
+         float reg_u, float reg_i, float reg_c,
+         bool compute_loss, string optimizer);
     ~CCFR();
 
-    void get_option(int dim, int num_threads, int num_cg_max_iters,
-            float alpha, float l, float cg_tolerance,
-            float reg_u, float reg_i, float reg_c,
-            bool compute_loss, string optimizer);
     bool init(string opt_path);
     bool parse_option(string opt_path);
     void set_embedding(float* data, int size, string obj_type);
@@ -44,6 +43,7 @@ private:
     void _leastsquare(Map<MatrixType>& X, int idx, MatrixType& A, VectorType& y);
 
 private:
+    Json opt_;
     int dim_, num_threads_, num_cg_max_iters_;
     float alpha_, l_, cg_tolerance_, reg_u_, reg_i_, reg_c_;
     bool compute_loss_;
