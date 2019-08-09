@@ -1,11 +1,6 @@
 # cython: experimental_cpp_class_def=True, language_level=3
 # distutils: language=c++
 # -*- coding: utf-8 -*-
-import time
-import json
-import logging
-
-import tqdm
 import cython
 from libcpp.string cimport string
 from libcpp.vector cimport vector
@@ -14,17 +9,6 @@ from libc.stdint cimport int32_t, int64_t
 
 import numpy as np
 cimport numpy as np
-from numpy.linalg import norm
-from hyperopt import STATUS_OK as HOPT_STATUS_OK
-
-import buffalo.data
-from buffalo.data.base import Data
-from buffalo.misc import aux, log
-from buffalo.evaluate import Evaluable
-from buffalo.algo.options import AlsOption
-from buffalo.algo.optimize import Optimizable
-from buffalo.data.buffered_data import BufferedDataMatrix
-from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
 
 cdef extern from "buffalo/algo_impl/cfr/cfr.hpp" namespace "cfr":
@@ -46,7 +30,7 @@ cdef extern from "buffalo/algo_impl/cfr/cfr.hpp" namespace "cfr":
 
 cdef class CyCFR:
     """CCFR object holder"""
-    cdef CCFR* obj  # C-ALS object
+    cdef CCFR* obj  # C-CFR object
 
     def __cinit__(self, dim, num_threads, num_cg_max_iters,
                   alpha, l, cg_tolerance, reg_u, reg_i, reg_c,
