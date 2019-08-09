@@ -216,11 +216,8 @@ class Data(object):
     def _build_compressed_triplets(self, db, mm_path, num_lines, max_key, max_sz,
                                    data_chunk_size=1000000, switch_row_col=False):
         # NOTE: this part is the bottle-neck, can we do better?
-        '''
-        str_to_int = [str(i + 1) for i in range(max_sz)]
-        str_to_int.sort()
-        str_to_int = {k: idx for idx, k in enumerate(str_to_int)}
-        '''
+        # this is significantly faster than casting string to integer for each time
+        # TODO: cython implementation for taking advantage of scanf (fast mmread)
         str_to_int = {str(i + 1): i for i in range(max_sz)}
         with open(mm_path) as fin:
             prev_key, data_index, data_rear_index = 0, 0, 0
