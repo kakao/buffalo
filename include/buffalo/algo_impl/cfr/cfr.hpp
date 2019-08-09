@@ -58,6 +58,7 @@ private:
                 // no preconditioning
                 // thus faster in case of small number of iterations than eigen implementation
                 r = y - X.row(idx) * A;
+                // in case that current vector is nearer to solution than zero vector, no zero initialization
                 if (y.dot(y) < r.dot(r)){
                     X.row(idx).setZero(); r = y;
                 }
@@ -78,6 +79,7 @@ private:
             case 3: // eigen implementation of conjugate gradient descent
                 cg.setMaxIterations(num_cg_max_iters_).setTolerance(cg_tolerance_).compute(A);
                 r = y - X.row(idx) * A;
+                // in case that current vector is nearer to solution than zero vector, no zero initialization
                 if (y.dot(y) < r.dot(r))
                     X.row(idx).noalias() = cg.solve(y.transpose());
                 else

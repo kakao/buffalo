@@ -37,6 +37,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
         self.opt, self.opt_path = self.get_option(opt_path)
         # put options into cython class with type assertion
+        # see comments on options.py for the description of each parameter
         for k, dt in [("dim", int), ("num_workers", int), ("num_cg_max_iters", int),
                       ("alpha", float), ("l", float), ("cg_tolerance", float),
                       ("reg_u", float), ("reg_i", float), ("reg_c", float),
@@ -49,6 +50,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
                          self.opt.alpha, self.opt.l, self.opt.cg_tolerance,
                          self.opt.reg_u, self.opt.reg_i, self.opt.reg_c,
                          self.opt.compute_loss, self.opt.optimizer.encode("utf8"))
+        # ensure embedding matrix is initialzed for preventing segmentation fault
         self.is_initialized = False
 
         self.data = None
