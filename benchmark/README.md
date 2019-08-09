@@ -10,6 +10,8 @@ This benchmark can be reproduce with main.py.
 
 ## Alternating Least Square
 
+![](benchmark1.png)
+
 - The number of latent feature vector dimension
 
 | method   |     D=10 |     D=20 |    D=30 |    D=40 |    D=50 |    D=60 |    D=70 |    D=80 |     D=90 |   D=100 |    D=150 |   D=200 |
@@ -19,21 +21,19 @@ This benchmark can be reproduce with main.py.
 
 Buffalo is faster up to 8 times.
 
-![](benchmark1.png)
-
 - The number of threads
 
-| method   |     T=1 |     T=2 |     T=4 |     T=8 |     T=16 |
-|----------|---------|----------|---------|---------|---------|
-| buffalo  | 69.3051 | 34.0029 | 18.8265 | 11.9599 |  9.52505 |
-| implicit | 90.0916 | 68.9974 | 59.0597 | 58.3854 | 58.1543  |
+| method   |     T=1 |     T=2 |     T=4 |     T=6 |     T=12 |
+|----------|---------|---------|---------|---------|----------|
+| buffalo  | 54.975  | 27.8395 | 15.8394 | 11.0378 |  7.34631 |
+| implicit | 71.4901 | 53.8176 | 50.2625 | 47.4736 | 44.6368  |
 
 This showed that Buffalo library can better utilize the CPU. 
 
-![](benchmark2.png)
-
 
 ## Bayesian Personalized Ranking Matrix Factorization
+
+![](benchmark2.png)
 
 - The number of latent feature vector dimension
 
@@ -44,7 +44,7 @@ This showed that Buffalo library can better utilize the CPU.
 
 - The number of threads
 
-| method   |      T=1 |     T=2 |     T=4 |     T=8 |    T=16 |
+| method   |      T=1 |     T=2 |     T=4 |     T=6 |    T=12 |
 |----------|----------|---------|---------|---------|---------|
-| buffalo  |  68.3064 | 40.763  | 23.9076 | 15.8787 | 11.8852 |
-| implicit | 135.255  | 75.1385 | 40.5113 | 28.0173 | 20.8871 |
+| buffalo  |  68.2997 | 39.2615 | 22.9208 | 18.2706 | 12.9425 |
+| implicit | 130.779  | 66.9705 | 35.1379 | 27.9193 | 19.894  |
