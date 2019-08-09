@@ -188,7 +188,7 @@ class Stream(Data):
         nnz = 0
         aux.psort(working_data_path, key=1)
         with open(working_data_path, "r") as fin, \
-            tempfile.NamedTemporaryFile(mode='w', delete=False) as w:
+            open(aux.get_temporary_file(), "w") as w:
             D = sum(1 for line in fin)
             fin.seek(0)
             probe, chunk = "junk", []
@@ -218,7 +218,6 @@ class Stream(Data):
         db["sppmi"].create_dataset("key", (nnz,), dtype='int32', maxshape=(nnz,))
         db["sppmi"].create_dataset("val", (nnz,), dtype='float32', maxshape=(nnz,))
         self._build_compressed_triplets(db['sppmi'], w.name, num_lines=nnz, max_key=sz, max_sz=sz)
-        self.temp_files.append(w.name)
 
     def _create_working_data(self, db, stream_main_path, itemids,
                              with_sppmi=False, windows=5):
@@ -234,7 +233,7 @@ class Stream(Data):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", ResourceWarning)
             if with_sppmi:
-                w_sppmi = tempfile.NamedTemporaryFile(mode='w', delete=False)
+                w_sppmi = open(aux.get_temporary_file(), "w")
             file_path = aux.get_temporary_file()
             with open(stream_main_path) as fin,\
                 open(file_path, 'w') as w:
@@ -320,10 +319,9 @@ class Stream(Data):
                 self.logger.debug(f'Working data is created on {tmp_main}')
                 self.logger.info('Building data part...')
                 self._build_data(db, tmp_main, validation_data)
-                self.temp_files.append(tmp_main)
                 if with_sppmi:
+                    self.logger.debug(f'sppmi data is created on {tmp_sppmi}')
                     self._build_sppmi(db, tmp_sppmi, k)
-                    self.temp_files.append(tmp_sppmi)
                 db.attrs['completed'] = 1
                 db.close()
                 self.handle = h5py.File(data_path, 'r')
