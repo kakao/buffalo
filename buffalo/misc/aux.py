@@ -8,6 +8,8 @@ import warnings
 import tempfile
 import subprocess
 
+from buffalo.misc import log
+
 _temporary_files = []
 
 
@@ -116,9 +118,9 @@ def copy_to_temporary_file(source_path, ignore_lines=0, chunk_size=8192, binary=
             return w.name
 
 
-def psort(path, parallel=-1, field_seperator=' ', key=1, output=None):
-    # TODO: We need better way for OS/platform compatibility. At least
-    # compatibility checking routine is needed.
+def psort(path, parallel=-1, field_seperator=' ', key=1, tmp_dir='/tmp/', buffer_mb=1024, output=None):
+    # TODO: We need better way for OS/platform compatibility.
+    # we need compatibility checking routine for this method.
     commands = ['sort', '-n', '-s']
     if parallel == -1:
         parallel = psutil.cpu_count()
@@ -128,15 +130,21 @@ def psort(path, parallel=-1, field_seperator=' ', key=1, output=None):
         output = path
     commands.extend(['-t', '{}'.format(field_seperator)])
     commands.extend(['-k', key])
+    commands.extend(['-T', tmp_dir])
+    commands.extend(['-S', '%sM' % buffer_mb])
     commands.extend(['-o', output])
     commands.append(path)
-    subprocess.check_output(map(str, commands), stderr=subprocess.STDOUT)
+    try:
+        subprocess.check_output(map(str, commands), stderr=subprocess.STDOUT, env={'LC_ALL': 'C'})
+    except Exception:
+        log.get_logger().error('Unexpected error for %s' % ' '.join(list(map(str, commands))))
+        raise
 
 
-def get_temporary_file(write_mode='w'):
+def get_temporary_file(root='/tmp/', write_mode='w'):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", ResourceWarning)
-        w = tempfile.NamedTemporaryFile(mode=write_mode, delete=False)
+        w = tempfile.NamedTemporaryFile(mode=write_mode, dir=root, delete=False)
         _temporary_files.append(w.name)
         return w.name
 
@@ -146,3 +154,7 @@ def __cleanup_tempory_files():
     for path in _temporary_files:
         if os.path.isfile(path):
             os.remove(path)
+
+
+def register_cleanup_file(path):
+    _temporary_files.append(path)

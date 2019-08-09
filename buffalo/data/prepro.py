@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import math
+import numpy as np
 
 
 class PreProcess(object):
@@ -24,7 +24,8 @@ class OneBased(PreProcess):
         return
 
     def __call__(self, v):
-        return 1.0
+        v[:] = 1.0
+        return v
 
     def post(self, db):
         return
@@ -39,12 +40,16 @@ class MinMaxScalar(PreProcess):
     def pre(self, header):
         return
 
-    def __call__(self, v):
-        self.value_min = min(self.value_min, v)
-        self.value_max = max(self.value_max, v)
-        return v
+    def __call__(self, V):
+        self.value_min = min(self.value_min, np.min(V))
+        self.value_max = max(self.value_max, np.max(V))
+        return V
 
     def post(self, db):
+        if self.value_max - self.value_min < 0.00000001:
+            db['val'][:] = 1.0
+            db['val'][:] *= self.opt.max
+            return
         sz = db['val'].shape[0]
         per = db['val'].chunks[0]
         for idx in range(0, sz, per):
@@ -61,8 +66,8 @@ class ImplicitALS(PreProcess):
     def pre(self, header):
         return
 
-    def __call__(self, v):
-        return math.log(1 + v / self.opt.epsilon)
+    def __call__(self, V):
+        return np.log(1 + V / self.opt.epsilon)
 
     def post(self, db):
         return

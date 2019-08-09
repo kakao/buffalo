@@ -68,7 +68,7 @@ extensions = [
                             site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
-              extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
+              extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-Og'] + extend_compile_flags),
     Extension(name="buffalo.algo.bpr",
               sources=['buffalo/algo/bpr.cpp'],
               include_dirs=['./include',
@@ -78,7 +78,7 @@ extensions = [
                             site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
-              extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
+              extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-Og'] + extend_compile_flags),
     Extension(name="buffalo.algo.w2v",
               sources=['buffalo/algo/w2v.cpp'],
               include_dirs=['./include',
@@ -99,6 +99,11 @@ extensions = [
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
+    Extension(name="buffalo.data.fileio",
+              sources=['buffalo/data/fileio.cpp'],
+              libraries=['gomp'],
+              extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-Og'] + extend_compile_flags),
+
 ]
 
 
@@ -146,7 +151,8 @@ class BuildExtention(build_ext, object):
         ext_files = ['buffalo/algo/als.pyx',
                      'buffalo/algo/bpr.pyx',
                      'buffalo/algo/w2v.pyx',
-                     'buffalo/misc/log.pyx']
+                     'buffalo/misc/log.pyx',
+                     'buffalo/data/fileio.pyx']
         for path in ext_files:
             from Cython.Build import cythonize
             cythonize(path)

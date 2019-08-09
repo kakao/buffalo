@@ -3,6 +3,7 @@ import os
 import unittest
 import tempfile
 
+from buffalo.misc.log import set_log_level
 from buffalo.data.mm import MatrixMarket, MatrixMarketOptions
 
 
@@ -41,6 +42,7 @@ class TestMatrixMarket(unittest.TestCase):
         self.assertTrue(MatrixMarketOptions().is_valid_option(opt))
 
     def test2_create(self):
+        set_log_level(3)
         opt = MatrixMarketOptions().get_default_option()
         opt.input.main = self.mm_path
         opt.input.uid = self.uid_path

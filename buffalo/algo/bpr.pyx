@@ -148,14 +148,6 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
         self.data = data
 
-    def fast_similar(self, onoff=True):
-        # TODO: implement
-        if onoff:
-            self.FQ = self.normalize(self.Q)
-        else:
-            if hasattr(self, 'FQ'):
-                del self.FQ
-
     def normalize(self, group='item'):
         if group == 'item':
             self.Q = self._normalize(self.Q)
@@ -336,4 +328,4 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
         return data
 
     def get_evaluation_metrics(self):
-        return ['val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error', 'prloss']
+        return ['val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error', 'train_loss']

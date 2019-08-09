@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import psutil
 import warnings
 import traceback
 from collections import Counter
@@ -147,8 +148,11 @@ class Stream(Data):
         return db, itemids
 
     def _build_data(self, db, working_data_path, validation_data):
+        self.logger.debug('building compressed triplets for rowwise...')
         self.prepro.pre(db)
+        buffer_mb = int(max(1024, psutil.virtual_memory().available / 1024 / 1024 / 3))
 
+        self.logger.debug('building compressed triplets for rowwise...')
         if self.opt.data.internal_data_type == 'stream':
             self._build_compressed_triplets(db['rowwise'], working_data_path,
                                             num_lines=db.attrs['num_nnz'],
@@ -156,7 +160,7 @@ class Stream(Data):
             self.prepro.post(db['rowwise'])
             self.fill_validation_data(db, validation_data)
         elif self.opt.data.internal_data_type == 'matrix':
-            aux.psort(working_data_path, key=1)
+            aux.psort(working_data_path, tmp_dir=self.opt.data.tmp_dir, key=1, buffer_mb=buffer_mb)
             self._build_compressed_triplets(db['rowwise'], working_data_path,
                                             num_lines=db.attrs['num_nnz'],
                                             max_key=db.attrs['num_users'])
@@ -164,7 +168,8 @@ class Stream(Data):
 
             self.fill_validation_data(db, validation_data)
 
-            aux.psort(working_data_path, key=2)
+            self.logger.debug('building compressed triplets for colwise...')
+            aux.psort(working_data_path, tmp_dir=self.opt.data.tmp_dir, key=2, buffer_mb=buffer_mb)
             self._build_compressed_triplets(db['colwise'], working_data_path,
                                             num_lines=db.attrs['num_nnz'],
                                             max_key=db.attrs['num_items'],

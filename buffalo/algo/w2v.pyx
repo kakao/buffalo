@@ -148,7 +148,6 @@ class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExte
         return None
 
     def initialize(self):
-        # TODO: implement
         assert self.data, 'Data is not setted'
         if self.opt.random_seed:
             np.random.seed(self.opt.random_seed)
@@ -228,11 +227,7 @@ class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExte
         return dist
 
     def _get_topk_recommendation(self, rows, topk):
-        # TODO: implement
         raise NotImplemented
-        p = self.P[rows]
-        topks = np.argsort(p.dot(self.Q.T) + self.Qb.T, axis=1)[:, -topk:][:,::-1]
-        return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk):
         if not isinstance(col, np.ndarray):
@@ -263,7 +258,7 @@ class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExte
                 self.obj.add_jobs(start_x, next_x, indptr, keys)
                 update_t += time.time() - start_t
                 pbar.update(sz)
-        self.logger.debug(f'Processed samples({updated}) elapsed(data feed: {feed_t:0.3f}s update: {update_t:0.3f})s')
+        self.logger.debug(f'processed({updated}) elapsed(data feed: {feed_t:0.3f}s update: {update_t:0.3f})s')
 
     def train(self):
         self.validation_result = {}

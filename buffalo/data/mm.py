@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-import warnings
+import psutil
 import traceback
 
 import h5py
@@ -112,8 +112,12 @@ class MatrixMarket(Data):
         return db, num_header_lines
 
     def _build_data(self, db, working_data_path, validation_data):
-        aux.psort(working_data_path, key=1)
+        self.logger.info('Building compressed triplets for rowwise...')
+        buffer_mb = int(max(1024, psutil.virtual_memory().available / 1024 / 1024 / 3))
+        aux.psort(working_data_path, tmp_dir=self.opt.data.tmp_dir, key=1, buffer_mb=buffer_mb)
+        self.logger.info('Preprocessing...')
         self.prepro.pre(db)
+        self.logger.info('Compressing...')
         self._build_compressed_triplets(db['rowwise'], working_data_path,
                                         num_lines=db.attrs['num_nnz'],
                                         max_key=db.attrs['num_users'])
@@ -121,7 +125,8 @@ class MatrixMarket(Data):
 
         self.fill_validation_data(db, validation_data)
 
-        aux.psort(working_data_path, key=2)
+        self.logger.info('Building compressed triplets for colwise...')
+        aux.psort(working_data_path, tmp_dir=self.opt.data.tmp_dir, key=2, buffer_mb=buffer_mb)
         self.prepro.pre(db)
         self._build_compressed_triplets(db['colwise'], working_data_path,
                                         num_lines=db.attrs['num_nnz'],
@@ -137,22 +142,65 @@ class MatrixMarket(Data):
         """
         vali_indexes = [] if 'vali' not in db else db['vali']['indexes']
         vali_lines = []
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", ResourceWarning)
-            file_path = aux.get_temporary_file()
-            with open(file_path, 'w') as w:
-                fin = open(source_path, mode='r')
-                for _ in range(ignore_lines):
-                    fin.readline()
-                target_indexes = set(vali_indexes)
-                for idx, line in enumerate(fin):
-                    if idx in target_indexes:
-                        vali_lines.append(line.strip())
-                    else:
-                        w.write(line)
-                w.close()
-                fin.close()
-                return w.name, vali_lines
+        file_path = aux.get_temporary_file(self.opt.data.tmp_dir)
+        with open(file_path, 'w') as w:
+            fin = open(source_path, mode='r')
+            file_size = fin.seek(0, 2)
+            fin.seek(0, 0)
+            for _ in range(ignore_lines):
+                fin.readline()
+            total = file_size - fin.tell()
+            buffered = ''
+            CHUNK_SIZE = 4096 * 1000
+            total_lines = 0
+            vali_indexes = sorted(vali_indexes)
+            target_index = vali_indexes[0] if vali_indexes else -1
+            vali_indexes = vali_indexes[1:]
+            with log.pbar(log.INFO, total=total, mininterval=10) as pbar:
+                while True:
+                    buffered += fin.read(CHUNK_SIZE)
+                    if buffered == '':
+                        break
+                    current_file_position = fin.tell()
+                    pbar.update(CHUNK_SIZE)
+                    num_lines_on_buffer = buffered.count('\n')
+                    # search the position of validation sample and extract
+                    # it from training data
+                    while target_index >= 0 and target_index <= (total_lines + num_lines_on_buffer):
+                        no_line = total_lines
+                        new_buffered = ''
+                        from_index = 0
+                        for idx, c in enumerate(buffered):
+                            if c == '\n':
+                                if no_line == target_index:
+                                    vali_lines.append(buffered[from_index:idx])
+                                    if from_index > 0:
+                                        w.write(buffered[0:from_index])
+                                    new_buffered = buffered[idx + 1:]
+                                    no_line += 1
+                                    total_lines += 1
+                                    num_lines_on_buffer -= 1
+                                    break
+                                no_line += 1
+                                total_lines += 1
+                                from_index = idx + 1
+                                num_lines_on_buffer -= 1
+                        buffered = new_buffered
+                        if vali_indexes:
+                            target_index, vali_indexes = vali_indexes[0], vali_indexes[1:]
+                        else:
+                            target_index = -1
+                    where = buffered.rfind('\n')
+                    total_lines += num_lines_on_buffer
+                    if where != -1:
+                        w.write(buffered[:where + 1])
+                        buffered = buffered[where + 1:]
+                    elif current_file_position == file_size:
+                        w.write(buffered)
+                        buffered = ''
+            w.close()
+            fin.close()
+            return w.name, vali_lines
 
     def create(self) -> h5py.File:
         mm_main_path = self.opt.input.main
@@ -165,7 +213,7 @@ class MatrixMarket(Data):
             self.open(data_path)
             return
 
-        self.logger.info('Create database from matrix market files')
+        self.logger.info('Create the database from matrix market file.')
         with open(mm_main_path) as fin:
             header = '%'
             while header.startswith('%'):

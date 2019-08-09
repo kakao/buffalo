@@ -3,6 +3,7 @@ import os
 os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 import time
+import h5py
 import numpy as np
 from implicit.datasets.movielens import get_movielens
 
@@ -48,11 +49,15 @@ class ImplicitLib(Benchmark):
     def __init__(self):
         super().__init__()
 
-    def get_database(self, name):
+    def get_database(self, name, **kwargs):
         if name == 'ml20m':
             _, ratings = get_movielens('20m')
             ratings.data = np.ones(len(ratings.data))
             ratings = ratings.tocsr()
+            return ratings
+        elif name == 'kakao_reco_medium':
+            db = h5py.File('kakao_reco_medium.h5py')
+            ratings = db_to_coo(db)
             return ratings
 
     def als(self, database, **kwargs):
@@ -61,7 +66,7 @@ class ImplicitLib(Benchmark):
         model = AlternatingLeastSquares(
             **opts
         )
-        ratings = self.get_database(database)
+        ratings = self.get_database(database, **kwargs)
 
         start_t = time.time()
         model.fit(ratings)
@@ -74,7 +79,7 @@ class ImplicitLib(Benchmark):
         model = BayesianPersonalizedRanking(
             **opts
         )
-        ratings = self.get_database(database)
+        ratings = self.get_database(database, **kwargs)
 
         start_t = time.time()
         model.fit(ratings)
@@ -86,19 +91,24 @@ class BuffaloLib(Benchmark):
     def __init__(self):
         super().__init__()
 
-    def get_database(self, name):
+    def get_database(self, name, **kwargs):
         from buffalo.data.mm import MatrixMarketOptions
         data_opt = MatrixMarketOptions().get_default_option()
         data_opt.validation = None
         data_opt.data.use_cache = True
+        data_opt.batch_mb = kwargs.get('batch_mb', 1024)
         if name == 'ml20m':
             data_opt.input.main = '../tests/ml-20m/main'
+        elif name == 'kakao_reco_medium':
+            data_opt.data.path = 'kakao_reco_medium.h5py'
+            data_opt.data.tmp_dir = './tmp/'
+            data_opt.input.main = '../tests/kakao_reco_medium/main'
         return data_opt
 
     def als(self, database, **kwargs):
         from buffalo.algo.als import ALS
         opts = self.get_option('buffalo', 'als', **kwargs)
-        data_opt = self.get_database(database)
+        data_opt = self.get_database(database, **kwargs)
         als = ALS(opts, data_opt=data_opt)
         als.initialize()
         start_t = time.time()
@@ -109,7 +119,7 @@ class BuffaloLib(Benchmark):
     def bpr(self, database, **kwargs):
         from buffalo.algo.bpr import BPRMF
         opts = self.get_option('buffalo', 'bpr', **kwargs)
-        data_opt = self.get_database(database)
+        data_opt = self.get_database(database, **kwargs)
         bpr = BPRMF(opts, data_opt=data_opt)
         bpr.initialize()
         start_t = time.time()

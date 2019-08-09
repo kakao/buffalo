@@ -74,6 +74,7 @@ class TqdmLogger(io.StringIO):
     def flush(self):
         if self.buf.strip():
             self.logger(self.buf)
+            self.buf = ''
 
 
 def get_logger(name=__file__, no_fileno=False):

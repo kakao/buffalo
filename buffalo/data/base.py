@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 import os
 import abc
-import atexit
+import psutil
 
 import h5py
 import numpy as np
 
 from buffalo.data import prepro
 from buffalo.misc import aux, log
+from buffalo.data.fileio import chunking_file
 
 
 class Data(object):
@@ -49,12 +50,12 @@ class Data(object):
         self.verify()
 
     def verify(self):
-        assert self.handle, 'DB is not opened'
+        assert self.handle, 'Database is not opened'
         if self.get_header()['completed'] != 1:
-            raise RuntimeError('DB is corrupted or partially built. Please try again, after remove it.')
+            raise RuntimeError('Database is corrupted or partially built. Please try again, after remove it.')
 
     def get_header(self):
-        assert self.handle, 'DB is not opened'
+        assert self.handle, 'Database is not opened'
         if not self.header:
             self.header = {'num_nnz': self.handle.attrs['num_nnz'],
                            'num_users': self.handle.attrs['num_users'],
@@ -64,12 +65,43 @@ class Data(object):
 
     def get_group(self, group_name='rowwise'):
         assert group_name in ['rowwise', 'colwise', 'vali', 'idmap'], 'Unexpected group_name: {}'.format(group_name)
-        assert self.handle, 'DB is not opened'
+        assert self.handle, 'Database is not opened'
         group = self.handle[group_name]
         return group
 
     def has_group(self, name):
         return name in self.handle
+
+    def _iterate_matrix(self, axis, use_repr_name, userids, itemids):
+        assert axis in ['rowwise', 'colwise'], 'Unexpected data axis: {}'.format(axis)
+        assert self.handle, 'Database is not opened'
+        group = self.handle[axis]
+        data_index = 0
+        for u, end in enumerate(group['indptr']):
+            keys = group['key'][data_index:end]
+            vals = group['val'][data_index:end]
+            if use_repr_name:
+                for k, v in zip(keys, vals):
+                    yield userids(u), itemids(k), v
+            else:
+                for k, v in zip(keys, vals):
+                    yield u, k, v
+            data_index = end
+
+    def _iterate_stream(self, axis, use_repr_name, userids, itemids):
+        assert axis in ['rowwise'], 'Unexpected date axis: {}'.format(axis)
+        assert self.handle, 'Database is not opened'
+        group = self.handle[axis]
+        data_index = 0
+        for u, end in enumerate(group['indptr']):
+            keys = group['key'][data_index:end]
+            if use_repr_name:
+                for k in keys:
+                    yield userids(u), itemids(k)
+            else:
+                for k in keys:
+                    yield u, k
+            data_index = end
 
     def iterate(self, axis='rowwise', use_repr_name=False) -> [int, int, float]:
         """Iterate over datas
@@ -91,39 +123,14 @@ class Data(object):
                 userids, itemids = itemids, userids
 
         if self.opt.data.internal_data_type == 'matrix':
-            assert axis in ['rowwise', 'colwise'], 'Unexpected data axis: {}'.format(axis)
-            assert self.handle, 'DB is not opened'
-            group = self.handle[axis]
-            data_index = 0
-            for u, end in enumerate(group['indptr']):
-                keys = group['key'][data_index:end]
-                vals = group['val'][data_index:end]
-                if use_repr_name:
-                    for k, v in zip(keys, vals):
-                        yield userids(u), itemids(k), v
-                else:
-                    for k, v in zip(keys, vals):
-                        yield u, k, v
-                data_index = end
+            return self._iterate_matrix(axis, use_repr_name, userids, itemids)
         elif self.opt.data.internal_data_type == 'stream':
-            assert axis in ['rowwise'], 'Unexpected date axis: {}'.format(axis)
-            assert self.handle, 'DB is not opened'
-            group = self.handle[axis]
-            data_index = 0
-            for u, end in enumerate(group['indptr']):
-                keys = group['key'][data_index:end]
-                if use_repr_name:
-                    for k in keys:
-                        yield userids(u), itemids(k)
-                else:
-                    for k in keys:
-                        yield u, k
-                data_index = end
+            return self._iterate_stream(axis, use_repr_name, userids, itemids)
 
     def get(self, index, axis='rowwise') -> [int, int, float]:
         if self.opt.data.internal_data_type == 'matrix':
             assert axis in ['rowwise', 'colwise'], 'Unexpected data axis: {}'.format(axis)
-            assert self.handle, 'DB is not opened'
+            assert self.handle, 'Database is not opened'
             group = self.handle[axis]
             begin = 0 if index == 0 else group['indptr'][index - 1]
             end = group['indptr'][index]
@@ -132,7 +139,7 @@ class Data(object):
             return (keys, vals)
         elif self.opt.data.internal_data_type == 'stream':
             assert axis in ['rowwise'], 'Unexpected date axis: {}'.format(axis)
-            assert self.handle, 'DB is not opened'
+            assert self.handle, 'Database is not opened'
             group = self.handle[axis]
             begin = 0 if index == 0 else group['indptr'][index - 1]
             end = group['indptr'][index]
@@ -191,7 +198,9 @@ class Data(object):
             g.create_dataset('col', (sz,), dtype='int32', maxshape=(sz,))
             g.create_dataset('val', (sz,), dtype='float32', maxshape=(sz,))
             g.create_dataset('indexes', (sz,), dtype='int64', maxshape=(sz,))
-            g['indexes'][:] = np.random.choice(num_nnz, sz, replace=False)
+            # Watch out, create_working_data cannot deal with last line of data
+            # for validation data thus we have to reduce index 1.
+            g['indexes'][:] = np.random.choice(num_nnz - 1, sz, replace=False)
             num_nnz -= sz
         elif method in ['newest']:
             sz = kwargs['num_validation_samples']
@@ -208,55 +217,61 @@ class Data(object):
         if not validation_data:
             return
         validation_data = [line.strip().split() for line in validation_data]
-        assert len(validation_data) == db['vali'].attrs['num_samples'], 'Given data data is not matched with required for validation data'
+        assert len(validation_data) == db['vali'].attrs['num_samples'], 'Mimatched validation data'
         db['vali']['row'][:] = [int(r) - 1 for r, _, _ in validation_data]  # 0-based
         db['vali']['col'][:] = [int(c) - 1 for _, c, _ in validation_data]  # 0-based
-        db['vali']['val'][:] = [self.value_prepro(float(v)) for _, _, v in validation_data]
+        V = np.array([float(v) for _, _, v in validation_data], dtype=np.float32)
+        db['vali']['val'][:] = self.value_prepro(V)
 
-    def _build_compressed_triplets(self, db, mm_path, num_lines, max_key, data_chunk_size=1000000, switch_row_col=False):
-        # NOTE: this part is the bottle-neck, can we do better?
-        with open(mm_path) as fin:
-            prev_key, data_index, data_rear_index = 0, 0, 0
-            chunk, data_chunk = [], []
-            for line in log.iter_pbar(log.DEBUG, iterable=fin, total=num_lines, mininterval=30):
-                tkns = line.strip().split()
-                if tkns[0] == '%' or len(tkns) != 3:
-                    continue
-                u, i, v = int(tkns[0]) - 1, int(tkns[1]) - 1, float(tkns[2])
-                v = self.value_prepro(v)
-                if switch_row_col:
-                    u, i = i, u
-                if prev_key != u:
-                    sz = len(chunk)
-                    data_chunk.extend(chunk)
-                    data_index += sz
-                    db['indptr'][prev_key] = data_index
-                    chunk = []
-                    for empty_index in range(prev_key + 1, u):
-                        db['indptr'][empty_index] = data_index
-                    prev_key = u
-
-                chunk.append((i, v))
-                if len(data_chunk) % data_chunk_size == 0:
-                    sz = len(data_chunk)
-                    db['key'][data_rear_index:data_rear_index + sz] = [k for k, _ in data_chunk]
-                    db['val'][data_rear_index:data_rear_index + sz] = [v for _, v in data_chunk]
-                    data_rear_index += sz
-                    data_chunk = []
-            if chunk:
-                sz = len(chunk)
-                data_chunk.extend(chunk)
-                data_index += sz
-                db['indptr'][prev_key] = data_index
-                prev_key += 1
-            if len(data_chunk) > 0:
-                sz = len(data_chunk)
-                db['key'][data_rear_index:data_rear_index + sz] = [k for k, _ in data_chunk]
-                db['val'][data_rear_index:data_rear_index + sz] = [v for _, v in data_chunk]
-                data_rear_index += sz
-                data_chunk = []
-            for empty_index in range(prev_key, max_key):
-                db['indptr'][empty_index] = data_index
+    def _build_compressed_triplets(self, db, mm_path, num_lines, max_key, data_chunk_size=10000, switch_row_col=False):
+        num_workers = psutil.cpu_count()
+        while num_workers > 20:
+            num_workers = int(num_workers / 2)
+        num_chunks = num_workers * 2
+        self.logger.info(f'Dividing into {num_chunks}...')
+        job_files = chunking_file(mm_path,
+                                  self.tmp_root,
+                                  total_lines=num_lines,
+                                  num_chunks=num_chunks,
+                                  sep_idx=0 if not switch_row_col else 1,
+                                  num_workers=num_workers)
+        self.logger.info('Total job files: %s' % len(job_files))
+        with log.pbar(log.INFO, total=len(job_files), mininterval=10) as pbar:
+            indptr_index = 0
+            data_index = 0
+            RECORD_SIZE = 12
+            for job in job_files:
+                with open(job, 'rb') as fin:
+                    total_size = fin.seek(0, 2)
+                    if total_size == 0:
+                        continue
+                    total_records = int(total_size / RECORD_SIZE)
+                    fin.seek(0, 0)
+                    data = np.fromstring(fin.read(),
+                                         dtype=np.dtype([('u', 'i'),
+                                                         ('i', 'i'),
+                                                         ('v', 'f')]),
+                                         count=total_records)
+                    U, I, V = data['u'], data['i'], data['v']
+                    if switch_row_col:
+                        U, I = I, U
+                    U -= 1
+                    I -= 1
+                    V = self.value_prepro(V)
+                    assert data_index + total_records <= num_lines, 'Requests data size(%s) exceed capacity(%s)' % (data_index + total_records, num_lines)
+                    db['key'][data_index:data_index + total_records] = I
+                    db['val'][data_index:data_index + total_records] = V
+                    indptr = [data_index + i
+                              for i in range(1, total_records)
+                              for j in range(U[i] - U[i-1])]
+                    indptr.append(data_index + total_records)
+                    db['indptr'][indptr_index:indptr_index + len(indptr)] = indptr
+                    assert indptr_index + len(indptr) <= max_key
+                    data_index += total_records
+                    indptr_index += len(indptr)
+                pbar.update(1)
+        for path in job_files:
+            os.remove(path)
 
 
 class DataOption(object):

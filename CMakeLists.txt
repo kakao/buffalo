@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.8.8)
 project (cbuffalo)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fPIC -Wall -Wextra -fopenmp -O3 -ggdb -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fPIC -Wall -Wextra -fopenmp -Og -ggdb -march=native")
 
 include(GNUInstallDirs)
 
