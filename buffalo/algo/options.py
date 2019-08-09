@@ -96,6 +96,21 @@ class CFROption(AlgoOption):
         super(CFROption, self).__init__(*args, **kwargs)
 
     def get_default_option(self):
+        """ Basic Options for CoFactor
+        options:
+            dim(int): latent space dimension
+            num_iters(int): number of iterations for training
+            num_workers(int): number of threads
+            num_cg_max_iters(int): number of maximum iterations for conjuaget gradient optimizer
+            reg_u(float): L2 regularization coefficient for user embedding matrix
+            reg_i(float): L2 regularization coefficient for item embedding matrix
+            reg_c(float): L2 regularization coefficient for context embedding matrix
+            cg_tolerance(float): tolerance for early stopping conjugate gradient optimizer
+            alpha(float): coefficient of giving more weights to losses on positive samples
+            l(float): relative weight of loss on user-item relation over item-context relation
+            compute_loss(bool): true if one wants to compute train loss
+            optimizer(string): optimizer, should be in [llt, ldlt, manual_cg, eigen_cg]
+        """
         opt = super().get_default_option()
         opt.update({
             'save_factors': False,
@@ -118,7 +133,7 @@ class CFROption(AlgoOption):
         return Option(opt)
 
     def get_default_optimize_option(self):
-        """Optimization Options for ALS
+        """Optimization Options for CoFactor
         options:
             loss(str): Target loss to optimize.
             max_trials(int, option): Maximum experiments for optimization. If not given, run forever.
