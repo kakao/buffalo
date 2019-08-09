@@ -181,8 +181,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
                 err += self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)
                 update_t += time.time() - start_t
                 pbar.update(sz)
-            pbar.refresh()
-        self.logger.debug('updated %s processed(%s) elapsed(data feed: %.3f update: %.3f)' % (group, updated, feed_t, update_t))
+        self.logger.debug('%s updated: processed(%s) elapsed(data feed: %.3f update: %.3f)' % (group, updated, feed_t, update_t))
         return err
 
     def train(self):
@@ -202,7 +201,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
                 self.validation_result = self.get_validation_results()
                 vali_t = time.time() - start_t
                 val_str = ' '.join([f'{k}:{v:0.5f}' for k, v in self.validation_result.items()])
-                self.logger.info(f'Validation: {val_str} Elased {vali_t:0.3f}')
+                self.logger.info(f'Validation: {val_str} Elapsed {vali_t:0.3f} secs')
                 metrics.update({'val_%s' % k: v
                                 for k, v in self.validation_result.items()})
             self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, train_t))

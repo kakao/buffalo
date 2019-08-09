@@ -196,7 +196,7 @@ void CW2V::worker(int worker_id)
     int window_size = opt_["window"].int_value();
     int num_negatives = opt_["num_negative_samples"].int_value();
     int random_seed = opt_["random_seed"].int_value();
-    bool compute_loss = opt_["evaluation_on_learning"].bool_value();
+    bool compute_loss = opt_["compute_loss_on_training"].bool_value();
     int vocab_size = L0_rows_;
 
     vector<int> N;

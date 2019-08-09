@@ -35,9 +35,9 @@ public:
     void launch_workers();
 
     void initialize_model(
-            Map<MatrixXf>& P,
-            Map<MatrixXf>& Q,
-            Map<MatrixXf>& Qb,
+            Map<FactorTypeRowMajor>& P,
+            Map<FactorTypeRowMajor>& Q,
+            Map<FactorTypeRowMajor>& Qb,
             int64_t num_total_samples);
 
     void set_cumulative_table(int64_t* cum_table, int size);
@@ -56,17 +56,15 @@ public:
 
     void wait_until_done();
 
-    int get_negative_sample(unordered_set<int>& seen);
-
     double compute_loss(
             Map<VectorXi>& users,
             Map<VectorXi>& positives,
             Map<VectorXi>& negatives);
 
     void update_adam(
-            FactorType& grad,
-            FactorType& momentum,
-            FactorType& velocity,
+            FactorTypeRowMajor& grad,
+            FactorTypeRowMajor& momentum,
+            FactorTypeRowMajor& velocity,
             int i,
             double beta1,
             double beta2);
@@ -89,15 +87,14 @@ private:
     string optimizer_;
     double total_processed_;
 
-    mt19937 rng_;
 
     int64_t* cum_table_;
     int cum_table_size_;
     vector<int> P_samples_per_coordinates_;
     vector<int> Q_samples_per_coordinates_;
-    FactorType gradP_, gradQ_, gradQb_;
-    FactorType momentumP_, momentumQ_, momentumQb_;
-    FactorType velocityP_, velocityQ_, velocityQb_;
+    FactorTypeRowMajor gradP_, gradQ_, gradQb_;
+    FactorTypeRowMajor momentumP_, momentumQ_, momentumQb_;
+    FactorTypeRowMajor velocityP_, velocityQ_, velocityQb_;
 
     float exp_table_[EXP_TABLE_SIZE];
 

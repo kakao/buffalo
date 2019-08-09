@@ -49,6 +49,7 @@ class TestBase(unittest.TestCase):
                     bag.append(iids[int(i) - 1])
                 fout.write(" ".join(bag))
         cls.ml_100k = './ml-100k/'
+
         if not os.path.isdir('ml-20m'):
             raise RuntimeError('Cannot find the ./ml-20m directory')
 
@@ -103,12 +104,9 @@ class TestBase(unittest.TestCase):
                     bag.append(i)
                 fout.write(" ".join(bag))
         cls.ml_20m = './ml-20m/'
-        if not os.path.isfile('./text8/main'):
-            with open('./text8/text8') as fin:
-                words = fin.readline().strip().split()
-                with open('./text8/main', 'w') as fout:
-                    for i in range(0, len(words), 1000):
-                        fout.write('%s\n' % ' '.join(words[i:i + 1000]))
+
+        if not os.path.isdir('text8'):
+            raise RuntimeError('Cannot find the ./text8 directory')
         cls.text8 = './text8/'
         cls.temp_files = []
 

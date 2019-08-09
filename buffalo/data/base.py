@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import abc
+import atexit
 
 import h5py
 import numpy as np
@@ -17,7 +18,6 @@ class Data(object):
             aux.mkdirs(self.tmp_root)
         self.handle = None
         self.header = None
-        self.temp_files = []
         self.prepro = prepro.PreProcess(self.opt.data)
         self.value_prepro = self.prepro
         if self.opt.data.value_prepro:
@@ -138,13 +138,6 @@ class Data(object):
             end = group['indptr'][index]
             keys = group['key'][begin:end]
             return (keys,)
-
-    def __del__(self):
-        if self.handle:
-            self.handle = None
-            self.header = None
-        for path in self.temp_files:
-            os.remove(path)
 
     def close(self):
         if self.handle:
