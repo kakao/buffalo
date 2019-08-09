@@ -101,6 +101,8 @@ class Stream(Data):
         vali_n = self.opt.data.validation.get('n', 0)
         num_nnz, vali_limit, itemids = 0, 0, set()
         self.logger.info(f'gathering itemids from {main_path}...')
+        if self.opt.data.validation.name not in ["oldest", "newest"]:
+            vali_n = 0
         with open(main_path) as fin:
             for line in log.iter_pbar(log_level=log.DEBUG, iterable=fin):
                 data = line.strip().split()
@@ -114,7 +116,6 @@ class Stream(Data):
                     num_nnz += (data_size - _vali_size)
                 elif self.opt.data.internal_data_type == 'matrix':
                     num_nnz += len(set(data[:(data_size - _vali_size)]))
-
         if iid_path:
             with open(iid_path) as fin:
                 itemids = {iid.strip(): idx + 1 for idx, iid in enumerate(fin)}
@@ -239,7 +240,7 @@ class Stream(Data):
                 tempfile.NamedTemporaryFile(mode='w', delete=False) as w:
                 total_index = 0
                 internal_data_type = self.opt.data.internal_data_type
-                for line_idx, data in enumerate(fin):
+                for line_idx, data in log.iter_pbar(log_level=log.DEBUG, iterable=enumerate(fin)):
                     data = data.strip().split()
                     total_data_size = len(data)
                     user = line_idx + 1
@@ -266,12 +267,17 @@ class Stream(Data):
                                 vali_data.append(col)
                             else:
                                 train_data.append(col)
+                    total_index += len(data)
                     if internal_data_type == 'stream':
                         for col in train_data:
                             w.write(f'{user} {col} 1\n')
+                        for col in vali_data:
+                            vali_lines.append(f'{user} {col} {val}')
                     else:
                         for col, val in Counter(train_data).items():
                             w.write(f'{user} {col} {val}\n')
+                        for col, val in Counter(vali_data).items():
+                            vali_lines.append(f'{user} {col} {val}')
                     if with_sppmi:
                        sz = len(train_data)
                        for i in range(sz):
@@ -282,8 +288,6 @@ class Stream(Data):
                                _w, _c = train_data[i], train_data[j]
                                w_sppmi.write(f'{_w} {_c}\n')
                                w_sppmi.write(f'{_c} {_w}\n')
-                    for col, val in Counter(vali_data).items():
-                        vali_lines.append(f'{user} {col} {val}')
                 if with_sppmi:
                     w_sppmi.close()
                     return w.name, vali_lines, w_sppmi.name

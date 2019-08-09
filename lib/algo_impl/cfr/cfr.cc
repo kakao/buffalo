@@ -294,48 +294,5 @@ double CCFR::partial_update_context(int start_x, int next_x,
     return reg_c_ * accumulate(losses.begin(), losses.end(), 0.0);
 }
 
-void CCFR::_leastsquare(Map<MatrixType>& X, int idx, MatrixType& A, VectorType& y){
-    VectorType r, p;
-    float rs_old, rs_new, alpha, beta;
-    ConjugateGradient<MatrixType, Lower|Upper> cg;
-    // use switch statement instead of if statement just for the clarity of the code
-    // no performance improvement
-    switch (optimizer_code_){
-        case 0: // llt
-            X.row(idx).noalias() = A.llt().solve(y.transpose());
-            break;
-        case 1: // ldlt
-            X.row(idx).noalias() = A.ldlt().solve(y.transpose());
-            break;
-        case 2: 
-            // manual implementation of conjugate gradient descent
-            // no preconditioning
-            // thus faster in case of small number of iterations than eigen implementation
-            r = y - X.row(idx) * A;
-            if (y.dot(y) < r.dot(r)){
-                X.row(idx).setZero(); r = y;
-            }
-            p = r;
-            for (int it=0; it<num_cg_max_iters_; ++it){
-                rs_old = r.dot(r);
-                alpha = rs_old / (p * A).dot(p);
-                X.row(idx).noalias() += alpha * p;
-                r.noalias() -= alpha * (p * A);
-                rs_new = r.dot(r);
-                // stop iteration if rs_new is sufficiently small
-                if (rs_new < cg_tolerance_)
-                    break;
-                beta = rs_new / rs_old;
-                p.noalias() = r + beta * p;
-            }
-            break;
-        case 3: // eigen implementation of conjugate gradient descent
-            cg.setMaxIterations(num_cg_max_iters_).compute(A);
-            X.row(idx).noalias() = cg.solve(y.transpose());
-            break;
-        default:
-            break;
-    }
-}
 
 } // namespace cfr

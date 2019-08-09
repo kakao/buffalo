@@ -20,7 +20,7 @@ class TestBase(unittest.TestCase):
             aux.psort(in_path, field_seperator="\t", key=1)
 
             with open('./ml-100k/main', 'w') as fout:
-                fout.write('%%MatrixMarket matrix coordinate integer general\n%\n%\n943 1682 80000\n')
+                fout.write('%%MatrixMarket matrix coordinate integer general\n%\n%\n943 1682 100000\n')
                 with open('./ml-100k/u.data') as fin:
                     for line in fin:
                         u, i, v, ts = line.strip().split('\t')

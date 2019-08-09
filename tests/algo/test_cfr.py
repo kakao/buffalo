@@ -3,13 +3,13 @@ import unittest
 from .base import TestBase
 from buffalo.misc import aux
 from buffalo.algo.cfr import CFR
+from buffalo.algo.als import ALS
 from buffalo.misc.log import set_log_level
 from buffalo.algo.options import CFROption
 from buffalo.data.stream import StreamOptions
 
 
 class TestCFR(TestBase):
-    '''
     def test0_get_default_option(self):
         CFROption().get_default_option()
         self.assertTrue(True)
@@ -45,13 +45,12 @@ class TestCFR(TestBase):
         c.initialize()
         self.assertEqual(c.U.shape, (943, 20))
         self.assertEqual(c.I.shape, (1682, 20))
-    '''
 
     def test4_train(self):
         set_log_level(3)
         opt = CFROption().get_default_option()
         opt.dim = 20
-        opt.optimizer = "eigen_cgd"
+        opt.optimizer = "manual_cgd"
         data_opt = StreamOptions().get_default_option()
         data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
@@ -64,6 +63,56 @@ class TestCFR(TestBase):
         c.initialize()
         c.train()
         self.assertTrue(True)
+
+    def test5_validation(self, ndcg=0.06, map=0.04):
+        set_log_level(3)
+        opt = CFROption().get_default_option()
+        opt.dim = 20
+        opt.optimizer = "manual_cgd"
+        opt.validation = aux.Option({'topk': 10})
+        opt.tensorboard = aux.Option({'root': './tb',
+                                      'name': 'cfr'})
+        data_opt = StreamOptions().get_default_option()
+        data_opt.data.validation.name = "sample"
+        data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
+        data_opt.data.internal_data_type = "matrix"
+        data_opt.input.main = self.ml_100k + 'stream'
+        data_opt.input.uid = self.ml_100k + 'uid'
+        data_opt.input.iid = self.ml_100k + 'iid'
+        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
+
+        c = CFR(opt, data_opt=data_opt)
+        c.initialize()
+        c.train()
+        results = c.get_validation_results()
+        self.assertTrue(results['ndcg'] > ndcg)
+        self.assertTrue(results['map'] > map)
+
+    def test6_topk(self):
+        set_log_level(1)
+        opt = CFROption().get_default_option()
+        opt.dim = 20
+        opt.optimizer = "manual_cgd"
+        opt.validation = aux.Option({'topk': 10})
+        data_opt = StreamOptions().get_default_option()
+        data_opt.data.validation.name = "sample"
+        data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
+        data_opt.data.internal_data_type = "matrix"
+        data_opt.input.main = self.ml_100k + 'stream'
+        data_opt.input.uid = self.ml_100k + 'uid'
+        data_opt.input.iid = self.ml_100k + 'iid'
+        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
+
+        c = CFR(opt, data_opt=data_opt)
+        c.initialize()
+        c.train()
+        self.assertTrue(len(c.topk_recommendation('1', 10)['1']), 10)
+        ret_a = [x for x, _ in c.most_similar('49.Star_Wars_(1977)')]
+        self.assertIn('180.Return_of_the_Jedi_(1983)', ret_a)
+        c.normalize()
+        ret_b = [x for x, _ in c.most_similar('49.Star_Wars_(1977)')]
+        self.assertIn('180.Return_of_the_Jedi_(1983)', ret_b)
+        self.assertEqual(ret_a, ret_b)
 
 
 if __name__ == '__main__':

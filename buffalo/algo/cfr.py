@@ -49,6 +49,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
                          self.opt.alpha, self.opt.l, self.opt.cg_tolerance,
                          self.opt.reg_u, self.opt.reg_i, self.opt.reg_c,
                          self.opt.compute_loss, self.opt.optimizer.encode("utf8"))
+        self.is_initialized = False
 
         self.data = None
         data = kwargs.get('data')
@@ -103,6 +104,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.obj.set_embedding(self.C, "context".encode("utf8"))
         self.obj.set_embedding(self.Ib, "item_bias".encode("utf8"))
         self.obj.set_embedding(self.Cb, "context_bias".encode("utf8"))
+        self.is_initialized = True
 
     def _get_topk_recommendation(self, rows, topk):
         u = self.U[rows]
@@ -184,6 +186,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         return l * (alpha * vsum + num_users * num_items) + sppmi_nnz
 
     def train(self):
+        assert self.is_initialized, "embedding matrix is not initialized"
         buf = self._get_buffer()
         best_loss, rmse, self.validation_result = 987654321.0, None, {}
         self.prepare_evaluation()
@@ -203,9 +206,9 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
                 vali_t = time.time() - start_t
                 val_str = ' '.join([f'{k}:{v:0.5f}' for k, v in self.validation_result.items()])
                 self.logger.info(f'Validation: {val_str} Elased {vali_t:0.3f}')
-                metrics.update({'val_%s' % k: v
+                metrics.update({'vali_%s' % k: v
                                 for k, v in self.validation_result.items()})
-            self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, loss, train_t))
+            self.logger.info('Iteration %d: Loss %.3f Elapsed %.3f secs' % (i + 1, loss, train_t))
             self.update_tensorboard_data(metrics)
             if self.opt.save_best and best_loss > loss and self.periodical(self.opt.save_period, i):
                 best_loss = loss
