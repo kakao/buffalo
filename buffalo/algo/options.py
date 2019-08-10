@@ -8,6 +8,7 @@ class AlgoOption(InputOptions):
 
     def get_default_option(self):
         opt = {
+            'evaluation_on_learning': True,
             'compute_loss_on_training': True,
             'save_best': False,
             'evaluation_period': 1,
