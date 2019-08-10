@@ -167,6 +167,8 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def init_factors(self):
         header = self.data.get_header()
+        for attr_name in ['P', 'Q', 'Qb']:
+            setattr(self, attr_name, None)
         self.P = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
                                          size=(header['num_users'], self.opt.d)).astype("float32"), order='C')
         self.Q = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),

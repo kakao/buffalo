@@ -203,6 +203,7 @@ class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.logger.info(f'Vocab({total_vocab}) TotalWords({total_word_count})')
 
     def init_factors(self, vocab_size):
+        self.L0 = None
         self.L0 = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
                                          size=(vocab_size, self.opt.d)).astype("float32"),
                          order='C')
