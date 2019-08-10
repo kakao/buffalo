@@ -29,19 +29,26 @@ class BufferedDataMatrix(BufferedData):
     This class feed chunked data to training step.
     """
     def __init__(self):
-        super(BufferedDataMatrix, self).__init__()
+        super().__init__()
         self.group = 'rowwise'
         self.major = {'rowwise': {}, 'colwise': {}}
+
+    def free(self, buf):
+        buf['indptr'] = None
+        buf['keys'] = None
+        buf['vals'] = None
 
     def initialize(self, data):
         self.data = data
         # 16 bytes(indptr8, keys4, vals4)
-        limit = max(int(((self.data.opt.data.batch_mb * 1000 * 1000) / 16.)), 64)
+        limit = max(int(((self.data.opt.data.batch_mb * 1024 * 1024) / 16.)), 64)
         minimum_required_batch_size = 0
         for G in ['rowwise', 'colwise']:
             lim = int(limit / 2)
             group = data.get_group(G)
             header = data.get_header()
+            if self.major[G]:
+                self.free(self.major[G])
             m = self.major[G]
             m['index'] = 0
             m['limit'] = lim
@@ -51,8 +58,9 @@ class BufferedDataMatrix(BufferedData):
             m['indptr'] = group['indptr'][::]
             minimum_required_batch_size = max([m['indptr'][i] - m['indptr'][i - 1]
                                                for i in range(1, len(m['indptr']))])
-            m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='F')
-            m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order='F')
+            m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='C')
+            m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order='C')
+        self.logger.info(f'Set data buffer size as {limit}(minimum required batch size is {minimum_required_batch_size}).')
         if minimum_required_batch_size > int(limit / 2):
             self.logger.warning('Given batch size(%d) is smaller than '
                                 'minimum required batch size(%d) for the data. '
@@ -62,8 +70,8 @@ class BufferedDataMatrix(BufferedData):
                 m = self.major[G]
                 lim = minimum_required_batch_size + 1
                 m['limit'] = lim
-                m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='F')
-                m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order='F')
+                m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='C')
+                m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order='C')
 
     def fetch_batch(self):
         m = self.major[self.group]
@@ -125,6 +133,10 @@ class BufferedDataStream(BufferedData):
         self.major = {'rowwise': {}}
         self.group = 'rowwise'
 
+    def free(self, buf):
+        buf['indptr'] = None
+        buf['keys'] = None
+
     def initialize(self, data):
         self.data = data
         assert self.data.data_type == 'stream'
@@ -136,6 +148,8 @@ class BufferedDataStream(BufferedData):
         group = data.get_group(G)
         header = data.get_header()
         m = self.major[G]
+        if self.major[G]:
+            self.free(self.major[G])
         m['index'] = 0
         m['limit'] = lim
         m['start_x'] = 0

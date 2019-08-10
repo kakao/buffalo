@@ -137,9 +137,11 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
     def init_factors(self):
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
+        self.P = None
         self.P = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
                                          size=(header['num_users'], self.opt.d)).astype("float32"),
                         order='C')
+        self.Q = None
         self.Q = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
                                          size=(header['num_items'], self.opt.d)).astype("float32"),
                         order='C')

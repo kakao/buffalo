@@ -69,11 +69,11 @@ class TestBase(unittest.TestCase):
         c.initialize()
         c.train()
         results = c.get_validation_results()
-        self.assertTrue(results['ndcg'] > ndcg)
-        self.assertTrue(results['map'] > map)
+        self.assertTrue(results['ndcg'] > ndcg, msg='NDCG Test')
+        self.assertTrue(results['map'] > map, msg='MAP Test')
 
     def _test6_topk(self, cls, opt):
-        set_log_level(1)
+        set_log_level(2)
 
         data_opt = MatrixMarketOptions().get_default_option()
         data_opt.input.main = self.ml_100k + 'main'

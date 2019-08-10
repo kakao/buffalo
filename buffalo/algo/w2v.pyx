@@ -160,7 +160,7 @@ class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def build_vocab(self):
         header = self.data.get_header()
-        self.logger.info('Counting the frequency of words.')
+        self.logger.info('Caculating the frequency of words.')
         uni = [0 for i in range(header['num_items'])]
         total_word_count = 0
         for sz in self.buf.fetch_batch():

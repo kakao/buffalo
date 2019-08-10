@@ -8,7 +8,7 @@ import numpy as np
 
 from buffalo.data import prepro
 from buffalo.misc import aux, log
-from buffalo.data.fileio import chunking_file
+from buffalo.data.fileio import chunking_into_bins, sort_and_compressed_binarization
 
 
 class Data(object):
@@ -159,9 +159,10 @@ class Data(object):
 
         f.create_group('rowwise')
         f.create_group('colwise')
+        chunk_size = (min(1024 ** 3, num_nnz),)
         for g in [f['rowwise'], f['colwise']]:
-            g.create_dataset('key', (num_nnz,), dtype='int32', maxshape=(num_nnz,))
-            g.create_dataset('val', (num_nnz,), dtype='float32', maxshape=(num_nnz,))
+            g.create_dataset('key', (num_nnz,), dtype='int32', maxshape=(num_nnz,), chunks=chunk_size)
+            g.create_dataset('val', (num_nnz,), dtype='float32', maxshape=(num_nnz,), chunks=chunk_size)
         f['rowwise'].create_dataset('indptr', (num_users,), dtype='int64', maxshape=(num_users,))
         f['colwise'].create_dataset('indptr', (num_items,), dtype='int64', maxshape=(num_items,))
 
@@ -223,18 +224,53 @@ class Data(object):
         V = np.array([float(v) for _, _, v in validation_data], dtype=np.float32)
         db['vali']['val'][:] = self.value_prepro(V)
 
-    def _build_compressed_triplets(self, db, mm_path, num_lines, max_key, data_chunk_size=10000, switch_row_col=False):
+    def _sort_and_compressed_binarization(self, mm_path, num_lines, max_key, sort_key):
+        num_workers = psutil.cpu_count()
+        merged_bin = sort_and_compressed_binarization(
+            mm_path,
+            self.tmp_root,
+            num_lines, max_key, sort_key, num_workers)
+        return merged_bin
+
+    def _load_compressed_triplet_bin(self, db, bin_path, num_lines, max_key, is_colwise=0):
+        self.logger.info('Load triplet bin: %s' % bin_path)
+        INDPTR_SIZE = 8
+        RECORD_SIZE = 8
+        with open(bin_path, 'rb') as fin:
+            estimated_size = num_lines * 8 + max_key * 8
+            total_size = fin.seek(0, 2)
+            fin.seek(0, 0)
+            assert estimated_size == total_size, f'Not valid file size {total_size} (excepted: {estimated_size})'
+            indptr = np.fromstring(fin.read(max_key * 8),
+                                   dtype=np.int64,
+                                   count=max_key)
+            data = np.fromstring(fin.read(),
+                                 dtype=np.dtype([('i', 'i'),
+                                                 ('v', 'f')]),
+                                 count=num_lines)
+            I, V = data['i'], data['v']
+            I -= 1
+            V = self.value_prepro(V)
+            db['key'][:num_lines] = I
+            db['val'][:num_lines] = V
+            db['indptr'][:max_key] = indptr
+        os.remove(bin_path)
+
+    def _chunking_into_bins(self, mm_path, num_lines, max_key, sep_idx):
         num_workers = psutil.cpu_count()
         while num_workers > 20:
             num_workers = int(num_workers / 2)
         num_chunks = num_workers * 2
-        self.logger.info(f'Dividing into {num_chunks}...')
-        job_files = chunking_file(mm_path,
-                                  self.tmp_root,
-                                  total_lines=num_lines,
-                                  num_chunks=num_chunks,
-                                  sep_idx=0 if not switch_row_col else 1,
-                                  num_workers=num_workers)
+        self.logger.info(f'Dividing into {num_chunks} chunks...')
+        job_files = chunking_into_bins(mm_path,
+                                       self.tmp_root,
+                                       total_lines=num_lines,
+                                       num_chunks=num_chunks,
+                                       sep_idx=0 if not switch_row_col else 1,
+                                       num_workers=num_workers)
+        return job_files
+
+    def _build_compressed_triplets(self, db, job_files, num_lines, max_key, is_colwise=0):
         self.logger.info('Total job files: %s' % len(job_files))
         with log.pbar(log.INFO, total=len(job_files), mininterval=10) as pbar:
             indptr_index = 0
@@ -253,7 +289,7 @@ class Data(object):
                                                          ('v', 'f')]),
                                          count=total_records)
                     U, I, V = data['u'], data['i'], data['v']
-                    if switch_row_col:
+                    if is_colwise:
                         U, I = I, U
                     U -= 1
                     I -= 1
@@ -272,6 +308,59 @@ class Data(object):
                 pbar.update(1)
         for path in job_files:
             os.remove(path)
+
+    def _build_data(self,
+                    db,
+                    working_data_path,
+                    validation_data,
+                    target_groups=['rowwise', 'colwise'],
+                    sort=True):
+        available_mb = psutil.virtual_memory().available / 1024 / 1024
+        approximated_data_mb = 0
+        with open(working_data_path, 'rb') as fin:
+            fin.seek(0, 2)
+            approximated_data_mb = db.attrs['num_nnz'] * 3 / 1024 / 1024
+        buffer_mb = int(max(1024, available_mb * 0.75))
+        # for each sides
+        for group, sep_idx, max_key in [('rowwise', 0, db.attrs['num_users']),
+                                        ('colwise', 1, db.attrs['num_items'])]:
+            if group not in target_groups:
+                continue
+            self.logger.info(f'Building compressed triplets for {group}...')
+            self.logger.info('Preprocessing...')
+            self.prepro.pre(db)
+            if approximated_data_mb * 1.2 < available_mb:
+                self.logger.info('In-memory Compreesing ...')
+                merged_bin = self._sort_and_compressed_binarization(
+                    working_data_path,
+                    db.attrs['num_nnz'],
+                    max_key,
+                    sort_key=sep_idx + 1 if sort else -1)
+                self._load_compressed_triplet_bin(
+                    db[group], merged_bin,
+                    num_lines=db.attrs['num_nnz'],
+                    max_key=max_key,
+                    is_colwise=sep_idx)
+            else:
+                self.logger.info('Disk-based Compressing...')
+                if sort:
+                    aux.psort(working_data_path,
+                            tmp_dir=self.opt.data.tmp_dir,
+                            key=sep_idx + 1,
+                            buffer_mb=buffer_mb)
+                jobs_files = self._chunking_into_bins(working_data_path,
+                                                      db.attrs['num_nnz'],
+                                                      max_key,
+                                                      sep_idx=sep_idx)
+                self._build_compressed_triplets(db[group],
+                                                job_files,
+                                                num_lines=db.attrs['num_nnz'],
+                                                max_key=max_key,
+                                                is_colwise=sep_idx)
+            self.prepro.post(db[group])
+            if group == 'rowwise':
+                self.fill_validation_data(db, validation_data)
+            self.logger.info('Finished')
 
 
 class DataOption(object):

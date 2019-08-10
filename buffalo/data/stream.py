@@ -148,33 +148,13 @@ class Stream(Data):
         return db, itemids
 
     def _build_data(self, db, working_data_path, validation_data):
-        self.logger.debug('building compressed triplets for rowwise...')
-        self.prepro.pre(db)
-        buffer_mb = int(max(1024, psutil.virtual_memory().available / 1024 / 1024 / 3))
-
-        self.logger.debug('building compressed triplets for rowwise...')
         if self.opt.data.internal_data_type == 'stream':
-            self._build_compressed_triplets(db['rowwise'], working_data_path,
-                                            num_lines=db.attrs['num_nnz'],
-                                            max_key=db.attrs['num_users'])
-            self.prepro.post(db['rowwise'])
-            self.fill_validation_data(db, validation_data)
+            super()._build_data(db, working_data_path, validation_data,
+                                target_groups=['rowwise'],
+                                sort=False)  # keep order
         elif self.opt.data.internal_data_type == 'matrix':
-            aux.psort(working_data_path, tmp_dir=self.opt.data.tmp_dir, key=1, buffer_mb=buffer_mb)
-            self._build_compressed_triplets(db['rowwise'], working_data_path,
-                                            num_lines=db.attrs['num_nnz'],
-                                            max_key=db.attrs['num_users'])
-            self.prepro.post(db['rowwise'])
-
-            self.fill_validation_data(db, validation_data)
-
-            self.logger.debug('building compressed triplets for colwise...')
-            aux.psort(working_data_path, tmp_dir=self.opt.data.tmp_dir, key=2, buffer_mb=buffer_mb)
-            self._build_compressed_triplets(db['colwise'], working_data_path,
-                                            num_lines=db.attrs['num_nnz'],
-                                            max_key=db.attrs['num_items'],
-                                            switch_row_col=True)
-            self.prepro.post(db['rowwise'])
+            super()._build_data(db, working_data_path, validation_data,
+                                target_groups=['rowwise', 'colwise'])
 
     def _create_working_data(self, db, stream_main_path, itemids):
         vali_method = None if 'vali' not in db else db['vali'].attrs['method']

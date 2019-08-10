@@ -1,16 +1,19 @@
 #pragma once
+#include <cmath>
 #include <omp.h>
 #include <vector>
 #include <string>
 #include <cstdio>
 #include <fstream>
+#include <parallel/algorithm>
 
 using namespace std;
 
 namespace fileio
 {
 
-vector<string> _chunking_file(string path, string to_dir, long total_lines, int num_chunks, int sep_idx, int num_workers)
+vector<string> _chunking_into_bins(string path, string to_dir,
+        int64_t total_lines, int num_chunks, int sep_idx, int num_workers)
 {
     ifstream fin(path.c_str());
     if (!fin.is_open()) {
@@ -89,6 +92,88 @@ vector<string> _chunking_file(string path, string to_dir, long total_lines, int 
         fclose(fouts[i]);
     }
     return chunk_files;
+}
+
+
+struct triple_t
+{
+    int r, c;
+    float v;
+    triple_t() : r(0), c(0), v(0.0) {
+    }
+};
+
+string _sort_and_compressed_binarization(
+        string path,
+        string to_dir,
+        int64_t total_lines,
+        int max_key,
+        int sort_key,
+        int num_workers)
+{
+    FILE* fin = fopen(path.c_str(), "r");
+
+    vector<triple_t> records(total_lines);
+    for (long i=0; i < total_lines; ++i) {
+        fscanf(fin, "%d %d %f", &records[i].r, &records[i].c, &records[i].v);
+    }
+
+    omp_set_num_threads(num_workers);
+
+    if (sort_key > 0) {
+        __gnu_parallel::stable_sort(records.begin(),
+                                    records.end(),
+                                    [sort_key](const triple_t& t1, const triple_t& t2){
+                                        if (sort_key == 1) {
+                                            if (t1.r == t2.r) return t1.c < t2.c;
+                                            else return t1.r < t2.r;
+                                        } else {
+                                            if (t1.c == t2.c) return t1.r < t2.r;
+                                            else return t1.c < t2.c;
+                                        }
+                                    });
+    }
+
+    char cbuffer[512];
+    sprintf(cbuffer, "%s/chunk.bin", to_dir.c_str());
+    FILE* fout = fopen(cbuffer, "w");
+
+    vector<int64_t> indptr;
+    indptr.reserve(max_key);
+
+    if (sort_key == 1 or sort_key == -1) {
+        for (int64_t i=1; i < total_lines; ++i) {
+            for (int j=0; j < records[i].r - records[i - 1].r; ++j)
+                indptr.push_back(i);
+        }
+    }
+    else {
+        for (int64_t i=1; i < total_lines; ++i) {
+            for (int j=0; j < records[i].c - records[i - 1].c; ++j)
+                indptr.push_back(i);
+        }
+    }
+    indptr.push_back(total_lines);
+
+    for (const auto& i : indptr) {
+        fwrite((char*)&i, sizeof(i), 1, fout);
+    }
+
+    if (sort_key == 1 or sort_key == -1){
+        for (const auto& r : records) {
+            fwrite((char*)&r.c, sizeof(r.c), 1, fout);
+            fwrite((char*)&r.v, sizeof(r.v), 1, fout);
+        }
+    }
+    else {
+        for (const auto& r : records) {
+            fwrite((char*)&r.r, sizeof(r.r), 1, fout);
+            fwrite((char*)&r.v, sizeof(r.v), 1, fout);
+        }
+    }
+
+    fclose(fout);
+    return string(cbuffer);
 }
 
 }

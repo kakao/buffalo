@@ -55,8 +55,7 @@ class TestBPRMF(TestBase):
     def test6_topk(self):
         opt = BprmfOption().get_default_option()
         opt.d = 5
-        opt.lr = 0.002
-        opt.num_iters = 100
+        opt.num_iters = 200
         opt.validation = aux.Option({'topk': 10})
         self._test6_topk(BPRMF, opt)
 
@@ -68,8 +67,7 @@ class TestBPRMF(TestBase):
 
     def test8_serialization(self):
         opt = BprmfOption().get_default_option()
-        opt.lr = 0.002
-        opt.num_iters = 100
+        opt.num_iters = 200
         opt.d = 5
         opt.validation = aux.Option({'topk': 10})
 
@@ -77,6 +75,7 @@ class TestBPRMF(TestBase):
 
     def test9_compact_serialization(self):
         opt = BprmfOption().get_default_option()
+        opt.num_iters = 200
         opt.d = 5
         opt.validation = aux.Option({'topk': 10})
         self._test9_compact_serialization(BPRMF, opt)
