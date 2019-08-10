@@ -3,9 +3,22 @@ import os
 os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 import time
+import queue
+import threading
+
 import h5py
+import psutil
 import numpy as np
 from implicit.datasets.movielens import get_movielens
+
+
+def collect_memory_usage(stop_event, result_queue):
+    p = psutil.Process(os.getpid())
+    data = []
+    while not stop_event.is_set():
+        time.sleep(5)
+        data.append(p.memory_info().rss)
+    result_queue.put(data)
 
 
 class Benchmark(object):
@@ -44,6 +57,22 @@ class Benchmark(object):
                         'verify_negative_samples': True,
                         'num_threads': kwargs.get('num_workers', 10)}
 
+    def run(self, func, *args):
+        stop_event = threading.Event()
+        result_queue = queue.Queue()
+        t = threading.Thread(target=collect_memory_usage, args=(stop_event, result_queue))
+        t.start()
+        start_t = time.time()
+        func(*args)
+        elapsed = time.time() - start_t
+        stop_event.set()
+        t.join()
+        memory_usage = result_queue.get()
+        model = None
+        return elapsed, {'min': min(memory_usage) / 1024 / 1024.0,
+                         'avg': sum(memory_usage) / len(memory_usage) / 1024 / 1024.0,
+                         'max': max(memory_usage) / 1024 / 1024.0}
+
 
 class ImplicitLib(Benchmark):
     def __init__(self):
@@ -68,10 +97,9 @@ class ImplicitLib(Benchmark):
         )
         ratings = self.get_database(database, **kwargs)
 
-        start_t = time.time()
-        model.fit(ratings)
-        elapsed = time.time() - start_t
-        return elapsed
+        elasepd, mem_info = self.run(model.fit, ratings)
+        model = None
+        return elapsed, mem_info
 
     def bpr(self, database, **kwargs):
         from implicit.bpr import BayesianPersonalizedRanking
@@ -81,10 +109,9 @@ class ImplicitLib(Benchmark):
         )
         ratings = self.get_database(database, **kwargs)
 
-        start_t = time.time()
-        model.fit(ratings)
-        elapsed = time.time() - start_t
-        return elapsed
+        elapsed, mem_info = self.run(model.fit, ratings)
+        model = None
+        return elapsed, mem_info
 
 
 class BuffaloLib(Benchmark):
@@ -96,7 +123,7 @@ class BuffaloLib(Benchmark):
         data_opt = MatrixMarketOptions().get_default_option()
         data_opt.validation = None
         data_opt.data.use_cache = True
-        data_opt.batch_mb = kwargs.get('batch_mb', 1024)
+        data_opt.data.batch_mb = kwargs.get('batch_mb', 1024)
         if name == 'ml20m':
             data_opt.input.main = '../tests/ml-20m/main'
         elif name == 'kakao_reco_medium':
@@ -111,10 +138,9 @@ class BuffaloLib(Benchmark):
         data_opt = self.get_database(database, **kwargs)
         als = ALS(opts, data_opt=data_opt)
         als.initialize()
-        start_t = time.time()
-        als.train()
-        elapsed = time.time() - start_t
-        return elapsed
+        elapsed, mem_info = self.run(als.train)
+        als = None
+        return elapsed, mem_info
 
     def bpr(self, database, **kwargs):
         from buffalo.algo.bpr import BPRMF
@@ -122,10 +148,9 @@ class BuffaloLib(Benchmark):
         data_opt = self.get_database(database, **kwargs)
         bpr = BPRMF(opts, data_opt=data_opt)
         bpr.initialize()
-        start_t = time.time()
-        bpr.train()
-        elapsed = time.time() - start_t
-        return elapsed
+        elapsed, mem_info = self.run(bpr.train)
+        bpr = None
+        return elapsed, mem_info
 
 
 def db_to_coo(db):
