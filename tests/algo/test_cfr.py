@@ -116,6 +116,7 @@ class TestCFR(TestBase):
         self.assertIn('180.Return_of_the_Jedi_(1983)', ret_b)
         self.assertEqual(ret_a, ret_b)
 
+    '''
     def test7_train_ml20m(self):
         set_log_level(3)
         opt = CFROption().get_default_option()
@@ -133,6 +134,7 @@ class TestCFR(TestBase):
         c.initialize()
         c.train()
         self.assertTrue(True)
+    '''
 
     def test8_serialization(self):
         set_log_level(1)
