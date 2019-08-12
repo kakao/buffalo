@@ -110,7 +110,7 @@ class BufferedDataMatrix(BufferedData):
             yield size
 
     def get_specific_chunk(self, group, start_x, next_x):
-        db = self.get_group(groups)
+        db = self.data.get_group(groups)
         m = self.major[group]
         indptr = m["indptr"]
         beg = 0 if start_x == 0 else indptr[start_x - 1]
@@ -123,11 +123,11 @@ class BufferedDataMatrix(BufferedData):
         assert groups and isinstance(groups, list), "groups should be list (length >= 1)"
         for G in groups:
             assert G in ["rowwise", "colwise", "sppmi"], f"G ({G}) is not proper group for getting range"
-        db = self.get_group(groups[0])
+        db = self.data.get_group(groups[0])
         indptr = np.zeros(db["indptr"].shape[0], dtype=np.int64)
         max_x = len(indptr)
         for G in groups:
-            _indtpr = self.get_groups()["indptr"][:]
+            _indptr = self.data.get_group(G)["indptr"][:]
             assert len(_indptr) == max_x, f"size of indptr (group: {G}) should be {max_x}"
             indptr += _indptr
         limit = max(int(((self.data.opt.data.batch_mb * 1024 * 1024) / 16.)), 64) / 2
