@@ -146,14 +146,17 @@ string _sort_and_compressed_binarization(
             for (int j=0; j < records[i].r - records[i - 1].r; ++j)
                 indptr.push_back(i);
         }
+        for (int j=0; j<max_key-records[total_lines-1].r; ++j)
+            indptr.push_back(total_lines);
     }
     else {
         for (int64_t i=1; i < total_lines; ++i) {
             for (int j=0; j < records[i].c - records[i - 1].c; ++j)
                 indptr.push_back(i);
         }
+        for (int j=0; j<max_key-records[total_lines-1].c; ++j)
+            indptr.push_back(total_lines);
     }
-    indptr.push_back(total_lines);
 
     for (const auto& i : indptr) {
         fwrite((char*)&i, sizeof(i), 1, fout);
