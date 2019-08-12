@@ -70,7 +70,7 @@ class Optimizable(object):
                         if not self.opt.model_path:
                             raise RuntimeError('Failed to dump model: model path is not defined')
                         self.logger.info('Saving model... to {}'.format(self.opt.model_path))
-                        self.dump(self.opt.model_path)
+                        self.save(self.opt.model_path)
                 if self.optimize_after_callback_fn:
                     self.optimize_after_callback_fn(self)
                 pbar.update(1)

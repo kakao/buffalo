@@ -11,22 +11,27 @@ from buffalo.misc.log import set_log_level
 from buffalo.algo.options import AlsOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.mm import MatrixMarketOptions
+from buffalo.algo.base import TensorboardExtention
 
 from .base import TestBase
 
 
-class MockAlgo(Algo, Optimizable):
+class MockAlgo(Algo, Optimizable, TensorboardExtention):
     def __init__(self, *args, **kwargs):
         Algo.__init__(self, *args, **kwargs)
         Optimizable.__init__(self, *args, **kwargs)
+        TensorboardExtention.__init__(self, *args, **kwargs)
         self.logger = log.get_logger('MockAlgo')
         option = AlsOption().get_default_option()
         optimize_option = AlsOption().get_default_optimize_option()
+        optimize_option.start_with_default_parameters = False
         option.optimize = optimize_option
         option.model_path = 'hello.world.bin'
         self.opt = option
+        self._optimize_loss = {'loss': 987654321.0}
 
     def _optimize(self, params):
+        self._optimize_params = params
         loss = 1.0 - params['adaptive_reg'] / 1.0
         loss += 1.0 / params['d']
         loss += 1.0 / params['alpha']
@@ -36,17 +41,23 @@ class MockAlgo(Algo, Optimizable):
         return {'loss': loss,
                 'status': STATUS_OK}
 
-    def dump(self, path):
+    def save(self, path):
         return path
+
+    def _get_feature(self, index, group='item'):
+        pass
+
+    def normalize(self, group='item'):
+        pass
 
 
 class TestOptimize(TestBase):
     def test0_get_space(self):
-        Optimizable()._get_space({'space': {'x': ['uniform', ['x', 1, 10]]}})
+        Optimizable()._get_space({'x': ['uniform', ['x', 1, 10]]})
         self.assertTrue(True)
 
     def test1_optimize(self):
-        space = Optimizable()._get_space({'space': {'x': ['uniform', ['x', 1, 10]]}})
+        space = Optimizable()._get_space({'x': ['uniform', ['x', 1, 10]]})
         best = fmin(fn=lambda opt: opt['x'] ** 2,
                     space=space,
                     algo=tpe.suggest,
@@ -67,7 +78,7 @@ class TestOptimize(TestBase):
         best = fmin(fn=mock_fn,
                     space=space,
                     algo=tpe.suggest,
-                    max_evals=500)
+                    max_evals=600)
         self.assertGreaterEqual(int(best['d']), 16)
         self.assertGreaterEqual(int(best['alpha']), 16)
         self.assertGreaterEqual(best['reg_i'], 0.5)
@@ -77,6 +88,7 @@ class TestOptimize(TestBase):
     def test3_optimize(self):
         algo = MockAlgo()
         algo.optimize()
+        self.assertTrue(True)
 
     def test4_optimize(self):
         set_log_level(2)
@@ -86,7 +98,7 @@ class TestOptimize(TestBase):
         opt.model_path = 'als.bin'
         opt.validation = aux.Option({'topk': 10})
         optimize_option = aux.Option({
-            'loss': 'rmse',
+            'loss': 'val_rmse',
             'max_trials': 10,
             'deployment': True,
             'start_with_default_parameters': True,
@@ -98,6 +110,7 @@ class TestOptimize(TestBase):
             }
         })
         opt.optimize = optimize_option
+        opt.evaluation_period = 1
         opt.tensorboard = aux.Option({'root': './tb',
                                       'name': 'als'})
 
@@ -112,7 +125,7 @@ class TestOptimize(TestBase):
         als.train()
         default_result = als.get_validation_results()
         als.optimize()
-        base_loss = default_result['rmse']
+        base_loss = default_result['rmse']  # val_rmse
         optimize_loss = als.get_optimization_data()['best']['val_rmse']
         self.assertTrue(base_loss > optimize_loss)
 
