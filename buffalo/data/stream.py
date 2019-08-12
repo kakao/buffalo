@@ -175,11 +175,11 @@ class Stream(Data):
             fin.seek(0)
             probe, chunk = "junk", []
             for line in fin:
-                _w, _c = map(int, line.strip().split())
+                _w, _c = line.strip().split()
                 if probe != _w:
                     appearances[probe] = len(chunk)
                     for __c, cnt in Counter(chunk).items():
-                        if probe < __c:
+                        if int(probe) < int(__c):
                             continue
                         pmi = np.log(cnt) + np.log(D) - \
                             np.log(appearances[probe]) - np.log(appearances[__c])
@@ -199,7 +199,13 @@ class Stream(Data):
         db["sppmi"].create_dataset("indptr", (sz,), dtype='int64', maxshape=(sz,))
         db["sppmi"].create_dataset("key", (nnz,), dtype='int32', maxshape=(nnz,))
         db["sppmi"].create_dataset("val", (nnz,), dtype='float32', maxshape=(nnz,))
-        self._build_compressed_triplets(db['sppmi'], w.name, num_lines=nnz, max_key=sz)
+        self.logger.info('Disk-based Compressing...')
+        jobs_files = self._chunking_into_bins(w.name, nnz, sz, 0)
+        self._build_compressed_triplets(db["sppmi"],
+                                        job_files,
+                                        num_lines=nnz,
+                                        max_key=sz,
+                                        is_colwise=0)
 
     def _create_working_data(self, db, stream_main_path, itemids,
                              with_sppmi=False, windows=5):
