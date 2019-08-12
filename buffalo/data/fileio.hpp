@@ -142,19 +142,23 @@ string _sort_and_compressed_binarization(
     indptr.reserve(max_key);
 
     if (sort_key == 1 or sort_key == -1) {
+        for (int j=0; j<records[0].r-1; ++j)
+            indptr.push_back(0);
         for (int64_t i=1; i < total_lines; ++i) {
             for (int j=0; j < records[i].r - records[i - 1].r; ++j)
                 indptr.push_back(i);
         }
-        for (int j=0; j<max_key-records[total_lines-1].r; ++j)
+        for (int j=0; j<max_key+1-records[total_lines-1].r; ++j)
             indptr.push_back(total_lines);
     }
     else {
+        for (int j=0; j<records[0].c-1; ++j)
+            indptr.push_back(0);
         for (int64_t i=1; i < total_lines; ++i) {
             for (int j=0; j < records[i].c - records[i - 1].c; ++j)
                 indptr.push_back(i);
         }
-        for (int j=0; j<max_key-records[total_lines-1].c; ++j)
+        for (int j=0; j<max_key+1-records[total_lines-1].c; ++j)
             indptr.push_back(total_lines);
     }
 
