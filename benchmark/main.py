@@ -2,7 +2,7 @@
 import fire
 from tabulate import tabulate
 
-from models import ImplicitLib, BuffaloLib
+from models import ImplicitLib, BuffaloLib, LightfmLib, QmfLib, PysparkLib
 
 
 def _get_elapsed_time(algo_name, database, lib, repeat, **options):
@@ -47,12 +47,15 @@ def _test1(algo_name, database, lib):
     return results
 
 
-def benchmark1(algo_name, database, libs=['buffalo', 'implicit']):
+def benchmark1(algo_name, database, libs=['buffalo', 'implicit', 'lightfm', 'qmf', 'pyspark']):
     assert algo_name in ['als', 'bpr']
     if isinstance(libs, str):
         libs = [libs]
     R = {'buffalo': BuffaloLib,
-         'implicit': ImplicitLib}
+         'implicit': ImplicitLib,
+         'lightfm': LightfmLib,
+         'qmf': QmfLib,
+         'pyspark': PysparkLib}
     results = {l: _test1(algo_name, database, R[l]()) for l in libs}
 
     for f in ['D', 'T']:
@@ -83,7 +86,7 @@ def _test2(algo_name, database, lib):
               }
     opt = options[algo_name]
 
-    for batch_mb in [128, 256, 512, 1024]:
+    for batch_mb in [128, 256, 512, 1024, 2048, 4096]:
         opt['batch_mb'] = batch_mb
         elapsed, memory_usage = _get_elapsed_time(algo_name, database, lib, repeat, **opt)
         results[f'E={batch_mb}'] = elapsed
@@ -91,6 +94,8 @@ def _test2(algo_name, database, lib):
         results[f'A={batch_mb}'] = memory_usage['avg']
         results[f'B={batch_mb}'] = memory_usage['min']
         print(f'M={batch_mb} {elapsed} {memory_usage}')
+        if isinstance(lib, ImplicitLib):  # batch_mb does effect to Buffalo only.
+            break
     return results
 
 

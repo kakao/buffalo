@@ -226,7 +226,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
         assert self.obj.init(bytes(self._temporary_opt_file, 'utf-8')),\
             'cannot parse option file: %s' % self._temporary_opt_file
         self.logger.info(params)
-        self.initializ()
+        self.initialize()
         loss = self.train()
         loss['eval_time'] = time.time()
         loss['loss'] = loss.get(self.opt.optimize.loss)
