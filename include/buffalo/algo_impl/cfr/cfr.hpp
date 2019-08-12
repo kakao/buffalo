@@ -35,9 +35,8 @@ public:
 
 private:
     Json opt_;
-    char optimizer_code_;
-    int dim_, num_threads_, num_cg_max_iters_;
-    float alpha_, l_, reg_u_, reg_i_, reg_c_, cg_tolerance_;
+    int dim_, num_threads_;
+    float alpha_, l_, reg_u_, reg_i_, reg_c_;
     bool compute_loss_;
     Map<MatrixType> U_, I_, C_;
     MatrixType FF_;

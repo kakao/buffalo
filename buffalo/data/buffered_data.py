@@ -110,7 +110,7 @@ class BufferedDataMatrix(BufferedData):
             yield size
 
     def get_specific_chunk(self, group, start_x, next_x):
-        db = self.data.get_group(groups)
+        db = self.data.get_group(group)
         m = self.major[group]
         indptr = m["indptr"]
         beg = 0 if start_x == 0 else indptr[start_x - 1]

@@ -4,7 +4,9 @@
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
+#include <Eigen/IterativeLinearSolvers>
 #include <unsupported/Eigen/SparseExtra>
+#include <unsupported/Eigen/IterativeSolvers>
 
 #include "json11.hpp"
 #include "buffalo/misc/log.hpp"
@@ -32,18 +34,14 @@ public:
     virtual bool parse_option(string opt_path) = 0;
     void decouple(Map<MatrixXf>& mat, float** data, int& rows, int& cols);  // due to eigency compatibility
     void decouple(Map<FactorTypeRowMajor>& mat, float** data, int& rows, int& cols);  // due to eigency compatibility
-
-    std::shared_ptr<spdlog::logger> logger_;
-
-private:
     inline void _leastsquare(Map<MatrixType>& X, int idx, MatrixType& A, VectorType& y){
         VectorType r, p;
         float rs_old, rs_new, alpha, beta;
         ConjugateGradient<MatrixType, Lower|Upper> cg;
-        BiCGSTAB<MatrixType, IdentityPreconditional> bicg;
-        GMRES<MatrixType, IdentityPreconditional> gmres;
-        DGMRES<MatrixType, IdentityPreconditional> dgmres;
-        MINRES<MatrixType, IdentityPreconditional> minres;
+        BiCGSTAB<MatrixType> bicg;
+        GMRES<MatrixType> gmres;
+        DGMRES<MatrixType> dgmres;
+        MINRES<MatrixType> minres;
         // use switch statement instead of if statement just for the clarity of the code
         // no performance improvement
         switch (optimizer_code_){
@@ -126,4 +124,10 @@ private:
         }
     }
 
+public:
+    char optimizer_code_ = 0;
+    int num_cg_max_iters_ = 3;
+    float cg_tolerance_ = 1e-10;
+    std::shared_ptr<spdlog::logger> logger_;
 };
+

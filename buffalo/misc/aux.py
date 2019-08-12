@@ -152,6 +152,7 @@ def get_temporary_file(root='/tmp/', write_mode='w'):
 @atexit.register
 def __cleanup_tempory_files():
     for path in _temporary_files:
+        continue
         if os.path.isfile(path):
             os.remove(path)
 
