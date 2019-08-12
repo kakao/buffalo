@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-import math
-from quickselect import quickselect
+import numpy as np
+from buffalo.evaluate.quickselect import quickselect
 
 
 class Evaluable(object):
@@ -71,7 +71,7 @@ class Evaluable(object):
                 HIT += hit
 
                 # ndcg, map
-                idcg = sum([1.0 / math.log(i + 2, 2)
+                idcg = sum([1.0 / np.log(i + 2, 2)
                             for i in range(min(len(_gt), len(_topk)))])
                 dcg = 0.0
                 hit, ap = 0.0, 0.0
@@ -82,7 +82,7 @@ class Evaluable(object):
                     if r not in _gt:
                         continue
                     rank = i + 1
-                    dcg += 1.0 / math.log(rank + 1, 2)
+                    dcg += 1.0 / np.log(rank + 1, 2)
                 ndcg = dcg / idcg
                 NDCG += ndcg
                 ap /= min(len(_gt), len(_topk))

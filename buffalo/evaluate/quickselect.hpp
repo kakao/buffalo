@@ -6,10 +6,14 @@
 #include <cstdio>
 #include <fstream>
 #include <random>
+#include <algorithm>
 #include <parallel/algorithm>
 
+#include <Eigen/Core>
+#include <Eigen/Dense>
+
 using namespace std;
-using namespace eigen;
+using namespace Eigen;
 
 namespace evaluate
 {
@@ -23,12 +27,12 @@ namespace evaluate
             vector<int> ranks(cols);
             iota(ranks.begin(), ranks.end(), 0);  // initialize ranks as {0, 1, 2, ...}
             // high score has a priority
-            nth_elment(ranks.begin(), ranks.begin() + k - 1, ranks.end(), 
-                    [&](int lhs, int rhs){return scores(i, lhs) > scores(i, rhs);});
+            nth_element(ranks.begin(), ranks.begin() + k - 1, ranks.end(), 
+                       [&](int lhs, int rhs){return _scores(i, lhs) > _scores(i, rhs);});
             // sort ranks[: k], since it is not guaranteed to be sorted
             if (sorted)
                 sort(ranks.begin(), ranks.begin() + k,
-                        [&](int lhs, int rhs){return scores(i, lhs) > scores(i, rhs);});
+                     [&](int lhs, int rhs){return _scores(i, lhs) > _scores(i, rhs);});
             copy(ranks.begin(), ranks.begin() + k, &_result(i, 0));
         }
     }

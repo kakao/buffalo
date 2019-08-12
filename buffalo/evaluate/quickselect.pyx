@@ -11,14 +11,14 @@ import numpy as np
 cimport numpy as np
 
 
-cdef extern from "quickselect.hpp" namespace "evaluate":
-    void quickselect(float*, int, int, int*, int, bool_t, int)
+cdef extern from "quickselect.hpp":
+    cdef void _quickselect "evaluate::quickselect"(float*, int, int, int32_t*, int, bool_t, int) nogil except +
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def quickselect(np.ndarray[np.float32_t, ndim=2] scores,
                 np.ndarray[np.int32_t, ndim=2] result,
-                bool_t sorted, int num_threads):
-    quickselect(&scores[0, 0], scores.shape[0], scores.shape[1],
-                &result[0, 0], result.shape[1], sorted, num_threads)
+                sorted, num_threads):
+    _quickselect(&scores[0, 0], scores.shape[0], scores.shape[1],
+                 &result[0, 0], result.shape[1], sorted, num_threads)
