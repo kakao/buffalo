@@ -115,8 +115,8 @@ class BufferedDataMatrix(BufferedData):
         indptr = m["indptr"]
         beg = 0 if start_x == 0 else indptr[start_x - 1]
         end = indptr[next_x - 1]
-        keys = m["key"][beg: end]
-        vals = m["val"][beg: end]
+        keys = db["key"][beg: end]
+        vals = db["val"][beg: end]
         return indptr, keys, vals
 
     def fetch_batch_range(self, groups):
@@ -146,7 +146,6 @@ class BufferedDataMatrix(BufferedData):
                 raise RuntimeError('Need more memory to load the data, '
                                    'cannot load data with buffer size %d that should be at least %d. '
                                    'Increase batch_mb value to deal with this.' % (current_batch_size, need_batch_size))
-            end = indptr[where - 1]
             next_x = where
             if next_x + 1 >= max_x:
                 flushed = True

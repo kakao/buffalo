@@ -41,7 +41,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.obj = CyCFR()
         # check the validity of option
         self.is_valid_option(self.opt)
-        self.obj.init(self.opt_path.encode("utf8"))
+        assert self.obj.init(self.opt_path.encode("utf8")), "putting parameter to cython object failed"
 
         # ensure embedding matrix is initialzed for preventing segmentation fault
         self.is_initialized = False
@@ -122,10 +122,8 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def _iterate(self, buf, group='user'):
         assert group in ["user", "item", "context"], f"group {group} is not properly provided"
-        header = self.data.get_header()
-        end = header['num_users'] if group == 'user' else header['num_items']
-        err = 0.0
-        update_t, feed_t, updated = 0, 0, 0
+        header = self.data.get_scale_info(with_sppmi=True)
+        err, update_t, feed_t, updated = 0, 0, 0, 0
         if group == "user":
             self.obj.precompute("item".encode("utf8"))
             total = header["num_nnz"]
@@ -164,7 +162,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
                 len(keys_u) + len(keys_c)
         elif group == "context":
             indptr, keys, vals = buf.get_specific_chunk("sppmi", start_x, next_x)
-            return self.obj.partial_update_context(start_x, next_x, indptr, keys, vals)
+            return self.obj.partial_update_context(start_x, next_x, indptr, keys, vals), len(keys)
 
     def compute_scale(self):
         # scaling loss for convenience in monitoring

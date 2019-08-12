@@ -180,7 +180,6 @@ class BprmfOption(AlgoOption):
         opt.update({
             'use_bias': True,
             'evaluation_period': 100,
-
             'num_workers': 1,
             'num_iters': 100,
             'd': 20,

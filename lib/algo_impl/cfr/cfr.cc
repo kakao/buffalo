@@ -36,7 +36,7 @@ bool CCFR::init(string opt_path){
         num_cg_max_iters_ = opt_["num_cg_max_iters"].int_value();
         alpha_ = opt_["alpha"].number_value();
         l_ = opt_["l"].number_value();
-        
+    
         // floating number parameters
         cg_tolerance_ = opt_["cg_tolerance_"].number_value();
         reg_u_ = opt_["reg_u"].number_value();
@@ -58,7 +58,6 @@ bool CCFR::init(string opt_path){
         else if (optimizer == "eigen_minres") optimizer_code_ = 7;
 
         FF_.resize(dim_, dim_);
-        omp_set_num_threads(num_threads_);
     }
     return ok;
 }
@@ -85,6 +84,7 @@ void CCFR::set_embedding(float* data, int size, string obj_type) {
 
 void CCFR::precompute(string obj_type)
 {
+    omp_set_num_threads(num_threads_);
     if (obj_type == "user") FF_ = U_.transpose() * U_;
     else if (obj_type == "item") FF_ = I_.transpose() * I_;
 }
@@ -99,7 +99,9 @@ double CCFR::partial_update_user(int start_x, int next_x,
 
     int end_loop = next_x - start_x;
     const int64_t shifted = start_x == 0? 0: indptr[start_x - 1];
+    omp_set_num_threads(num_threads_);
     vector<double> losses(num_threads_, 0.0);
+
     #pragma omp parallel
     {
         int _thread = omp_get_thread_num();
@@ -156,6 +158,7 @@ double CCFR::partial_update_item(int start_x, int next_x,
         return 0.0;
     }
     
+    omp_set_num_threads(num_threads_);
     vector<double> losses(num_threads_, 0.0);
     int end_loop = next_x - start_x;
     const int64_t shifted_u = start_x == 0? 0: indptr_u[start_x - 1];
@@ -256,6 +259,7 @@ double CCFR::partial_update_context(int start_x, int next_x,
         WARN0("No data to process");
         return 0.0;
     }
+    omp_set_num_threads(num_threads_);
     vector<double> losses(num_threads_, 0.0);
     int end_loop = next_x - start_x;
     const int64_t shifted = start_x == 0? 0: indptr[start_x - 1];
