@@ -199,7 +199,7 @@ class Stream(Data):
         db["sppmi"].create_dataset("indptr", (sz,), dtype='int64', maxshape=(sz,))
         db["sppmi"].create_dataset("key", (nnz,), dtype='int32', maxshape=(nnz,))
         db["sppmi"].create_dataset("val", (nnz,), dtype='float32', maxshape=(nnz,))
-        self._build_compressed_triplets(db['sppmi'], w.name, num_lines=nnz, max_key=sz, max_sz=sz)
+        self._build_compressed_triplets(db['sppmi'], w.name, num_lines=nnz, max_key=sz)
 
     def _create_working_data(self, db, stream_main_path, itemids,
                              with_sppmi=False, windows=5):

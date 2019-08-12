@@ -165,8 +165,8 @@ class CFROption(AlgoOption):
         b = super().is_valid_option(opt)
         possible_optimizers = ["llt", "ldlt", "manual_cg", "eigen_cg", "eigen_bicg",
                                "eigen_gmres", "eigen_dgmres", "eigen_minres"]
-        if not self.opt.optimizer in possible_optimizers:
-            msg = f"optimizer ({self.opt.optimizer}) should be in {possible_optimizers}"
+        if not opt.optimizer in possible_optimizers:
+            msg = f"optimizer ({opt.optimizer}) should be in {possible_optimizers}"
             raise RuntimeError(msg)
         return b
 

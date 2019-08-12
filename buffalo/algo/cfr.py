@@ -41,7 +41,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.obj = CyCFR()
         # check the validity of option
         self.is_valid_option(self.opt)
-        self.obj.init(self.opt_path)
+        self.obj.init(self.opt_path.encode("utf8"))
 
         # ensure embedding matrix is initialzed for preventing segmentation fault
         self.is_initialized = False

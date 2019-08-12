@@ -52,7 +52,7 @@ class TestCFR(TestBase):
         set_log_level(3)
         opt = CFROption().get_default_option()
         opt.dim = 20
-        opt.optimizer = "manual_cgd"
+        opt.optimizer = "manual_cg"
         data_opt = StreamOptions().get_default_option()
         data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
@@ -70,7 +70,7 @@ class TestCFR(TestBase):
         set_log_level(3)
         opt = CFROption().get_default_option()
         opt.dim = 20
-        opt.optimizer = "manual_cgd"
+        opt.optimizer = "manual_cg"
         opt.validation = aux.Option({'topk': 10})
         opt.tensorboard = aux.Option({'root': './tb',
                                       'name': 'cfr'})
@@ -94,7 +94,7 @@ class TestCFR(TestBase):
         set_log_level(1)
         opt = CFROption().get_default_option()
         opt.dim = 20
-        opt.optimizer = "manual_cgd"
+        opt.optimizer = "manual_cg"
         opt.validation = aux.Option({'topk': 10})
         data_opt = StreamOptions().get_default_option()
         data_opt.data.validation.name = "sample"
@@ -121,7 +121,7 @@ class TestCFR(TestBase):
         set_log_level(3)
         opt = CFROption().get_default_option()
         opt.dim = 20
-        opt.optimizer = "manual_cgd"
+        opt.optimizer = "manual_cg"
         data_opt = StreamOptions().get_default_option()
         data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
@@ -141,7 +141,7 @@ class TestCFR(TestBase):
 
         opt = CFROption().get_default_option()
         opt.dim = 20
-        opt.optimizer = "manual_cgd"
+        opt.optimizer = "manual_cg"
         data_opt = StreamOptions().get_default_option()
         data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
@@ -166,7 +166,7 @@ class TestCFR(TestBase):
 
         opt = CFROption().get_default_option()
         opt.dim = 20
-        opt.optimizer = "manual_cgd"
+        opt.optimizer = "manual_cg"
         data_opt = StreamOptions().get_default_option()
         data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
@@ -195,7 +195,7 @@ class TestCFR(TestBase):
 
         opt = CFROption().get_default_option()
         opt.dim = 20
-        opt.optimizer = "manual_cgd"
+        opt.optimizer = "manual_cg"
         data_opt = StreamOptions().get_default_option()
         data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
