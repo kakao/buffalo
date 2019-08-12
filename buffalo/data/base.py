@@ -63,6 +63,18 @@ class Data(object):
                            'completed': self.handle.attrs['completed']}
         return self.header
 
+    def get_scale_info(self, with_sppmi=False, chunk_size=100000):
+        ret = {k: self.handle.attrs[k] for k in ["num_users", "num_items", "num_nnz", "sppmi_nnz"]}
+        if with_sppmi:
+            ret["sppmi_nnz"] = self.handle.attrs["sppmi_nnz"]
+        db = self.handle["rowwise"]
+        num_nnz = ret["num_nnz"]
+        for offset in range(0, num_nnz, chunk_size):
+            limit = min(num_nnz, offset + chunk_size)
+            vsum += np.sum(db["val"][offset: limit])
+        ret["vsum"] = vsum
+        return ret
+
     def get_group(self, group_name='rowwise'):
         assert group_name in ['rowwise', 'colwise', 'vali', 'idmap', 'sppmi'], 'Unexpected group_name: {}'.format(group_name)
         assert self.handle, 'DB is not opened'

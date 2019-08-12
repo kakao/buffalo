@@ -35,21 +35,14 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
         self.logger = log.get_logger('CFR')
 
-        self.opt, self.opt_path = self.get_option(opt_path)
         # put options into cython class with type assertion
         # see comments on options.py for the description of each parameter
-        for k, dt in [("dim", int), ("num_workers", int), ("num_cg_max_iters", int),
-                      ("alpha", float), ("l", float), ("cg_tolerance", float),
-                      ("reg_u", float), ("reg_i", float), ("reg_c", float),
-                      ("compute_loss", bool), ("optimizer", str)]:
-            assert isinstance(self.opt.get(k), dt), f"{k} should be {dt} type"
-        assert self.opt.optimizer in ["llt", "ldlt", "manual_cgd", "eigen_cgd"], \
-            f"optimizer ({self.opt.optimizer}) is not properly provided"
+        self.opt, self.opt_path = self.get_option(opt_path)
+        self.obj = CyCFR()
+        # check the validity of option
+        self.is_valid_option(self.opt)
+        self.obj.init(self.opt_path)
 
-        self.obj = CyCFR(self.opt.dim, self.opt.num_workers, self.opt.num_cg_max_iters,
-                         self.opt.alpha, self.opt.l, self.opt.cg_tolerance,
-                         self.opt.reg_u, self.opt.reg_i, self.opt.reg_c,
-                         self.opt.compute_loss, self.opt.optimizer.encode("utf8"))
         # ensure embedding matrix is initialzed for preventing segmentation fault
         self.is_initialized = False
 
@@ -62,14 +55,14 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
             self.data.create()
         elif isinstance(data, Data):
             self.data = data
-        self.logger.info('CFR (%s)' % json.dumps(self.opt, indent=2))
+        self.logger.info('CFR ({})'.format(json.dumps(self.opt, indent=2)))
         if self.data:
             self.logger.info(self.data.show_info())
             assert self.data.data_type in ['stream']
 
     @staticmethod
     def new(path, data_fields=[]):
-        return CFR.instantiate(AlsOption, path, data_fields)
+        return CFR.instantiate(CFROption, path, data_fields)
 
     def set_data(self, data):
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
@@ -91,6 +84,8 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
     def initialize(self):
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
+        for attr_name in ['U', 'I', 'C', 'Ib', 'Cb']:
+            setattr(self, attr_name, None)
         self.U = np.random.normal(scale=1.0/(self.opt.dim ** 2),
                                   size=(header['num_users'], self.opt.dim)).astype("float32")
         self.I = np.random.normal(scale=1.0/(self.opt.dim ** 2),
@@ -131,60 +126,52 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         end = header['num_users'] if group == 'user' else header['num_items']
         err = 0.0
         update_t, feed_t, updated = 0, 0, 0
-        buf_map = {"user": "rowwise", "item": "colwise", "context": "sppmi"}
-        buf.set_group(buf_map[group])
-        total = self.data.handle.attrs["sppmi_nnz"] if group == "context" else header["num_nnz"]
         if group == "user":
             self.obj.precompute("item".encode("utf8"))
+            total = header["num_nnz"]
+            _groups = ["rowwise"]
         elif group == "item":
             self.obj.precompute("user".encode("utf8"))
+            total = header["num_nnz"] + header["sppmi_nnz"]
+            _groups = ["colwise", "sppmi"]
+        elif group == "context":
+            total = header["sppmi_nnz"]
+            _groups = ["sppmi"]
+
         with log.pbar(log.DEBUG, desc='%s' % group,
                       total=total, mininterval=30) as pbar:
             start_t = time.time()
-            for sz in buf.fetch_batch():
-                updated += sz
+            for start_x, next_x in buf.get_batch_range(_groups):
                 feed_t += time.time() - start_t
-                start_x, next_x, indptr, keys, vals = buf.get()
                 start_t = time.time()
-                _indptr = np.empty(next_x - start_x + 1, dtype=np.int64)
-                _indptr[0] = 0 if start_x == 0 else indptr[start_x - 1]
-                _indptr[1:] = indptr[start_x: next_x]
-                err += self.partial_update(group, start_x, next_x,
-                                           _indptr, keys, vals)
+                _err, _updated = self.partial_update(buf, group, start_x, next_x)
                 update_t += time.time() - start_t
-                pbar.update(sz)
+                updated += _updated
+                err += _err
+                pbar.update(_updated)
             pbar.refresh()
-        self.logger.debug('updated %s processed(%s) elapsed(data feed: %.3f update: %.3f)' % (group, updated, feed_t, update_t))
+        self.logger.debug(f'updated {group} processed({updated}) elapsed(data feed: {feed_t:.3f} update: {update_t:.3f}")')
         return err
 
-    def partial_update(self, group, start_x, next_x, indptr, keys, vals):
+    def partial_update(self, buf, group, start_x, next_x):
         if group == "user":
-            return self.obj.partial_update_user(start_x, next_x, indptr, keys, vals)
+            indptr, keys, vals = buf.get_specific_chunk("rowwise", start_x, next_x)
+            return self.obj.partial_update_user(start_x, next_x, indptr, keys, vals), len(keys)
         elif group == "item":
-            db = self.data.get_group("sppmi")
-            _indptr = np.empty(next_x - start_x + 1, dtype=np.int64)
-            _indptr[0] = 0 if start_x == 0 else db['inpdtr'][start_x - 1]
-            _indptr[1:] = db['indptr'][start_x: next_x]
-            _keys = db['key'][_indptr[0]: _indptr[-1]]
-            _vals = db['val'][_indptr[0]: _indptr[-1]]
-            return self.obj.partial_update_item(start_x, next_x, indptr, keys, vals,
-                                                _indptr, _keys, _vals)
+            indptr_u, keys_u, vals_u = buf.get_specific_chunk("colwise", start_x, next_x)
+            indptr_c, keys_c, vals_c = buf.get_specific_chunk("sppmi", start_x, next_x)
+            return self.obj.partial_update_item(start_x, next_x, indptr_u, keys_u, vals_u, indptr_c, keys_c, vals_c), \
+                len(keys_u) + len(keys_c)
         elif group == "context":
+            indptr, keys, vals = buf.get_specific_chunk("sppmi", start_x, next_x)
             return self.obj.partial_update_context(start_x, next_x, indptr, keys, vals)
 
     def compute_scale(self):
         # scaling loss for convenience in monitoring
-        handle = self.data.handle
-        num_users, num_items, num_nnz, sppmi_nnz = \
-            [handle.attrs[k] for k in ["num_users", "num_items", "num_nnz", "sppmi_nnz"]]
-        alpha = self.opt.alpha
-        l = self.opt.l
-        chunk_size = 100000
-        vsum = 0
-        db = self.data.get_group("rowwise")
-        for offset in range(0, num_nnz, chunk_size):
-            limit = min(num_nnz, offset + chunk_size)
-            vsum += np.sum(db["val"][offset: limit])
+        ret = self.data.get_scale_info(with_sppmi=True)
+        num_users, num_items, sppmi_nnz, vsum = \
+            [ret[k] for k in ["num_users", "num_items", "sppmi_nnz", "vsum"]]
+        alpha, l = self.opt.alpha, self.opt.l
         return l * (alpha * vsum + num_users * num_items) + sppmi_nnz
 
     def train(self):

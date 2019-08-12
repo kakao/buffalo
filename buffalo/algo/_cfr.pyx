@@ -13,10 +13,7 @@ cimport numpy as np
 
 cdef extern from "buffalo/algo_impl/cfr/cfr.hpp" namespace "cfr":
     cdef cppclass CCFR:
-        CCFR(int dim, int num_threads, int num_cg_max_iters,
-                        float alpha, float l, float cg_tolerance,
-                        float reg_u, float reg_i, float reg_c,
-                        bool_t compute_loss, string optimizer) nogil except +
+        bool init(string) nogil except +
         void set_embedding(float*, int, string) nogil except +
         void precompute(string) nogil except +
         double partial_update_user(int, int,
@@ -32,15 +29,14 @@ cdef class CyCFR:
     """CCFR object holder"""
     cdef CCFR* obj  # C-CFR object
 
-    def __cinit__(self, dim, num_threads, num_cg_max_iters,
-                  alpha, l, cg_tolerance, reg_u, reg_i, reg_c,
-                  compute_loss, optimizer):
-        self.obj = new CCFR(dim ,num_threads, num_cg_max_iters,
-                            alpha, l, cg_tolerance, reg_u, reg_i, reg_c,
-                            compute_loss, optimizer)
+    def __cinit__(self, opt_path):
+        self.obj = new CCFR()
 
     def __dealloc__(self):
         del self.obj
+
+    def init(self, opt_path):
+        return self.obj.init(opt_path)
 
     def precompute(self, obj_type):
         self.obj.precompute(obj_type)

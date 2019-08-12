@@ -126,7 +126,7 @@ class CFROption(AlgoOption):
             'reg_c': 0.1,
             'alpha': 8.0,
             'l': 1.0,
-            'optimizer': 'manual_cgd',
+            'optimizer': 'manual_cg',
             'num_cg_max_iters': 3,
             'model_path': '',
             'data_opt': {}
@@ -160,6 +160,15 @@ class CFROption(AlgoOption):
             }
         })
         return Option(opt)
+
+    def is_valid_option(self, opt):
+        b = super().is_valid_option(opt)
+        possible_optimizers = ["llt", "ldlt", "manual_cg", "eigen_cg", "eigen_bicg",
+                               "eigen_gmres", "eigen_dgmres", "eigen_minres"]
+        if not self.opt.optimizer in possible_optimizers:
+            msg = f"optimizer ({self.opt.optimizer}) should be in {possible_optimizers}"
+            raise RuntimeError(msg)
+        return b
 
 
 class BprmfOption(AlgoOption):

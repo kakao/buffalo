@@ -11,26 +11,9 @@
 
 namespace cfr {
 
-CCFR::CCFR(int dim, int num_threads, int num_cg_max_iters,
-        float alpha, float l, float cg_tolerance,
-        float reg_u, float reg_i, float reg_c,
-        bool compute_loss, string optimizer): 
+CCFR::CCFR(): 
     U_(nullptr, 0, 0), I_(nullptr, 0, 0), C_(nullptr, 0, 0),
-    Ib_(nullptr, 0), Cb_(nullptr, 0)
-{
-    dim_ = dim; num_threads_ = num_threads; num_cg_max_iters_ = num_cg_max_iters;
-    alpha_ = alpha; l_ = l; cg_tolerance_ = cg_tolerance;
-    reg_u_ = reg_u; reg_i_ = reg_i; reg_c_ = reg_c;
-    compute_loss_ = compute_loss;
-
-    if (optimizer == "llt") optimizer_code_ = 0;
-    else if (optimizer == "ldlt") optimizer_code_ = 1;
-    else if (optimizer == "manual_cgd") optimizer_code_ = 2;
-    else if (optimizer == "eigen_cgd") optimizer_code_ = 3;
-
-    FF_.resize(dim_, dim_);
-    omp_set_num_threads(num_threads_);
-}
+    Ib_(nullptr, 0), Cb_(nullptr, 0){}
 
 CCFR::~CCFR()
 {
@@ -44,7 +27,40 @@ CCFR::~CCFR()
 
 // implementation of inherited virtual functions
 bool CCFR::init(string opt_path){
-    return parse_option(opt_path);
+    bool ok = parse_option(opt_path);
+    if (ok){
+
+        // int parameters
+        dim_ = opt_["dim"].int_value();
+        num_threads_ = opt_["num_workers"].int_value();
+        num_cg_max_iters_ = opt_["num_cg_max_iters"].int_value();
+        alpha_ = opt_["alpha"].number_value();
+        l_ = opt_["l"].number_value();
+        
+        // floating number parameters
+        cg_tolerance_ = opt_["cg_tolerance_"].number_value();
+        reg_u_ = opt_["reg_u"].number_value();
+        reg_i_ = opt_["reg_i"].number_value();
+        reg_c_ = opt_["reg_c"].number_value();
+        
+        // boolean parameters
+        compute_loss_ = opt_["compute_loss"].bool_value();
+     
+        // get optimizer
+        string optimizer = opt_["optimizer"].string_value();
+        if (optimizer == "llt") optimizer_code_ = 0;
+        else if (optimizer == "ldlt") optimizer_code_ = 1;
+        else if (optimizer == "manual_cg") optimizer_code_ = 2;
+        else if (optimizer == "eigen_cg") optimizer_code_ = 3;
+        else if (optimizer == "eigen_bicg") optimizer_code_ = 4;
+        else if (optimizer == "eigen_gmres") optimizer_code_ = 5;
+        else if (optimizer == "eigen_dgmres") optimizer_code_ = 6;
+        else if (optimizer == "eigen_minres") optimizer_code_ = 7;
+
+        FF_.resize(dim_, dim_);
+        omp_set_num_threads(num_threads_);
+    }
+    return ok;
 }
 
 // implementation of inherited virtual functions
@@ -82,7 +98,7 @@ double CCFR::partial_update_user(int start_x, int next_x,
     }
 
     int end_loop = next_x - start_x;
-    const int64_t shifted = indptr[0];
+    const int64_t shifted = start_x == 0? 0: indptr[start_x - 1];
     vector<double> losses(num_threads_, 0.0);
     #pragma omp parallel
     {
@@ -92,8 +108,8 @@ double CCFR::partial_update_user(int start_x, int next_x,
         {
             const int x = start_x + i;
             // assume that shifted index is not so big
-            const int beg = indptr[i] - shifted;
-            const int end = indptr[i+1] - shifted;
+            const int beg = x == 0? 0: indptr[x - 1] - shifted;
+            const int end = indptr[x] - shifted;
             const int data_size = end - beg;
             if (data_size == 0) {
                 TRACE("No data exists for {}", x);
@@ -142,8 +158,8 @@ double CCFR::partial_update_item(int start_x, int next_x,
     
     vector<double> losses(num_threads_, 0.0);
     int end_loop = next_x - start_x;
-    const int64_t shifted_u = indptr_u[0];
-    const int64_t shifted_c = indptr_c[0];
+    const int64_t shifted_u = start_x == 0? 0: indptr_u[start_x - 1];
+    const int64_t shifted_c = start_x == 0? 0: indptr_c[start_x - 1];
     #pragma omp parallel
     {
         int _thread = omp_get_thread_num();
@@ -155,12 +171,12 @@ double CCFR::partial_update_item(int start_x, int next_x,
             MatrixType A(dim_, dim_);
             VectorType y(dim_); 
             
-            const int beg_u = indptr_u[i] - shifted_u;
-            const int end_u = indptr_u[i+1] - shifted_u;
+            const int beg_u = x == 0? 0: indptr_u[x - 1] - shifted_u;
+            const int end_u = indptr_u[x] - shifted_u;
             const int data_size_u = end_u - beg_u;
             
-            const int beg_c = indptr_c[i] - shifted_c;
-            const int end_c = indptr_c[i+1] - shifted_c;
+            const int beg_c = x == 0? 0: indptr_c[x - 1] - shifted_c;
+            const int end_c = indptr_c[x] - shifted_c;
             const int data_size_c = end_c - beg_c;
             if (data_size_u == 0 and data_size_c == 0) {
                 TRACE("No data exists for {}", x);
@@ -242,7 +258,7 @@ double CCFR::partial_update_context(int start_x, int next_x,
     }
     vector<double> losses(num_threads_, 0.0);
     int end_loop = next_x - start_x;
-    const int64_t shifted = indptr[0];
+    const int64_t shifted = start_x == 0? 0: indptr[start_x - 1];
     #pragma omp parallel
     {
         int _thread = omp_get_thread_num();
@@ -254,8 +270,8 @@ double CCFR::partial_update_context(int start_x, int next_x,
             MatrixType A(dim_, dim_);
             VectorType y(dim_); 
             
-            const int beg = indptr[i] - shifted;
-            const int end = indptr[i+1] - shifted;
+            const int beg = x == 0? 0: indptr[x - 1] - shifted;
+            const int end = indptr[x] - shifted;
             const int data_size = end - beg;
             
             if (data_size == 0) {
