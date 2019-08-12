@@ -105,7 +105,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def _get_topk_recommendation(self, rows, topk):
         u = self.U[rows]
-        topks = np.argsort(u.dot(self.I.T), axis=1)[:, -topk:][:,::-1]
+        topks = self.get_topk(u.dot(self.I.T), k=topk, num_threads=self.opt.num_workers)
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk):
