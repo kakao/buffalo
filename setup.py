@@ -79,6 +79,16 @@ extensions = [
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
+    Extension(name="buffalo.algo.bpr",
+              sources=['buffalo/algo/bpr.cpp'],
+              include_dirs=['./include',
+                            numpy_include_dirs,
+                            '3rd/json11',
+                            '3rd/spdlog/include',
+                            site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
+              libraries=['gomp', 'cbuffalo'],
+              library_dirs=['/usr/local/lib64'],
+              extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo.w2v",
               sources=['buffalo/algo/w2v.cpp'],
               include_dirs=['./include',
@@ -99,6 +109,11 @@ extensions = [
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
+    Extension(name="buffalo.data.fileio",
+              sources=['buffalo/data/fileio.cpp'],
+              libraries=['gomp'],
+              extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
+
 ]
 
 
@@ -144,10 +159,11 @@ class BuildExtention(build_ext, object):
 
     def cythonize(self):
         ext_files = ['buffalo/algo/als.pyx',
-                     # 'buffalo/algo/bpr.pyx',
+                     'buffalo/algo/bpr.pyx',
                      'buffalo/algo/w2v.pyx',
                      'buffalo/misc/log.pyx',
-                     'buffalo/algo/_cfr.pyx']
+                     'buffalo/algo/_cfr.pyx',
+                     'buffalo/data/fileio.pyx']
         for path in ext_files:
             from Cython.Build import cythonize
             cythonize(path)

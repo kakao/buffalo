@@ -21,12 +21,6 @@ class BufferedData(object):
     @abc.abstractmethod
     def get(self):
         pass
-        # TODO: Checkout long long structure for Eigen/Eigency
-        return (self.ptr_index,
-                self.indptr,
-                self.rows,
-                self.keys,
-                self.vals)
 
 
 class BufferedDataMatrix(BufferedData):
@@ -35,14 +29,19 @@ class BufferedDataMatrix(BufferedData):
     This class feed chunked data to training step.
     """
     def __init__(self):
-        super(BufferedDataMatrix, self).__init__()
+        super().__init__()
         self.group = 'rowwise'
         self.major = {'rowwise': {}, 'colwise': {}, 'sppmi': {}}
 
-    def initialize(self, data, order='F', with_sppmi=False):
+    def free(self, buf):
+        buf['indptr'] = None
+        buf['keys'] = None
+        buf['vals'] = None
+
+    def initialize(self, data, with_sppmi=False):
         self.data = data
         # 16 bytes(indptr8, keys4, vals4)
-        limit = max(int(((self.data.opt.data.batch_mb * 1000 * 1000) / 16.)), 64)
+        limit = max(int(((self.data.opt.data.batch_mb * 1024 * 1024) / 16.)), 64)
         minimum_required_batch_size = 0
         Gs = ['rowwise', 'colwise']
         if with_sppmi:
@@ -51,6 +50,8 @@ class BufferedDataMatrix(BufferedData):
             lim = int(limit / 2)
             group = data.get_group(G)
             header = data.get_header()
+            if self.major[G]:
+                self.free(self.major[G])
             m = self.major[G]
             m['index'] = 0
             m['limit'] = lim
@@ -60,19 +61,20 @@ class BufferedDataMatrix(BufferedData):
             m['indptr'] = group['indptr'][::]
             minimum_required_batch_size = max([m['indptr'][i] - m['indptr'][i - 1]
                                                for i in range(1, len(m['indptr']))])
-            m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order=order)
-            m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order=order)
+            m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='C')
+            m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order='C')
+        self.logger.info(f'Set data buffer size as {limit}(minimum required batch size is {minimum_required_batch_size}).')
         if minimum_required_batch_size > int(limit / 2):
-            self.logger.warning('Increased batch size due to '
-                                'minimum required batch size is %d for the data, but %d given. '
+            self.logger.warning('Given batch size(%d) is smaller than '
+                                'minimum required batch size(%d) for the data. '
                                 'Increasing batch_mb would be helpful for faster traininig.',
-                                minimum_required_batch_size, int(limit / 2))
+                                int(limit / 2), minimum_required_batch_size)
             for G in ['rowwise', 'colwise']:
                 m = self.major[G]
                 lim = minimum_required_batch_size + 1
                 m['limit'] = lim
-                m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order=order)
-                m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order=order)
+                m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='C')
+                m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order='C')
 
     def fetch_batch(self):
         m = self.major[self.group]
@@ -96,8 +98,8 @@ class BufferedDataMatrix(BufferedData):
                 current_batch_size = m['limit']
                 need_batch_size = m['indptr'][where] - beg
                 raise RuntimeError('Need more memory to load the data, '
-                                   'current buffer size is %d but need to be at least %d. '
-                                   'Increase batch_mb value.' % (current_batch_size, need_batch_size))
+                                   'cannot load data with buffer size %d that should be at least %d. '
+                                   'Increase batch_mb value to deal with this.' % (current_batch_size, need_batch_size))
             end = m['indptr'][where - 1]
             m['next_x'] = where
             size = end - beg
@@ -134,7 +136,11 @@ class BufferedDataStream(BufferedData):
         self.major = {'rowwise': {}}
         self.group = 'rowwise'
 
-    def initialize(self, data, order='F'):
+    def free(self, buf):
+        buf['indptr'] = None
+        buf['keys'] = None
+
+    def initialize(self, data):
         self.data = data
         assert self.data.data_type == 'stream'
         # 12 bytes(indptr8, keys4)
@@ -145,6 +151,8 @@ class BufferedDataStream(BufferedData):
         group = data.get_group(G)
         header = data.get_header()
         m = self.major[G]
+        if self.major[G]:
+            self.free(self.major[G])
         m['index'] = 0
         m['limit'] = lim
         m['start_x'] = 0
@@ -155,10 +163,10 @@ class BufferedDataStream(BufferedData):
                                            for i in range(1, len(m['indptr']))])
         m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='F')
         if minimum_required_batch_size > int(limit / 2):
-            self.logger.warning('Increased batch size due to '
-                                'minimum required batch size is %d for the data, but %d given. '
+            self.logger.warning('Given batch size(%d) is smaller than '
+                                'minimum required batch size(%d) is for the data. '
                                 'Increasing batch_mb would be helpful for faster traininig.',
-                                minimum_required_batch_size, int(limit / 2))
+                                int(limit / 2), minimum_required_batch_size)
             m = self.major[G]
             lim = minimum_required_batch_size + 1
             m['limit'] = lim
@@ -186,8 +194,8 @@ class BufferedDataStream(BufferedData):
                 current_batch_size = m['limit']
                 need_batch_size = m['indptr'][where] - beg
                 raise RuntimeError('Need more memory to load the data, '
-                                   'current buffer size is %d but need to be at least %d. '
-                                   'Increase batch_mb value.' % (current_batch_size, need_batch_size))
+                                   'cannot load data with buffer size %d that should be at least %d. '
+                                   'Increase batch_mb value to deal with this.' % (current_batch_size, need_batch_size))
             end = m['indptr'][where - 1]
             m['next_x'] = where
             size = end - beg

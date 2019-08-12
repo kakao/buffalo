@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+import psutil
 import warnings
 import traceback
 from collections import Counter
@@ -155,32 +156,13 @@ class Stream(Data):
         return db, itemids
 
     def _build_data(self, db, working_data_path, validation_data):
-        self.prepro.pre(db)
-        max_sz = max(db.attrs['num_users'], db.attrs['num_items'])
         if self.opt.data.internal_data_type == 'stream':
-            self._build_compressed_triplets(db['rowwise'], working_data_path,
-                                            num_lines=db.attrs['num_nnz'],
-                                            max_key=db.attrs['num_users'],
-                                            max_sz=max_sz)
-            self.prepro.post(db['rowwise'])
-            self.fill_validation_data(db, validation_data)
+            super()._build_data(db, working_data_path, validation_data,
+                                target_groups=['rowwise'],
+                                sort=False)  # keep order
         elif self.opt.data.internal_data_type == 'matrix':
-            aux.psort(working_data_path, key=1)
-            self._build_compressed_triplets(db['rowwise'], working_data_path,
-                                            num_lines=db.attrs['num_nnz'],
-                                            max_key=db.attrs['num_users'],
-                                            max_sz=max_sz)
-            self.prepro.post(db['rowwise'])
-
-            self.fill_validation_data(db, validation_data)
-
-            aux.psort(working_data_path, key=2)
-            self._build_compressed_triplets(db['colwise'], working_data_path,
-                                            num_lines=db.attrs['num_nnz'],
-                                            max_key=db.attrs['num_items'],
-                                            max_sz=max_sz,
-                                            switch_row_col=True)
-            self.prepro.post(db['rowwise'])
+            super()._build_data(db, working_data_path, validation_data,
+                                target_groups=['rowwise', 'colwise'])
 
     def _build_sppmi(self, db, working_data_path, k):
         self.logger.info(f"build sppmi (shift k: {k})")

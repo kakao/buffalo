@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import math
+from quickselect import quickselect
 
 
 class Evaluable(object):
@@ -34,6 +35,12 @@ class Evaluable(object):
         results.update(self._evaluate_ranking_metrics())
         results.update(self._evaluate_score_metrics())
         return results
+
+    def get_topk(self, scores, k, sorted=True, num_threads=4):
+        assert k < scores.shape[1], f"k ({k}) should be smaller than cols ({scores.shape[1]})"
+        result = np.empty(shape=(scores.shape[0], k), dtype=np.int32)
+        quickselect(scores, result, sorted, num_threads)
+        return result
 
     def _evaluate_ranking_metrics(self):
         batch_size = self.opt.validation.get('batch', 128)
@@ -84,7 +91,8 @@ class Evaluable(object):
         NDCG /= N
         AP /= N
         ACC = HIT / N
-        return {'ndcg': NDCG, 'map': AP, 'accuracy': ACC}
+        ret = {'ndcg': NDCG, 'map': AP, 'accuracy': ACC}
+        return ret
 
     def _evaluate_score_metrics(self):
         vali = self.data.get_group('vali')

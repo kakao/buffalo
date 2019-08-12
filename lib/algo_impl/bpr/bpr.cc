@@ -452,6 +452,7 @@ double CBPRMF::compute_loss(Map<VectorXi>& users,
                             Map<VectorXi>& negatives)
 {
     int num_workers = opt_["num_workers"].int_value();
+    omp_set_num_threads(num_workers);
 
     vector<double> loss(num_workers, 0.0);
     int num_loss_samples = (int)users.rows();
@@ -481,6 +482,7 @@ void CBPRMF::update_adam(
 void CBPRMF::update_parameters()
 {
     int num_workers = opt_["num_workers"].int_value();
+    omp_set_num_threads(num_workers);
 
     bool use_bias = opt_["use_bias"].bool_value();
     double reg_u = opt_["reg_u"].number_value();
@@ -513,7 +515,7 @@ void CBPRMF::update_parameters()
                 gradQ_.row(i) /= Q_samples_per_coordinates_[i];
                 gradQb_.row(i) /= Q_samples_per_coordinates_[i];
             }
-            gradQ_.row(i) -= (Q.row(i) * (2 * reg_u));
+            gradQ_.row(i) -= (Q.row(i) * (2 * reg_i));
             update_adam(gradQ_, momentumQ_, velocityQ_, i, beta1, beta2);
             Q.row(i) += (lr * gradQ_.row(i));
 

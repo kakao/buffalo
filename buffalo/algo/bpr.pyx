@@ -10,7 +10,7 @@ import cython
 from libcpp cimport bool
 from libc.stdint cimport int64_t
 from libcpp.string cimport string
-from eigency.core cimport MatrixXf, Map, VectorXi, VectorXf
+from eigency.core cimport MatrixXf, Map, VectorXi, VectorXf, FlattenedMapWithOrder, Matrix, RowMajor, Dynamic
 
 import numpy as np
 cimport numpy as np
@@ -31,9 +31,9 @@ cdef extern from "buffalo/algo_impl/bpr/bpr.hpp" namespace "bpr":
     cdef cppclass CBPRMF:
         void release() nogil except +
         bool init(string) nogil except +
-        void initialize_model(Map[MatrixXf]&,
-                              Map[MatrixXf]&,
-                              Map[MatrixXf]&,
+        void initialize_model(FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor]&,
+                              FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor]&,
+                              FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor]&,
                               int64_t) nogil except +
         void set_cumulative_table(int64_t*, int)
         void launch_workers()
@@ -68,9 +68,9 @@ cdef class PyBPRMF:
                          np.ndarray[np.float32_t, ndim=2] Q,
                          np.ndarray[np.float32_t, ndim=2] Qb,
                          int64_t num_total_samples):
-        self.obj.initialize_model(Map[MatrixXf](P),
-                                  Map[MatrixXf](Q),
-                                  Map[MatrixXf](Qb),
+        self.obj.initialize_model(FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor](P),
+                                  FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor](Q),
+                                  FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor](Qb),
                                   num_total_samples)
 
     def launch_workers(self):
@@ -148,14 +148,6 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
         self.data = data
 
-    def fast_similar(self, onoff=True):
-        # TODO: implement
-        if onoff:
-            self.FQ = self.normalize(self.Q)
-        else:
-            if hasattr(self, 'FQ'):
-                del self.FQ
-
     def normalize(self, group='item'):
         if group == 'item':
             self.Q = self._normalize(self.Q)
@@ -175,12 +167,14 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def init_factors(self):
         header = self.data.get_header()
+        for attr_name in ['P', 'Q', 'Qb']:
+            setattr(self, attr_name, None)
         self.P = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
-                                         size=(header['num_users'], self.opt.d)).astype("float32"), order='F')
+                                         size=(header['num_users'], self.opt.d)).astype("float32"), order='C')
         self.Q = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
-                                         size=(header['num_items'], self.opt.d)).astype("float32"), order='F')
+                                         size=(header['num_items'], self.opt.d)).astype("float32"), order='C')
         self.Qb = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
-                                          size=(header['num_items'], 1)).astype("float32"), order='F')
+                                          size=(header['num_items'], 1)).astype("float32"), order='C')
         self.obj.initialize_model(self.P, self.Q, self.Qb, header['num_nnz'])
 
     def prepare_sampling(self):
@@ -336,4 +330,4 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
         return data
 
     def get_evaluation_metrics(self):
-        return ['val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error', 'prloss']
+        return ['val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error', 'train_loss']

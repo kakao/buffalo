@@ -97,8 +97,8 @@ double CALS::partial_update(
 
     int D = opt_["d"].int_value();
     int num_iteration_for_cg = opt_["num_iteration_for_conjugate_gradient"].int_value();
-    if (num_iteration_for_cg == -1) {
-        // NOTE: According to Eigen docs, the default number of iteration for conjugate gradient decent is twice times number of columns.
+    if (num_iteration_for_cg == -1) {  // auto
+        // NOTE: According to Eigen docs, the default number of iteration for conjugate gradient method is twice times number of columns.
         num_iteration_for_cg = (int)(max(int(sqrt(D)), 3));
     }
     int num_workers = opt_["num_workers"].int_value();
@@ -108,6 +108,7 @@ double CALS::partial_update(
     float alpha = opt_["alpha"].number_value();
 
     ConjugateGradient<FactorTypeRowMajor, Lower|Upper> cg[num_workers];
+    omp_set_num_threads(num_workers);
 
     vector<float> errs(num_workers, 0.0);
     int end_loop = next_x - start_x;

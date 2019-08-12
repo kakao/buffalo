@@ -31,8 +31,7 @@ class TestW2V(TestBase):
         self.assertTrue(True)
 
     def test3_init(self):
-        opt = W2vOption().get_default_option()
-        self._test3_init(W2V, opt)
+        pass
 
     def test4_train(self):
         set_log_level(3)

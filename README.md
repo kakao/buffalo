@@ -15,11 +15,11 @@ $> cd tests && python36
 >>> data_opt = MatrixMarketOptions().get_default_option()
 >>> data_opt.input.main = './ml-100k/main'
 >>> als = ALS(option, data_opt=data_opt)
->>> als.init()
+>>> als.initialize()
 >>> als.train()
 >>> results = als.get_validation_results()
 >>> print(resulsts)
-{'ndcg': 0.03247253115122813, 'map': 0.021315653632726805, 'accuracy': 0.06377032520325204, 'rmse': 2.9231147330905136, 'error': 2.7129669839143755}
+{'val_ndcg': 0.03247253115122813, 'val_map': 0.021315653632726805, 'val_accuracy': 0.06377032520325204, 'val_rmse': 2.9231147330905136, 'val_error': 2.7129669839143755}
 ```
 
 # Installation
@@ -32,4 +32,4 @@ $> python setup.py install
 ## Requirements
 - Python 3.6+
 - cmake 2.8.8+
-- gcc/g++(need C++14)
+- gcc/g++ (with std=c++14)

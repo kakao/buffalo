@@ -137,6 +137,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
     def init_factors(self):
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
+        self.P, self.Q = None, None
         self.P = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
                                          size=(header['num_users'], self.opt.d)).astype("float32"),
                         order='C')
@@ -181,7 +182,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
                 err += self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)
                 update_t += time.time() - start_t
                 pbar.update(sz)
-        self.logger.debug('%s updated: processed(%s) elapsed(data feed: %.3f update: %.3f)' % (group, updated, feed_t, update_t))
+        self.logger.debug(f'{group} updated: processed({updated}) elapsed(data feed: {feed_t:0.3f}s update: {update_t:0.03}s)')
         return err
 
     def train(self):
@@ -249,4 +250,4 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
         return data
 
     def get_evaluation_metrics(self):
-        return ['rmse', 'val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error']
+        return ['train_loss', 'val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error']
