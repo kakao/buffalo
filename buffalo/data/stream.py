@@ -200,7 +200,7 @@ class Stream(Data):
         db["sppmi"].create_dataset("key", (nnz,), dtype='int32', maxshape=(nnz,))
         db["sppmi"].create_dataset("val", (nnz,), dtype='float32', maxshape=(nnz,))
         self.logger.info('Disk-based Compressing...')
-        jobs_files = self._chunking_into_bins(w.name, nnz, sz, 0)
+        job_files = self._chunking_into_bins(w.name, nnz, sz, 0)
         self._build_compressed_triplets(db["sppmi"],
                                         job_files,
                                         num_lines=nnz,

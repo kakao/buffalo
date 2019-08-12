@@ -278,7 +278,7 @@ class Data(object):
                                        self.tmp_root,
                                        total_lines=num_lines,
                                        num_chunks=num_chunks,
-                                       sep_idx=0 if not switch_row_col else 1,
+                                       sep_idx=sep_idx,
                                        num_workers=num_workers)
         return job_files
 
@@ -360,10 +360,10 @@ class Data(object):
                               tmp_dir=self.opt.data.tmp_dir,
                               key=sep_idx + 1,
                               buffer_mb=buffer_mb)
-                jobs_files = self._chunking_into_bins(working_data_path,
-                                                      db.attrs['num_nnz'],
-                                                      max_key,
-                                                      sep_idx=sep_idx)
+                job_files = self._chunking_into_bins(working_data_path,
+                                                     db.attrs['num_nnz'],
+                                                     max_key,
+                                                     sep_idx=sep_idx)
                 self._build_compressed_triplets(db[group],
                                                 job_files,
                                                 num_lines=db.attrs['num_nnz'],
