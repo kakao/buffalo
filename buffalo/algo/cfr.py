@@ -141,7 +141,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         with log.pbar(log.DEBUG, desc='%s' % group,
                       total=total, mininterval=30) as pbar:
             start_t = time.time()
-            for start_x, next_x in buf.get_batch_range(_groups):
+            for start_x, next_x in buf.fetch_batch_range(_groups):
                 feed_t += time.time() - start_t
                 start_t = time.time()
                 _err, _updated = self.partial_update(buf, group, start_x, next_x)

@@ -109,6 +109,49 @@ class BufferedDataMatrix(BufferedData):
                 flushed = True
             yield size
 
+    def get_specific_chunk(self, group, start_x, next_x):
+        db = self.get_group(groups)
+        m = self.major[group]
+        indptr = m["indptr"]
+        beg = 0 if start_x == 0 else indptr[start_x - 1]
+        end = indptr[next_x - 1]
+        keys = m["key"][beg: end]
+        vals = m["val"][beg: end]
+        return indptr, keys, vals
+
+    def fetch_batch_range(self, groups):
+        assert groups and isinstance(groups, list), "groups should be list (length >= 1)"
+        for G in groups:
+            assert G in ["rowwise", "colwise", "sppmi"], f"G ({G}) is not proper group for getting range"
+        db = self.get_group(groups[0])
+        indptr = np.zeros(db["indptr"].shape[0], dtype=np.int64)
+        max_x = len(indptr)
+        for G in groups:
+            _indtpr = self.get_groups()["indptr"][:]
+            assert len(_indptr) == max_x, f"size of indptr (group: {G}) should be {max_x}"
+            indptr += _indptr
+        limit = max(int(((self.data.opt.data.batch_mb * 1024 * 1024) / 16.)), 64) / 2
+        start_x, next_x, flushed = 0, 0, False
+        while True:
+            if flushed:
+                raise StopIteration
+
+            start_x = next_x
+
+            beg = 0 if start_x == 0 else indptr[start_x - 1]
+            where = bisect.bisect_left(indptr, beg + limit)
+            if where == start_x:
+                current_batch_size = limit
+                need_batch_size = indptr[where] - beg
+                raise RuntimeError('Need more memory to load the data, '
+                                   'cannot load data with buffer size %d that should be at least %d. '
+                                   'Increase batch_mb value to deal with this.' % (current_batch_size, need_batch_size))
+            end = indptr[where - 1]
+            next_x = where
+            if next_x + 1 >= max_x:
+                flushed = True
+            yield start_x, next_x
+
     def set_group(self, group):
         assert group in ['rowwise', 'colwise', 'sppmi'], 'Unexpected group: {}'.format(group)
         self.group = group
