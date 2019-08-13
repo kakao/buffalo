@@ -84,23 +84,17 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
     def initialize(self):
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
-        for attr_name in ['U', 'I', 'C', 'Ib', 'Cb']:
-            setattr(self, attr_name, None)
-        self.U = np.random.normal(scale=1.0/(self.opt.dim ** 2),
-                                  size=(header['num_users'], self.opt.dim)).astype("float32")
-        self.I = np.random.normal(scale=1.0/(self.opt.dim ** 2),
-                                  size=(header['num_items'], self.opt.dim)).astype("float32")
-        self.C = np.random.normal(scale=1.0/(self.opt.dim ** 2),
-                                  size=(header['num_items'], self.opt.dim)).astype("float32")
-        self.Ib = np.random.normal(scale=1.0/(self.opt.dim ** 2),
-                                   size=(header['num_items'], 1)).astype("float32")
-        self.Cb = np.random.normal(scale=1.0/(self.opt.dim ** 2),
-                                   size=(header['num_items'], 1)).astype("float32")
-        self.obj.set_embedding(self.U, "user".encode("utf8"))
-        self.obj.set_embedding(self.I, "item".encode("utf8"))
-        self.obj.set_embedding(self.C, "context".encode("utf8"))
-        self.obj.set_embedding(self.Ib, "item_bias".encode("utf8"))
-        self.obj.set_embedding(self.Cb, "context_bias".encode("utf8"))
+        num_users, num_items, dim = \
+            header["num_users"], header["num_items"], self.opt.dim
+        for attr, shape, name in [('U', (num_users, dim), "user"),
+                                  ('I', (num_items, dim), "item"),
+                                  ('C', (num_items, dim), "context"),
+                                  ('Ib', (num_items, 1), "item_bias"),
+                                  ('Cb', (num_items, 1), "context_bias")]:
+            setattr(self, attr, None)
+            F = np.random.normal(scale=1.0/(dim ** 2), size=shape).astype(np.float32)
+            setattr(self, attr, F)
+            self.obj.set_embedding(getattr(self, attr), name.encode("utf8"))
         self.is_initialized = True
 
     def _get_topk_recommendation(self, rows, topk):
