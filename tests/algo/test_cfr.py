@@ -12,7 +12,6 @@ from buffalo.data.stream import StreamOptions
 
 
 class TestCFR(TestBase):
-    '''
     def test0_get_default_option(self):
         CFROption().get_default_option()
         self.assertTrue(True)
@@ -48,13 +47,10 @@ class TestCFR(TestBase):
         c.initialize()
         self.assertEqual(c.U.shape, (943, 20))
         self.assertEqual(c.I.shape, (1682, 20))
-    '''
 
     def test4_train(self):
         set_log_level(3)
         opt = CFROption().get_default_option()
-        opt.dim = 20
-        opt.optimizer = "eigen_minres"
         data_opt = StreamOptions().get_default_option()
         data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
@@ -68,12 +64,9 @@ class TestCFR(TestBase):
         c.train()
         self.assertTrue(True)
 
-    '''
     def test5_validation(self, ndcg=0.06, map=0.04):
         set_log_level(3)
         opt = CFROption().get_default_option()
-        opt.dim = 20
-        opt.optimizer = "manual_cg"
         opt.validation = aux.Option({'topk': 10})
         opt.tensorboard = aux.Option({'root': './tb',
                                       'name': 'cfr'})
@@ -96,8 +89,6 @@ class TestCFR(TestBase):
     def test6_topk(self):
         set_log_level(1)
         opt = CFROption().get_default_option()
-        opt.dim = 20
-        opt.optimizer = "manual_cg"
         opt.validation = aux.Option({'topk': 10})
         data_opt = StreamOptions().get_default_option()
         data_opt.data.validation.name = "sample"
@@ -122,8 +113,6 @@ class TestCFR(TestBase):
     def test7_train_ml20m(self):
         set_log_level(3)
         opt = CFROption().get_default_option()
-        opt.dim = 20
-        opt.optimizer = "manual_cg"
         data_opt = StreamOptions().get_default_option()
         data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
@@ -141,8 +130,6 @@ class TestCFR(TestBase):
         set_log_level(1)
 
         opt = CFROption().get_default_option()
-        opt.dim = 20
-        opt.optimizer = "manual_cg"
         data_opt = StreamOptions().get_default_option()
         data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
@@ -166,8 +153,6 @@ class TestCFR(TestBase):
         set_log_level(1)
 
         opt = CFROption().get_default_option()
-        opt.dim = 20
-        opt.optimizer = "manual_cg"
         data_opt = StreamOptions().get_default_option()
         data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
@@ -195,8 +180,6 @@ class TestCFR(TestBase):
         set_log_level(1)
 
         opt = CFROption().get_default_option()
-        opt.dim = 20
-        opt.optimizer = "manual_cg"
         data_opt = StreamOptions().get_default_option()
         data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
@@ -223,7 +206,6 @@ class TestCFR(TestBase):
                 _ = c.most_similar(key)
         elapsed_b = time.time() - start_t
         self.assertTrue(elapsed_a > elapsed_b)
-    '''
 
 
 if __name__ == '__main__':
