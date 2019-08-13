@@ -279,12 +279,3 @@ class TensorboardExtention(object):
         self._tb.session.close()
         self._tb = None
         tf.reset_default_graph()
-
-    def __del__(self):
-        if hasattr(self, '_tb_setted') and self._tb_setted:
-            tf.reset_default_graph()
-
-    def periodical(self, period, current):
-        if not period or (current + 1) % period == 0:
-            return True
-        return False

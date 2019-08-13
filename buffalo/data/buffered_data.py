@@ -130,7 +130,7 @@ class BufferedDataMatrix(BufferedData):
             _indptr = self.data.get_group(G)["indptr"][:]
             assert len(_indptr) == max_x, f"size of indptr (group: {G}) should be {max_x}"
             indptr += _indptr
-        limit = max(int(((self.data.opt.data.batch_mb * 1024 * 1024) / 16.)), 64) / 2
+        limit = max(int(((self.data.opt.data.batch_mb * 1024 * 1024) / 8.)), 64)
         start_x, next_x, flushed = 0, 0, False
         while True:
             if flushed:
@@ -203,7 +203,7 @@ class BufferedDataStream(BufferedData):
         m['indptr'] = group['indptr'][::]
         minimum_required_batch_size = max([m['indptr'][i] - m['indptr'][i - 1]
                                            for i in range(1, len(m['indptr']))])
-        m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='F')
+        m['keys'] = np.zeros(shape=(lim,), dtype=np.int32)
         if minimum_required_batch_size > int(limit / 2):
             self.logger.warning('Given batch size(%d) is smaller than '
                                 'minimum required batch size(%d) is for the data. '
@@ -212,7 +212,7 @@ class BufferedDataStream(BufferedData):
             m = self.major[G]
             lim = minimum_required_batch_size + 1
             m['limit'] = lim
-            m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order=order)
+            m['keys'] = np.zeros(shape=(lim,), dtype=np.int32)
 
     def fetch_batch(self):
         m = self.major[self.group]

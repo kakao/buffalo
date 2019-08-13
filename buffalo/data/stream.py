@@ -52,7 +52,7 @@ class StreamOptions(DataOption):
                     'max_samples': 500
                 },
                 'sppmi': {
-                    'enabled': True,
+                    'enabled': False,
                     'windows': 5,
                     'k': 1
                 },
