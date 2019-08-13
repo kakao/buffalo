@@ -38,6 +38,7 @@ public:
         VectorType r, p;
         float rs_old, rs_new, alpha, beta;
         ConjugateGradient<MatrixType, Lower|Upper> cg;
+        
         BiCGSTAB<MatrixType> bicg;
         GMRES<MatrixType> gmres;
         DGMRES<MatrixType> dgmres;
