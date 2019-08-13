@@ -25,7 +25,13 @@ class TestQuickSelect(TestBase):
         el = time.time() - st
         print(f"res: {res[0]}, el: {el} sec")
 
-    def test1_quickselect(self):
+    def test1_np_argpartition(self):
+        st = time.time()
+        res = np.argpartition(-scores, topk)[:, :topk]
+        el = time.time() - st
+        print(f"res: {res[0]}, el: {el} sec")
+
+    def test2_quickselect(self):
         ev = Evaluable()
         st = time.time()
         res = ev.get_topk(scores, k=topk, num_threads=4)
