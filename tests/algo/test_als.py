@@ -33,7 +33,7 @@ class TestALS(TestBase):
 
     def test4_train(self):
         opt = AlsOption().get_default_option()
-        opt.d = 5
+        opt.d = 20
         self._test4_train(ALS, opt)
 
     def test5_validation(self):
@@ -74,6 +74,7 @@ class TestALS(TestBase):
         opt.d = 5
         opt.validation = aux.Option({'topk': 10})
         self._test10_fast_most_similar(ALS, opt)
+
 
 if __name__ == '__main__':
     unittest.main()
