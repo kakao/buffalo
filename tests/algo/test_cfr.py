@@ -116,6 +116,7 @@ class TestCFR(TestBase):
         data_opt = StreamOptions().get_default_option()
         data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
+        data_opt.data.tmp_dir = './tmp/'
         data_opt.input.main = self.ml_20m + 'stream'
         data_opt.input.uid = self.ml_20m + 'uid'
         data_opt.input.iid = self.ml_20m + 'iid'

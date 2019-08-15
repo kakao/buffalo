@@ -102,8 +102,8 @@ class Benchmark(object):
                         'implicitPrefs': True,
                         'userCol': 'row',
                         'itemCol': 'col',
-                        'intermediateStorageLevel': 'MEMORY',
-                        'finalStorageLevel': 'MEMORY',
+                        # 'intermediateStorageLevel': 'MEMORY_ONLY',
+                        # 'finalStorageLevel': 'MEMORY_ONLY',
                         'ratingCol': 'data'}
 
     def run(self, func, *args, **kwargs):
@@ -364,8 +364,10 @@ class PysparkLib(Benchmark):
                .set('spark.local.dir', './tmp/')\
                .set('spark.driver.memory', '32G')
         context = SparkContext(conf=conf)
+        context.setLogLevel('INFO')
         spark = SparkSession(context)
         data = self.get_database(database, spark=spark, context=context)
+        print(opts)
         als = ALS(**opts)
         elapsed, memory_usage = self.run(als.fit, data)
         spark.stop()

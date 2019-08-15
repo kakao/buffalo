@@ -136,8 +136,8 @@ def psort(path, parallel=-1, field_seperator=' ', key=1, tmp_dir='/tmp/', buffer
     commands.append(path)
     try:
         subprocess.check_output(map(str, commands), stderr=subprocess.STDOUT, env={'LC_ALL': 'C'})
-    except Exception:
-        log.get_logger().error('Unexpected error for %s' % ' '.join(list(map(str, commands))))
+    except Exception as e:
+        log.get_logger().error('Unexpected error: %s for %s' % (str(e), ' '.join(list(map(str, commands)))))
         raise
 
 

@@ -10,7 +10,7 @@ import datetime
 
 import numpy as np
 import tensorflow as tf
-tf.logging.set_verbosity(tf.logging.ERROR)
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 from tensorflow.keras.utils import Progbar
 # what the...
 import absl.logging

@@ -170,7 +170,7 @@ class Stream(Data):
         nnz = 0
         aux.psort(working_data_path, key=1)
         with open(working_data_path, "r") as fin, \
-            open(aux.get_temporary_file(), "w") as w:
+            open(aux.get_temporary_file(root=self.opt.data.tmp_dir), "w") as w:
             D = sum(1 for line in fin)
             fin.seek(0)
             probe, chunk = "junk", []
@@ -221,8 +221,8 @@ class Stream(Data):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", ResourceWarning)
             if with_sppmi:
-                w_sppmi = open(aux.get_temporary_file(), "w")
-            file_path = aux.get_temporary_file()
+                w_sppmi = open(aux.get_temporary_file(root=self.opt.data.tmp_dir), "w")
+            file_path = aux.get_temporary_file(root=self.opt.data.tmp_dir)
             with open(stream_main_path) as fin,\
                 open(file_path, 'w') as w:
                 total_index = 0
