@@ -208,7 +208,6 @@ def setup_package():
                   'buffalo/data/',
                   'buffalo/evaluate/',
                   'buffalo/misc/',
-                  'buffalo/util/',
                   'buffalo/'],
         cmdclass=cmdclass,
         classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
