@@ -59,14 +59,17 @@ struct progress_t
 };
 
 
-CBPRMF::CBPRMF()
+CBPRMF::CBPRMF() :
+    P_(nullptr, 0, 0),
+    Q_(nullptr, 0, 0),
+    Qb_(nullptr, 0, 0)
 {
     build_exp_table();
 }
 
 CBPRMF::~CBPRMF()
 {
-    P_data_ = Q_data_ = Qb_data_ = nullptr;
+    release();
 }
 
 void CBPRMF::release()
@@ -85,6 +88,10 @@ void CBPRMF::release()
     P_samples_per_coordinates_.assign(1, 0);
     Q_samples_per_coordinates_.clear();
     Q_samples_per_coordinates_.assign(1, 0);
+
+    new (&P_) Map<MatrixType>(nullptr, 0, 0);
+    new (&Q_) Map<MatrixType>(nullptr, 0, 0);
+    new (&Qb_) Map<MatrixType>(nullptr, 0, 0);
 }
 
 
@@ -124,23 +131,21 @@ void CBPRMF::launch_workers()
 }
 
 void CBPRMF::initialize_model(
-        Map<FactorTypeRowMajor>& _P,
-        Map<FactorTypeRowMajor>& _Q,
-        Map<FactorTypeRowMajor>& _Qb,
+        float* P, int32_t P_rows,
+        float* Q, int32_t Q_rows,
+        float* Qb,
         int64_t num_total_samples) 
 {
     int one = 1;
-    decouple(_P, &P_data_, P_rows_, P_cols_);
-    decouple(_Q, &Q_data_, Q_rows_, Q_cols_);
-    decouple(_Qb, &Qb_data_, Q_rows_, one);
+    int D = opt_["d"].int_value();
 
-    Map<FactorTypeRowMajor> P(P_data_, P_rows_, P_cols_);
-    Map<FactorTypeRowMajor> Q(Q_data_, Q_rows_, Q_cols_);
-    Map<FactorTypeRowMajor> Qb(Qb_data_, Q_rows_, one);
+    new (&P_) Map<MatrixType>(P, P_rows, D);
+    new (&Q_) Map<MatrixType>(Q, Q_rows, D);
+    new (&Qb_) Map<MatrixType>(Q, Q_rows, one);
 
     DEBUG("P({} x {}) Q({} x {}) Qb({} x {}) setted.",
-            P.rows(), P.cols(),
-            Q.rows(), Q.cols(), Qb.rows(), Qb.cols());
+            P_.rows(), P_.cols(),
+            Q_.rows(), Q_.cols(), Qb_.rows(), Qb_.cols());
 
     if (optimizer_ == "adam") {
         initialize_adam_optimizer();
@@ -161,33 +166,33 @@ void CBPRMF::initialize_adam_optimizer()
     int D = opt_["d"].int_value();
     bool use_bias = opt_["use_bias"].bool_value();
 
-    gradP_.resize(P_rows_, D);
-    gradQ_.resize(Q_rows_, D);
+    gradP_.resize(P_.rows(), D);
+    gradQ_.resize(Q_.rows(), D);
 
     // currently only adam optimizer can be used
-    momentumP_.resize(P_rows_, D);
+    momentumP_.resize(P_.rows(), D);
     momentumP_.setZero();
-    momentumQ_.resize(Q_rows_, D);
+    momentumQ_.resize(Q_.rows(), D);
     momentumQ_.setZero();
 
-    velocityP_.resize(P_rows_, D);
+    velocityP_.resize(P_.rows(), D);
     velocityP_.setZero();
-    velocityQ_.resize(Q_rows_, D);
+    velocityQ_.resize(Q_.rows(), D);
     velocityQ_.setZero();
 
     if (use_bias) {
-        gradQb_.resize(Q_rows_, 1);
-        momentumQb_.resize(Q_rows_, 1);
+        gradQb_.resize(Q_.rows(), 1);
+        momentumQb_.resize(Q_.rows(), 1);
         momentumQb_.setZero();
-        velocityQb_.resize(Q_rows_, 1);
+        velocityQb_.resize(Q_.rows(), 1);
         velocityQb_.setZero();
     }
     gradP_.setZero();
     gradQ_.setZero();
     gradQb_.setZero();
     if (opt_["per_coordinate_normalize"].bool_value()) {
-        P_samples_per_coordinates_.assign(P_rows_, 0);
-        Q_samples_per_coordinates_.assign(Q_rows_, 0);
+        P_samples_per_coordinates_.assign(P_.rows(), 0);
+        Q_samples_per_coordinates_.assign(Q_.rows(), 0);
     }
 }
 
@@ -256,7 +261,7 @@ void CBPRMF::add_jobs(
         int start_x,
         int next_x,
         int64_t* indptr,
-        Map<VectorXi>& positives)
+        int32_t* positives)
 {
     if( (next_x - start_x) == 0) {
         WARN0("No data to process");
@@ -311,10 +316,6 @@ void CBPRMF::add_jobs(
 
 void CBPRMF::worker(int worker_id)
 {
-    Map<FactorTypeRowMajor> P(P_data_, P_rows_, P_cols_),
-                            Q(Q_data_, Q_rows_, Q_cols_),
-                            Qb(Qb_data_, Q_rows_, 1);
-
     bool use_bias = opt_["use_bias"].bool_value();
     bool update_i = opt_["update_i"].bool_value();
     bool update_j = opt_["update_j"].bool_value();
@@ -327,7 +328,7 @@ void CBPRMF::worker(int worker_id)
     mt19937 RNG(opt_["random_seed"].int_value() + worker_id);
     int num_negative_samples = opt_["num_negative_samples"].int_value();
     uniform_int_distribution<int64_t> rng1(0, cum_table_[cum_table_size_ - 1] - 1);
-    uniform_int_distribution<int64_t> rng2(0, Q_rows_ - 1);
+    uniform_int_distribution<int64_t> rng2(0, Q_.rows() - 1);
     double sample_power = opt_["sampling_power"].number_value();
     int uniform_sampling = sample_power == 0.0 ? 1 : 0;
 
@@ -361,9 +362,9 @@ void CBPRMF::worker(int worker_id)
                         }
                     }
 
-                    float x_uij = (P.row(u) * (Q.row(pos) - Q.row(neg)).transpose())(0, 0);
+                    float x_uij = (P_.row(u) * (Q_.row(pos) - Q_.row(neg)).transpose())(0, 0);
                     if (use_bias)
-                        x_uij += (Qb(pos, 0) - Qb(neg, 0)); 
+                        x_uij += (Qb_(pos, 0) - Qb_(neg, 0)); 
 
                     float logit = 0.0;
                     if (MAX_EXP < x_uij) {
@@ -379,7 +380,7 @@ void CBPRMF::worker(int worker_id)
 
                     FactorTypeRowMajor item_deriv; 
                     if (update_i or update_j)
-                        item_deriv = logit * P.row(u);
+                        item_deriv = logit * P_.row(u);
                     
                     // TODO: change to enum class
                     if (optimizer_ == "adam") {
@@ -388,7 +389,7 @@ void CBPRMF::worker(int worker_id)
                             #pragma omp atomic
                             Q_samples_per_coordinates_[neg] += 1;
                         }
-                        gradP_.row(u) += logit * (Q.row(pos) - Q.row(neg));
+                        gradP_.row(u) += logit * (Q_.row(pos) - Q_.row(neg));
                         
                         if (update_i) {
                             gradQ_.row(pos) += item_deriv; 
@@ -402,20 +403,20 @@ void CBPRMF::worker(int worker_id)
                                 gradQb_(neg, 0) -= logit;
                         }
                     } else { // sgd
-                        auto g = logit * (Q.row(pos) - Q.row(neg)) - reg_u * P.row(u);
+                        auto g = logit * (Q_.row(pos) - Q_.row(neg)) - reg_u * P_.row(u);
                         if (update_i) {
-                            Q.row(pos) += alpha * (item_deriv - reg_i * Q.row(pos));
+                            Q_.row(pos) += alpha * (item_deriv - reg_i * Q_.row(pos));
                             if (use_bias)
-                                Qb(pos, 0) += (logit - reg_b * Qb(pos, 0));
+                                Qb_(pos, 0) += (logit - reg_b * Qb_(pos, 0));
                         }
 
                         if (update_j) {
-                            Q.row(neg) -= alpha * (item_deriv - reg_j * Q.row(neg));
+                            Q_.row(neg) -= alpha * (item_deriv - reg_j * Q_.row(neg));
                             if (use_bias)
-                                Qb(pos, 0) -= (logit - reg_b * Qb(neg, 0));
+                                Qb_(pos, 0) -= (logit - reg_b * Qb_(neg, 0));
                         }
 
-                        P.row(u) += alpha * g;
+                        P_.row(u) += alpha * g;
                     }
                 }
 
@@ -436,26 +437,23 @@ void CBPRMF::worker(int worker_id)
 
 double CBPRMF::distance(size_t p, size_t q)
 {
-    Map<FactorTypeRowMajor> P(P_data_, P_rows_, P_cols_),
-                            Q(Q_data_, Q_rows_, Q_cols_),
-                            Qb(Qb_data_, Q_rows_, 1);
     bool use_bias = opt_["use_bias"].bool_value();
 
-    float ret = (P.row(p) * Q.row(q).transpose())(0, 0);
+    float ret = (P_.row(p) * Q_.row(q).transpose())(0, 0);
     if (use_bias)
-        ret += Qb(q, 0);
+        ret += Qb_(q, 0);
     return ret;
 }
 
-double CBPRMF::compute_loss(Map<VectorXi>& users,
-                            Map<VectorXi>& positives,
-                            Map<VectorXi>& negatives)
+double CBPRMF::compute_loss(int32_t num_loss_samples,
+                            int32_t* users,
+                            int32_t* positives,
+                            int32_t* negatives)
 {
     int num_workers = opt_["num_workers"].int_value();
     omp_set_num_threads(num_workers);
 
     vector<double> loss(num_workers, 0.0);
-    int num_loss_samples = (int)users.rows();
     #pragma omp parallel for schedule(static)
     for (int idx=0; idx < num_loss_samples; ++idx) {
         int u = users[idx], i = positives[idx], j = negatives[idx];
@@ -489,10 +487,6 @@ void CBPRMF::update_parameters()
     double reg_i = opt_["reg_i"].number_value();
     double reg_b = opt_["reg_b"].number_value();
 
-    Map<FactorTypeRowMajor> P(P_data_, P_rows_, P_cols_),
-                            Q(Q_data_, Q_rows_, Q_cols_),
-                            Qb(Qb_data_, Q_rows_, 1);
-
     bool per_coordinate_normalize = (opt_["per_coordinate_normalize"].bool_value());
     if (optimizer_ == "adam") {
         double lr = opt_["lr"].number_value();
@@ -500,34 +494,34 @@ void CBPRMF::update_parameters()
         double beta2 = opt_["beta1"].number_value();
 
         #pragma omp parallel for schedule(static)
-        for(int u=0; u < P_rows_; ++u){
+        for(int u=0; u < P_.rows(); ++u){
             if (per_coordinate_normalize && P_samples_per_coordinates_[u]) {
                 gradP_.row(u) /= P_samples_per_coordinates_[u];
             }
-            gradP_.row(u) -= (P.row(u) * (2 * reg_u));
+            gradP_.row(u) -= (P_.row(u) * (2 * reg_u));
             update_adam(gradP_, momentumP_, velocityP_, u, beta1, beta2);
-            P.row(u) += (lr * gradP_.row(u));
+            P_.row(u) += (lr * gradP_.row(u));
         }
 
         #pragma omp parallel for schedule(static)
-        for (int i=0; i < Q_rows_; ++i) {
+        for (int i=0; i < Q_.rows(); ++i) {
             if (per_coordinate_normalize && Q_samples_per_coordinates_[i]) {
                 gradQ_.row(i) /= Q_samples_per_coordinates_[i];
                 gradQb_.row(i) /= Q_samples_per_coordinates_[i];
             }
-            gradQ_.row(i) -= (Q.row(i) * (2 * reg_i));
+            gradQ_.row(i) -= (Q_.row(i) * (2 * reg_i));
             update_adam(gradQ_, momentumQ_, velocityQ_, i, beta1, beta2);
-            Q.row(i) += (lr * gradQ_.row(i));
+            Q_.row(i) += (lr * gradQ_.row(i));
 
             if (use_bias) {
-                gradQb_(i, 0) -= (Qb(i, 0) * (2 * reg_b));
+                gradQb_(i, 0) -= (Qb_(i, 0) * (2 * reg_b));
                 update_adam(gradQb_, momentumQb_, velocityQb_, i, beta1, beta2);
-                Qb(i, 0) += (lr * gradQb_(i, 0));
+                Qb_(i, 0) += (lr * gradQb_(i, 0));
             }
         }
         if (per_coordinate_normalize) {
-            P_samples_per_coordinates_.assign(P_rows_, 0);
-            Q_samples_per_coordinates_.assign(Q_rows_, 0);
+            P_samples_per_coordinates_.assign(P_.rows(), 0);
+            Q_samples_per_coordinates_.assign(Q_.rows(), 0);
         }
     } else { // sgd
     }

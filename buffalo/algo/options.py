@@ -57,8 +57,8 @@ class AlsOption(AlgoOption):
             'reg_u': 0.1,
             'reg_i': 0.1,
             'alpha': 8,
-            'use_conjugate_gradient': True,
-            'num_iteration_for_conjugate_gradient': 3,
+            'optimizer': 'manual_cg',
+            'num_cg_max_iters': 3,
 
             'model_path': '',
             'data_opt': {}

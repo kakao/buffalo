@@ -35,9 +35,9 @@ public:
     void launch_workers();
 
     void initialize_model(
-            Map<FactorTypeRowMajor>& P,
-            Map<FactorTypeRowMajor>& Q,
-            Map<FactorTypeRowMajor>& Qb,
+            float* P, int32_t P_rows,
+            float* Q, int32_t Q_rows,
+            float* Qb,
             int64_t num_total_samples);
 
     void set_cumulative_table(int64_t* cum_table, int size);
@@ -50,16 +50,17 @@ public:
             int start_x,
             int next_x,
             int64_t* indptr,
-            Map<VectorXi>& positives);
+            int32_t* positives);
 
     void worker(int worker_id);
 
     void wait_until_done();
 
     double compute_loss(
-            Map<VectorXi>& users,
-            Map<VectorXi>& positives,
-            Map<VectorXi>& negatives);
+            int32_t num_loss_samples,
+            int32_t* users,
+            int32_t* positives,
+            int32_t* negatives);
 
     void update_adam(
             FactorTypeRowMajor& grad,
@@ -80,8 +81,7 @@ public:
 
 private:
     Json opt_;
-    float *P_data_, *Q_data_, *Qb_data_;
-    int P_rows_, P_cols_, Q_rows_, Q_cols_;
+    Map<FactorTypeRowMajor> P_, Q_, Qb_;
     int iters_;
     double lr_;
     string optimizer_;

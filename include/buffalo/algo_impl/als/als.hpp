@@ -23,21 +23,20 @@ public:
     bool parse_option(string out_path);
 
     void initialize_model(
-            Map<FactorTypeRowMajor>& P,
-            Map<FactorTypeRowMajor>& Q);
+            float* P, int P_rows,
+            float* Q, int Q_rows);
     void precompute(int axis);
     double partial_update(int start_x,
                           int next_x,
                           int64_t* indptr,
-                          Map<VectorXi>& keys,
-                          Map<VectorXf>& vals,
+                          int32_t* keys,
+                          float* vals,
                           int axis);
 
 private:
     Json opt_;
-    float* P_data_, * Q_data_;
-    int P_rows_, P_cols_, Q_rows_, Q_cols_;
     FactorType FF_;
+    Map<FactorTypeRowMajor> P_, Q_;
 };
 
 }
