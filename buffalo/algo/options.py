@@ -92,6 +92,84 @@ class AlsOption(AlgoOption):
         })
         return Option(opt)
 
+class CFROption(AlgoOption):
+    def __init__(self, *args, **kwargs):
+        super(CFROption, self).__init__(*args, **kwargs)
+
+    def get_default_option(self):
+        """ Basic Options for CoFactor
+        options:
+            dim(int): latent space dimension
+            num_iters(int): number of iterations for training
+            num_workers(int): number of threads
+            num_cg_max_iters(int): number of maximum iterations for conjuaget gradient optimizer
+            reg_u(float): L2 regularization coefficient for user embedding matrix
+            reg_i(float): L2 regularization coefficient for item embedding matrix
+            reg_c(float): L2 regularization coefficient for context embedding matrix
+            cg_tolerance(float): tolerance for early stopping conjugate gradient optimizer
+            alpha(float): coefficient of giving more weights to losses on positive samples
+            l(float): relative weight of loss on user-item relation over item-context relation
+            compute_loss(bool): true if one wants to compute train loss
+            optimizer(string): optimizer, should be in [llt, ldlt, manual_cg, eigen_cg]
+        """
+        opt = super().get_default_option()
+        opt.update({
+            'save_factors': False,
+            'dim': 20,
+            'num_iters': 10,
+            'num_workers': 1,
+            'early_stopping_rounds': 5,
+            'compute_loss': True,
+            'cg_tolerance': 1e-10,
+            'reg_u': 0.1,
+            'reg_i': 0.1,
+            'reg_c': 0.1,
+            'alpha': 8.0,
+            'l': 1.0,
+            'optimizer': 'manual_cg',
+            'num_cg_max_iters': 3,
+            'model_path': '',
+            'data_opt': {}
+        })
+        return Option(opt)
+
+    def get_default_optimize_option(self):
+        """Optimization Options for CoFactor
+        options:
+            loss(str): Target loss to optimize.
+            max_trials(int, option): Maximum experiments for optimization. If not given, run forever.
+            min_trials(int, option): Minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
+            deployment(bool): Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
+            start_with_default_parameters(bool): If set to True, the loss value of the default parameter is used as the starting loss to beat.
+            space(dict): Parameter space definition. For more information, pleases reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Pleases see optimize.py to check how we deal with `randint`.k
+        """
+        opt = super().get_default_optimize_option()
+        opt.update({
+            'loss': 'train_loss',
+            'max_trials': 100,
+            'min_trials': 0,
+            'deployment': True,
+            'start_with_default_parameters': True,
+            'space': {
+                'd': ['randint', ['d', 10, 30]],
+                'reg_u': ['uniform', ['reg_u', 0.1, 1]],
+                'reg_i': ['uniform', ['reg_i', 0.1, 1]],
+                'reg_c': ['uniform', ['reg_i', 0.1, 1]],
+                'alpha': ['randint', ['alpha', 1, 32]],
+                'l': ['randint', ['alpha', 1, 32]]
+            }
+        })
+        return Option(opt)
+
+    def is_valid_option(self, opt):
+        b = super().is_valid_option(opt)
+        possible_optimizers = ["llt", "ldlt", "manual_cg", "eigen_cg", "eigen_bicg",
+                               "eigen_gmres", "eigen_dgmres", "eigen_minres"]
+        if not opt.optimizer in possible_optimizers:
+            msg = f"optimizer ({opt.optimizer}) should be in {possible_optimizers}"
+            raise RuntimeError(msg)
+        return b
+
 
 class BprmfOption(AlgoOption):
     def __init__(self, *args, **kwargs):
@@ -102,7 +180,6 @@ class BprmfOption(AlgoOption):
         opt.update({
             'use_bias': True,
             'evaluation_period': 100,
-
             'num_workers': 1,
             'num_iters': 100,
             'd': 20,

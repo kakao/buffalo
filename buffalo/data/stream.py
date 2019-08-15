@@ -31,6 +31,10 @@ class StreamOptions(DataOption):
             internal_data_type: "stream" or "matrix"
                 stream: Data file treated as is(i.e. streaming data)
                 matrix: Translate data file into sparse matrix format(it lose sequential information, but more compact for data size).
+            sppmi:
+                enabled: whether generate sppmi matrix or not
+                windows: window size to set relation between word and context
+                k: sppmi shift k (serves as negative sampling size in w2v model)
     """
     def get_default_option(self) -> aux.Option:
         opt = {
@@ -46,6 +50,11 @@ class StreamOptions(DataOption):
                     'p': 0.01,  # if set oldest or newest, ignored
                     'n': 1,  # if set sample, ignored
                     'max_samples': 500
+                },
+                'sppmi': {
+                    'enabled': False,
+                    'windows': 5,
+                    'k': 1
                 },
                 'batch_mb': 1024,
                 'use_cache': False,
@@ -77,7 +86,6 @@ class Stream(Data):
                 for l in fin:
                     max_col = max(max_col, len(l))
             return max_col
-
         uid_path, iid_path, main_path = P['uid_path'], P['iid_path'], P['main_path']
         if uid_path:
             with open(uid_path) as fin:
@@ -90,10 +98,11 @@ class Stream(Data):
         if uid_path:
             uid_max_col = get_max_column_length(uid_path) + 1
 
-
         vali_n = self.opt.data.validation.get('n', 0)
         num_nnz, vali_limit, itemids = 0, 0, set()
         self.logger.info(f'gathering itemids from {main_path}...')
+        if self.opt.data.validation.name not in ["oldest", "newest"]:
+            vali_n = 0
         with open(main_path) as fin:
             for line in log.iter_pbar(log_level=log.DEBUG, iterable=fin):
                 data = line.strip().split()
@@ -107,7 +116,6 @@ class Stream(Data):
                     num_nnz += (data_size - _vali_size)
                 elif self.opt.data.internal_data_type == 'matrix':
                     num_nnz += len(set(data[:(data_size - _vali_size)]))
-
         if iid_path:
             with open(iid_path) as fin:
                 itemids = {iid.strip(): idx + 1 for idx, iid in enumerate(fin)}
@@ -156,7 +164,51 @@ class Stream(Data):
             super()._build_data(db, working_data_path, validation_data,
                                 target_groups=['rowwise', 'colwise'])
 
-    def _create_working_data(self, db, stream_main_path, itemids):
+    def _build_sppmi(self, db, working_data_path, k):
+        self.logger.info(f"build sppmi (shift k: {k})")
+        appearances = {}
+        nnz = 0
+        aux.psort(working_data_path, key=1)
+        with open(working_data_path, "r") as fin, \
+            open(aux.get_temporary_file(), "w") as w:
+            D = sum(1 for line in fin)
+            fin.seek(0)
+            probe, chunk = "junk", []
+            for line in fin:
+                _w, _c = line.strip().split()
+                if probe != _w:
+                    appearances[probe] = len(chunk)
+                    for __c, cnt in Counter(chunk).items():
+                        if int(probe) < int(__c):
+                            continue
+                        pmi = np.log(cnt) + np.log(D) - \
+                            np.log(appearances[probe]) - np.log(appearances[__c])
+                        sppmi = pmi - np.log(k)
+                        if sppmi > 0:
+                            w.write(f"{probe} {__c} {sppmi}\n")
+                            w.write(f"{__c} {probe} {sppmi}\n")
+                            nnz += 2
+                    probe, chunk = _w, []
+                chunk.append(_c)
+        aux.psort(w.name)
+        self.logger.info(f"convert from {working_data_path} to {w.name}")
+        db.create_group("sppmi")
+        db.attrs["sppmi_nnz"] = nnz
+        self.logger.info(f"sppmi nnz: {nnz}")
+        sz = db.attrs["num_items"]
+        db["sppmi"].create_dataset("indptr", (sz,), dtype='int64', maxshape=(sz,))
+        db["sppmi"].create_dataset("key", (nnz,), dtype='int32', maxshape=(nnz,))
+        db["sppmi"].create_dataset("val", (nnz,), dtype='float32', maxshape=(nnz,))
+        self.logger.info('Disk-based Compressing...')
+        job_files = self._chunking_into_bins(w.name, nnz, sz, 0)
+        self._build_compressed_triplets(db["sppmi"],
+                                        job_files,
+                                        num_lines=nnz,
+                                        max_key=sz,
+                                        is_colwise=0)
+
+    def _create_working_data(self, db, stream_main_path, itemids,
+                             with_sppmi=False, windows=5):
         vali_method = None if 'vali' not in db else db['vali'].attrs['method']
         vali_indexes, vali_n = set(), 0
         if vali_method == 'sample':
@@ -165,14 +217,17 @@ class Stream(Data):
             vali_n = db['vali'].attrs['n']
         vali_lines = []
         users = db['idmap']['rows'][:]
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", ResourceWarning)
+            if with_sppmi:
+                w_sppmi = open(aux.get_temporary_file(), "w")
             file_path = aux.get_temporary_file()
             with open(stream_main_path) as fin,\
                 open(file_path, 'w') as w:
                 total_index = 0
                 internal_data_type = self.opt.data.internal_data_type
-                for line_idx, data in enumerate(fin):
+                for line_idx, data in log.iter_pbar(log_level=log.DEBUG, iterable=enumerate(fin)):
                     data = data.strip().split()
                     total_data_size = len(data)
                     user = line_idx + 1
@@ -199,15 +254,31 @@ class Stream(Data):
                                 vali_data.append(col)
                             else:
                                 train_data.append(col)
+                    total_index += len(data)
                     if internal_data_type == 'stream':
                         for col in train_data:
                             w.write(f'{user} {col} 1\n')
+                        for col in vali_data:
+                            vali_lines.append(f'{user} {col} {val}')
                     else:
                         for col, val in Counter(train_data).items():
                             w.write(f'{user} {col} {val}\n')
-                    for col, val in Counter(vali_data).items():
-                        vali_lines.append(f'{user} {col} {val}')
-                return w.name, vali_lines
+                        for col, val in Counter(vali_data).items():
+                            vali_lines.append(f'{user} {col} {val}')
+                    if with_sppmi:
+                       sz = len(train_data)
+                       for i in range(sz):
+                           beg, end = i + 1, i + windows + 1
+                           for j in range(beg, end):
+                               if j >= sz:
+                                   break
+                               _w, _c = train_data[i], train_data[j]
+                               w_sppmi.write(f'{_w} {_c}\n')
+                               w_sppmi.write(f'{_c} {_w}\n')
+                if with_sppmi:
+                    w_sppmi.close()
+                    return w.name, vali_lines, w_sppmi.name
+                return w.name, vali_lines, None
 
     def create(self) -> h5py.File:
         stream_main_path = self.opt.input.main
@@ -227,12 +298,18 @@ class Stream(Data):
                                        {'main_path': stream_main_path,
                                         'uid_path': stream_uid_path,
                                         'iid_path': stream_iid_path})
+            _opt = self.opt.data.sppmi
+            with_sppmi, windows, k = _opt.enabled, _opt.windows, _opt.k
             try:
                 self.logger.info('Creating working data...')
-                tmp_main, validation_data = self._create_working_data(db, stream_main_path, itemids)
+                tmp_main, validation_data, tmp_sppmi = \
+                    self._create_working_data(db, stream_main_path, itemids, with_sppmi, windows)
                 self.logger.debug(f'Working data is created on {tmp_main}')
                 self.logger.info('Building data part...')
                 self._build_data(db, tmp_main, validation_data)
+                if with_sppmi:
+                    self.logger.debug(f'sppmi data is created on {tmp_sppmi}')
+                    self._build_sppmi(db, tmp_sppmi, k)
                 db.attrs['completed'] = 1
                 db.close()
                 self.handle = h5py.File(data_path, 'r')

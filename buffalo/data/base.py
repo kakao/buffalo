@@ -35,7 +35,7 @@ class Data(object):
         vali_size = 0
         if self.has_group('vali'):
             g = self.get_group('vali')
-            vali_size = g['indexes'].shape[0]
+            vali_size = g.attrs['num_samples']
         info = '{name} Header({users}, {items}, {nnz}) Validation({vali} samples)'
         info = info.format(name=self.name,
                            users=header['num_users'],
@@ -63,9 +63,22 @@ class Data(object):
                            'completed': self.handle.attrs['completed']}
         return self.header
 
+    def get_scale_info(self, with_sppmi=False, chunk_size=100000):
+        ret = {k: self.handle.attrs[k] for k in ["num_users", "num_items", "num_nnz", "sppmi_nnz"]}
+        if with_sppmi:
+            ret["sppmi_nnz"] = self.handle.attrs["sppmi_nnz"]
+        db = self.handle["rowwise"]
+        num_nnz = ret["num_nnz"]
+        vsum = 0.0
+        for offset in range(0, num_nnz, chunk_size):
+            limit = min(num_nnz, offset + chunk_size)
+            vsum += np.sum(db["val"][offset: limit])
+        ret["vsum"] = vsum
+        return ret
+
     def get_group(self, group_name='rowwise'):
-        assert group_name in ['rowwise', 'colwise', 'vali', 'idmap'], 'Unexpected group_name: {}'.format(group_name)
-        assert self.handle, 'Database is not opened'
+        assert group_name in ['rowwise', 'colwise', 'vali', 'idmap', 'sppmi'], 'Unexpected group_name: {}'.format(group_name)
+        assert self.handle, 'DB is not opened'
         group = self.handle[group_name]
         return group
 
@@ -266,7 +279,7 @@ class Data(object):
                                        self.tmp_root,
                                        total_lines=num_lines,
                                        num_chunks=num_chunks,
-                                       sep_idx=0 if not switch_row_col else 1,
+                                       sep_idx=sep_idx,
                                        num_workers=num_workers)
         return job_files
 
@@ -276,6 +289,7 @@ class Data(object):
             indptr_index = 0
             data_index = 0
             RECORD_SIZE = 12
+            prev_key = 0
             for job in job_files:
                 with open(job, 'rb') as fin:
                     total_size = fin.seek(0, 2)
@@ -294,18 +308,21 @@ class Data(object):
                     U -= 1
                     I -= 1
                     V = self.value_prepro(V)
+                    self.logger.debug("minU: {}, maxU: {}".format(U[0], U[-1]))
                     assert data_index + total_records <= num_lines, 'Requests data size(%s) exceed capacity(%s)' % (data_index + total_records, num_lines)
                     db['key'][data_index:data_index + total_records] = I
                     db['val'][data_index:data_index + total_records] = V
-                    indptr = [data_index + i
-                              for i in range(1, total_records)
-                              for j in range(U[i] - U[i-1])]
-                    indptr.append(data_index + total_records)
+                    indptr = [data_index for j in range(U[0] - prev_key)]
+                    indptr += [data_index + i
+                               for i in range(1, total_records)
+                               for j in range(U[i] - U[i-1])]
                     db['indptr'][indptr_index:indptr_index + len(indptr)] = indptr
                     assert indptr_index + len(indptr) <= max_key
                     data_index += total_records
                     indptr_index += len(indptr)
+                    prev_key = U[-1]
                 pbar.update(1)
+            db["indptr"][indptr_index:] = data_index
         for path in job_files:
             os.remove(path)
 
@@ -345,13 +362,13 @@ class Data(object):
                 self.logger.info('Disk-based Compressing...')
                 if sort:
                     aux.psort(working_data_path,
-                            tmp_dir=self.opt.data.tmp_dir,
-                            key=sep_idx + 1,
-                            buffer_mb=buffer_mb)
-                jobs_files = self._chunking_into_bins(working_data_path,
-                                                      db.attrs['num_nnz'],
-                                                      max_key,
-                                                      sep_idx=sep_idx)
+                              tmp_dir=self.opt.data.tmp_dir,
+                              key=sep_idx + 1,
+                              buffer_mb=buffer_mb)
+                job_files = self._chunking_into_bins(working_data_path,
+                                                     db.attrs['num_nnz'],
+                                                     max_key,
+                                                     sep_idx=sep_idx)
                 self._build_compressed_triplets(db[group],
                                                 job_files,
                                                 num_lines=db.attrs['num_nnz'],

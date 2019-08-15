@@ -31,19 +31,22 @@ class BufferedDataMatrix(BufferedData):
     def __init__(self):
         super().__init__()
         self.group = 'rowwise'
-        self.major = {'rowwise': {}, 'colwise': {}}
+        self.major = {'rowwise': {}, 'colwise': {}, 'sppmi': {}}
 
     def free(self, buf):
         buf['indptr'] = None
         buf['keys'] = None
         buf['vals'] = None
 
-    def initialize(self, data):
+    def initialize(self, data, with_sppmi=False):
         self.data = data
         # 16 bytes(indptr8, keys4, vals4)
         limit = max(int(((self.data.opt.data.batch_mb * 1024 * 1024) / 16.)), 64)
         minimum_required_batch_size = 0
-        for G in ['rowwise', 'colwise']:
+        Gs = ['rowwise', 'colwise']
+        if with_sppmi:
+            Gs.append('sppmi')
+        for G in Gs:
             lim = int(limit / 2)
             group = data.get_group(G)
             header = data.get_header()
@@ -106,13 +109,55 @@ class BufferedDataMatrix(BufferedData):
                 flushed = True
             yield size
 
+    def get_specific_chunk(self, group, start_x, next_x):
+        db = self.data.get_group(group)
+        m = self.major[group]
+        indptr = m["indptr"]
+        beg = 0 if start_x == 0 else indptr[start_x - 1]
+        end = indptr[next_x - 1]
+        keys = db["key"][beg: end]
+        vals = db["val"][beg: end]
+        return indptr, keys, vals
+
+    def fetch_batch_range(self, groups):
+        assert groups and isinstance(groups, list), "groups should be list (length >= 1)"
+        for G in groups:
+            assert G in ["rowwise", "colwise", "sppmi"], f"G ({G}) is not proper group for getting range"
+        db = self.data.get_group(groups[0])
+        indptr = np.zeros(db["indptr"].shape[0], dtype=np.int64)
+        max_x = len(indptr)
+        for G in groups:
+            _indptr = self.data.get_group(G)["indptr"][:]
+            assert len(_indptr) == max_x, f"size of indptr (group: {G}) should be {max_x}"
+            indptr += _indptr
+        limit = max(int(((self.data.opt.data.batch_mb * 1024 * 1024) / 8.)), 64)
+        start_x, next_x, flushed = 0, 0, False
+        while True:
+            if flushed:
+                raise StopIteration
+
+            start_x = next_x
+
+            beg = 0 if start_x == 0 else indptr[start_x - 1]
+            where = bisect.bisect_left(indptr, beg + limit)
+            if where == start_x:
+                current_batch_size = limit
+                need_batch_size = indptr[where] - beg
+                raise RuntimeError('Need more memory to load the data, '
+                                   'cannot load data with buffer size %d that should be at least %d. '
+                                   'Increase batch_mb value to deal with this.' % (current_batch_size, need_batch_size))
+            next_x = where
+            if next_x + 1 >= max_x:
+                flushed = True
+            yield start_x, next_x
+
     def set_group(self, group):
-        assert group in ['rowwise', 'colwise'], 'Unexpected group: {}'.format(group)
+        assert group in ['rowwise', 'colwise', 'sppmi'], 'Unexpected group: {}'.format(group)
         self.group = group
 
     def reset(self):
         for m in self.major.valus():
-            m['index'], m['start_x'], m['next_x'] = 0, 0
+            m['index'], m['start_x'], m['next_x'] = 0, 0, 0
 
     def get(self):
         m = self.major[self.group]
@@ -158,7 +203,7 @@ class BufferedDataStream(BufferedData):
         m['indptr'] = group['indptr'][::]
         minimum_required_batch_size = max([m['indptr'][i] - m['indptr'][i - 1]
                                            for i in range(1, len(m['indptr']))])
-        m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='F')
+        m['keys'] = np.zeros(shape=(lim,), dtype=np.int32)
         if minimum_required_batch_size > int(limit / 2):
             self.logger.warning('Given batch size(%d) is smaller than '
                                 'minimum required batch size(%d) is for the data. '
@@ -167,7 +212,7 @@ class BufferedDataStream(BufferedData):
             m = self.major[G]
             lim = minimum_required_batch_size + 1
             m['limit'] = lim
-            m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='F')
+            m['keys'] = np.zeros(shape=(lim,), dtype=np.int32)
 
     def fetch_batch(self):
         m = self.major[self.group]
@@ -202,12 +247,12 @@ class BufferedDataStream(BufferedData):
             yield size
 
     def set_group(self, group):
-        assert group in ['rowwise'], 'Unexpected group: {}'.format(group)
+        assert group in ['rowwise', 'sppmi'], 'Unexpected group: {}'.format(group)
         self.group = group
 
     def reset(self):
         for m in self.major.valus():
-            m['index'], m['start_x'], m['next_x'] = 0, 0
+            m['index'], m['start_x'], m['next_x'] = 0, 0, 0
 
     def get(self):
         m = self.major[self.group]
