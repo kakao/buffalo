@@ -3,112 +3,20 @@
 # -*- coding: utf-8 -*-
 import time
 import json
-import logging
-
-import tqdm
-import cython
-from libcpp cimport bool
-from libc.stdint cimport int64_t
-from libcpp.string cimport string
-from eigency.core cimport MatrixXf, Map, VectorXi, VectorXf, FlattenedMapWithOrder, Matrix, RowMajor, Dynamic
 
 import numpy as np
-cimport numpy as np
 from numpy.linalg import norm
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
 from buffalo.data.base import Data
 from buffalo.misc import aux, log
+from buffalo.algo._bpr import PyBPRMF
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import BprmfOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
-
-
-cdef extern from "buffalo/algo_impl/bpr/bpr.hpp" namespace "bpr":
-    cdef cppclass CBPRMF:
-        void release() nogil except +
-        bool init(string) nogil except +
-        void initialize_model(FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor]&,
-                              FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor]&,
-                              FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor]&,
-                              int64_t) nogil except +
-        void set_cumulative_table(int64_t*, int)
-        void launch_workers()
-        void add_jobs(int,
-                      int,
-                      int64_t*,
-                      Map[VectorXi]&) nogil except +
-        double compute_loss(Map[VectorXi]&,
-                            Map[VectorXi]&,
-                            Map[VectorXi]&) nogil except +
-        double join()
-        void wait_until_done()
-        void update_parameters()
-
-
-cdef class PyBPRMF:
-    """CBPRMF object holder"""
-    cdef CBPRMF* obj  # C-BPRMF object
-
-    def __cinit__(self):
-        self.obj = new CBPRMF()
-
-    def __dealloc__(self):
-        self.obj.release()
-        del self.obj
-
-    def init(self, option_path):
-        return self.obj.init(option_path)
-
-    def initialize_model(self,
-                         np.ndarray[np.float32_t, ndim=2] P,
-                         np.ndarray[np.float32_t, ndim=2] Q,
-                         np.ndarray[np.float32_t, ndim=2] Qb,
-                         int64_t num_total_samples):
-        self.obj.initialize_model(FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor](P),
-                                  FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor](Q),
-                                  FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor](Qb),
-                                  num_total_samples)
-
-    def launch_workers(self):
-        self.obj.launch_workers()
-
-    def set_cumulative_table(self,
-                             np.ndarray[np.int64_t, ndim=1] cum_table,
-                             int cum_table_size):
-        self.obj.set_cumulative_table(&cum_table[0], cum_table_size)
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def add_jobs(self,
-                 int start_x,
-                 int next_x,
-                 np.ndarray[np.int64_t, ndim=1] indptr,
-                 np.ndarray[np.int32_t, ndim=1] positives):
-        self.obj.add_jobs(start_x,
-                          next_x,
-                          &indptr[0],
-                          Map[VectorXi](positives))
-
-    def compute_loss(self,
-                     np.ndarray[np.int32_t, ndim=1] users,
-                     np.ndarray[np.int32_t, ndim=1] positives,
-                     np.ndarray[np.int32_t, ndim=1] negatives):
-        return self.obj.compute_loss(Map[VectorXi](users),
-                                     Map[VectorXi](positives),
-                                     Map[VectorXi](negatives))
-
-    def update_parameters(self):
-        self.obj.update_parameters()
-
-    def join(self):
-        return self.obj.join()
-
-    def wait_until_done(self):
-        self.obj.wait_until_done()
 
 
 class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, TensorboardExtention):

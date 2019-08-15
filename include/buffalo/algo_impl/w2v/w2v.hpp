@@ -32,7 +32,8 @@ public:
     bool parse_option(string out_path);
 
     void initialize_model(
-            Map<FactorTypeRowMajor>& L0,
+            float* L0,
+            int32_t L0_rows,
             int32_t* index,
             uint32_t* scale,
             int32_t* dist,
@@ -46,12 +47,11 @@ public:
             int start_x,
             int next_x,
             int64_t* indptr,
-            Map<VectorXi>& sequences);
+            int32_t* sequences);
 
     void worker(int worker_id);
 
-    double update_parameter(Map<FactorTypeRowMajor>& L0,
-                            Array<float, 1, Dynamic, RowMajor>& work,
+    double update_parameter(Array<float, 1, Dynamic, RowMajor>& work,
                             double alpha,
                             int input_word_idx,
                             vector<int>& negatives,
@@ -64,8 +64,7 @@ public:
 
 private:
     Json opt_;
-    float *L0_data_;
-    int L0_rows_, L0_cols_;
+    Map<FactorTypeRowMajor> L0_;
     uint32_t *scale_;
     int32_t *index_, *dist_;
     FactorTypeRowMajor L1_;

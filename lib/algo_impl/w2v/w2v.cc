@@ -62,7 +62,8 @@ struct progress_t
 };
 
 
-CW2V::CW2V()
+CW2V::CW2V() :
+    L0_(nullptr, 0, 0)
 {
     build_exp_table();
     progress_manager_ = nullptr;
@@ -70,11 +71,13 @@ CW2V::CW2V()
 
 CW2V::~CW2V()
 {
+    release();
 }
 
 
 void CW2V::release()
 {
+    new (&L0_) Map<MatrixType>(nullptr, 0, 0);
     L1_.resize(0, 0);
 }
 
@@ -98,12 +101,13 @@ bool CW2V::parse_option(string opt_path) {
 
 
 void CW2V::initialize_model(
-        Map<FactorTypeRowMajor>& L0,
+        float* L0, int32_t L0_rows,
         int32_t* index, uint32_t* scale, int32_t* dist,
         int64_t total_word_count)
 {
-    decouple(L0, &L0_data_, L0_rows_, L0_cols_);
-    L1_.resize(L0_rows_, L0_cols_);
+    int D = opt_["d"].int_value();
+    new (&L0_) Map<FactorTypeRowMajor>(L0, L0_rows, D);
+    L1_.resize(L0_.rows(), L0_.cols());
     L1_.setZero();
     index_ = index;
     scale_ = scale;
@@ -113,7 +117,7 @@ void CW2V::initialize_model(
     total_processed_ = (double)total_word_count * num_iters;
 
     INFO("TotalWords({}) x Iteration({})", total_word_count, num_iters);
-    INFO("L0({} x {}) L1({} x {})", L0_rows_, L0_cols_, L1_.rows(), L1_.cols());
+    INFO("L0({} x {}) L1({} x {})", L0_.rows(), L0_.cols(), L1_.rows(), L1_.cols());
 }
 
 void CW2V::build_exp_table()
@@ -139,7 +143,7 @@ void CW2V::add_jobs(
         int start_x,
         int next_x,
         int64_t* indptr,
-        Map<VectorXi>& sequences)
+        int32_t* sequences)
 {
     if( (next_x - start_x) == 0) {
         WARN0("No data to process");
@@ -191,18 +195,16 @@ void CW2V::add_jobs(
 
 void CW2V::worker(int worker_id)
 {
-    Map<FactorTypeRowMajor> L0(L0_data_, L0_rows_, L0_cols_);
-
     int window_size = opt_["window"].int_value();
     int num_negatives = opt_["num_negative_samples"].int_value();
     int random_seed = opt_["random_seed"].int_value();
     bool compute_loss = opt_["compute_loss_on_training"].bool_value();
-    int vocab_size = L0_rows_;
+    int vocab_size = L0_.rows();
 
     vector<int> N;
     vector<int> W;
     Array<float, 1, Dynamic, RowMajor> work;
-    work.resize(L0_cols_); work.setZero();
+    work.resize(L0_.cols()); work.setZero();
 
     mt19937 RNG(random_seed + worker_id);
     uniform_int_distribution<unsigned int> rng1(0, 0xFFFFFFFF);
@@ -245,13 +247,12 @@ void CW2V::worker(int worker_id)
                     {
                         int neg_word_idx = (int)(lower_bound(
                                     dist_,
-                                    dist_ + L0_rows_,
+                                    dist_ + L0_.rows(),
                                     rng3(RNG)) - dist_);
                         if (neg_word_idx != target_word_idx)
                             N.push_back(neg_word_idx);
                     }
                     loss += update_parameter(
-                            L0,
                             work,
                             job.alpha,
                             W[j],
@@ -269,14 +270,13 @@ void CW2V::worker(int worker_id)
 
 
 double CW2V::update_parameter(
-        Map<FactorTypeRowMajor>& L0,
         Array<float, 1, Dynamic, RowMajor>& work,
         double alpha,
         int input_word_idx,
         vector<int>& negatives,
         bool compute_loss)
 {
-    VectorXf l0 = L0.row(input_word_idx);
+    VectorXf l0 = L0_.row(input_word_idx);
     int num_negatives = (int)negatives.size();
     work.setZero();
 
@@ -315,7 +315,7 @@ double CW2V::update_parameter(
 
         label = 0.0;
     }
-    L0.row(input_word_idx).array() += work;
+    L0_.row(input_word_idx).array() += work;
     return loss;
 }
 
