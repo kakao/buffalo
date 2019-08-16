@@ -76,6 +76,7 @@ class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExte
         return None
 
     def initialize(self):
+        super().initialize()
         assert self.data, 'Data is not setted'
         if self.opt.random_seed:
             np.random.seed(self.opt.random_seed)

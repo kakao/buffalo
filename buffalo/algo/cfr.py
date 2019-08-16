@@ -82,6 +82,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
             self.opt._nrz_C = True
 
     def initialize(self):
+        super().initialize()
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
         num_users, num_items, dim = \
@@ -199,9 +200,9 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
                                 for k, v in self.validation_result.items()})
             self.logger.info('Iteration %d: Loss %.3f Elapsed %.3f secs' % (i + 1, loss, train_t))
             self.update_tensorboard_data(metrics)
-            if self.opt.save_best and best_loss > loss and self.periodical(self.opt.save_period, i):
-                best_loss = loss
-                self.save(self.model_path)
+            best_loss = self.save_best_only(loss, best_loss, i)
+            if self.early_stopping(loss):
+                break
         ret = {'train_loss': loss}
         ret.update({'vali_%s' % k: v
                     for k, v in self.validation_result.items()})

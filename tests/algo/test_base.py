@@ -6,7 +6,7 @@ from buffalo.algo.options import AlsOption
 from buffalo.misc.log import set_log_level
 from buffalo.data.mm import MatrixMarketOptions
 
-from .base import TestBase
+from .base import TestBase, MockAlgo
 
 
 class TestAlgoBase(TestBase):
@@ -25,11 +25,21 @@ class TestAlgoBase(TestBase):
         data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
 
         als = ALS(opt, data_opt=data_opt)
-        als.init_factors()
+        als.initialize()
         als.train()
         results = als.get_validation_results()
         self.assertTrue(results['ndcg'] > 0.025)
         self.assertTrue(results['map'] > 0.015)
+
+    def test1_early_stopping(self):
+        set_log_level(2)
+        algo = MockAlgo()
+        algo.initialize()
+        algo.set_losses([1.0 + i / 1.0 for i in range(100)])
+        algo.opt.early_stopping_rounds = 5
+        algo.train()
+        self.assertEqual(algo.last_iteration, 5)
+
 
 if __name__ == '__main__':
     unittest.main()

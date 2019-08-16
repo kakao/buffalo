@@ -141,7 +141,7 @@ void CBPRMF::initialize_model(
 
     new (&P_) Map<MatrixType>(P, P_rows, D);
     new (&Q_) Map<MatrixType>(Q, Q_rows, D);
-    new (&Qb_) Map<MatrixType>(Q, Q_rows, one);
+    new (&Qb_) Map<MatrixType>(Qb, Q_rows, one);
 
     DEBUG("P({} x {}) Q({} x {}) Qb({} x {}) setted.",
             P_.rows(), P_.cols(),

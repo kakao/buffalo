@@ -38,6 +38,10 @@ class Algo(abc.ABC):
         feat = feat / np.sqrt((feat ** 2).sum(-1) + 1e-8)[..., np.newaxis]
         return feat
 
+    def initialize(self):
+        self.__early_stopping = {'round': 0,
+                                 'min_loss': 987654321}
+
     @abc.abstractmethod
     def normalize(self, group='item'):
         raise NotImplemented
@@ -160,6 +164,25 @@ class Algo(abc.ABC):
 
     def periodical(self, period, current):
         if not period or (current + 1) % period == 0:
+            return True
+        return False
+
+    def save_best_only(self, loss, best_loss, i):
+        if self.opt.save_best and best_loss > loss and self.periodical(self.opt.save_period, i):
+            self.save(self.model_path)
+            return loss
+        return best_loss
+
+    def early_stopping(self, loss):
+        if self.opt.early_stopping_rounds < 1:
+            return False
+        if self.__early_stopping['min_loss'] < loss:
+            self.__early_stopping['round'] += 1
+        else:
+            self.__early_stopping['round'] = 0
+        self.__early_stopping['min_loss'] = loss
+        if self.__early_stopping['round'] >= self.opt.early_stopping_rounds:
+            self.logger.info('Reached at early_stopping rounds, stopping train.')
             return True
         return False
 

@@ -65,6 +65,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
             self.opt._nrz_P = True
 
     def initialize(self):
+        super().initialize()
         self.init_factors()
 
     def init_factors(self):
@@ -137,9 +138,9 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
                                 for k, v in self.validation_result.items()})
             self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, train_t))
             self.update_tensorboard_data(metrics)
-            if self.opt.save_best and best_loss > rmse and self.periodical(self.opt.save_period, i):
-                best_loss = rmse
-                self.save(self.model_path)
+            best_loss = self.save_best_only(rmse, best_loss, i)
+            if self.early_stopping(rmse):
+                break
         ret = {'train_loss': rmse}
         ret.update({'val_%s' % k: v
                     for k, v in self.validation_result.items()})

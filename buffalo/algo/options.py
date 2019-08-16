@@ -10,6 +10,7 @@ class AlgoOption(InputOptions):
         opt = {
             'evaluation_on_learning': True,
             'compute_loss_on_training': True,
+            'early_stopping_rounds': 0,
             'save_best': False,
             'evaluation_period': 1,
             'save_period': 10,
@@ -53,7 +54,6 @@ class AlsOption(AlgoOption):
             'd': 20,
             'num_iters': 10,
             'num_workers': 1,
-            'early_stopping_rounds': 5,
             'reg_u': 0.1,
             'reg_i': 0.1,
             'alpha': 8,
@@ -118,7 +118,6 @@ class CFROption(AlgoOption):
             'dim': 20,
             'num_iters': 10,
             'num_workers': 1,
-            'early_stopping_rounds': 5,
             'compute_loss': True,
             'cg_tolerance': 1e-10,
             'reg_u': 0.1,
@@ -197,7 +196,6 @@ class BprmfOption(AlgoOption):
             'beta1': 0.9,
             'beta2': 0.999,
             'batch_size': -1,
-            'early_stopping_rounds': 5,
 
             'per_coordinate_normalize': False,
             'num_negative_samples': 1,
@@ -246,7 +244,6 @@ class W2vOption(AlgoOption):
             'lr': 0.025,
             'min_lr': 0.0001,
             'batch_size': -1,
-            'early_stopping_rounds': 5,
 
             'num_negative_samples': 5,
 
