@@ -12,14 +12,16 @@
 namespace als {
 
 
-CALS::CALS()
+CALS::CALS() : 
+    P_(nullptr, 0, 0), Q_(nullptr, 0, 0)
 {
 
 }
 
 CALS::~CALS()
 {
-    P_data_ = Q_data_ = nullptr;
+    new (&P_) Map<FactorTypeRowMajor>(nullptr, 0, 0);
+    new (&Q_) Map<FactorTypeRowMajor>(nullptr, 0, 0);
 }
 
 void CALS::release()
@@ -35,35 +37,43 @@ bool CALS::init(string opt_path) {
         omp_set_num_threads(num_workers);
         int d = opt_["d"].int_value();
         FF_.resize(d, d);
+
+        // get optimizer
+        string optimizer = opt_["optimizer"].string_value();
+        if (optimizer == "llt") optimizer_code_ = 0;
+        else if (optimizer == "ldlt") optimizer_code_ = 1;
+        else if (optimizer == "manual_cg") optimizer_code_ = 2;
+        else if (optimizer == "eigen_cg") optimizer_code_ = 3;
+        else if (optimizer == "eigen_bicg") optimizer_code_ = 4;
+        else if (optimizer == "eigen_gmres") optimizer_code_ = 5;
+        else if (optimizer == "eigen_dgmres") optimizer_code_ = 6;
+        else if (optimizer == "eigen_minres") optimizer_code_ = 7;
+
     }
     return ok;
 }
-
 
 bool CALS::parse_option(string opt_path) {
     bool ok = Algorithm::parse_option(opt_path, opt_);
     return ok;
 }
 
-void CALS::initialize_model(Map<FactorTypeRowMajor>& _P, Map<FactorTypeRowMajor>& _Q) {
-    decouple(_P, &P_data_, P_rows_, P_cols_);
-    decouple(_Q, &Q_data_, Q_rows_, Q_cols_);
+void CALS::initialize_model(float* P, int P_rows, float* Q, int Q_rows) {
+    int d = opt_["d"].int_value();
+    new (&P_) Map<FactorTypeRowMajor>(P, P_rows, d);
+    new (&Q_) Map<FactorTypeRowMajor>(Q, Q_rows, d);
 
-    Map<FactorTypeRowMajor> P(P_data_, P_rows_, P_cols_);
-    Map<FactorTypeRowMajor> Q(Q_data_, Q_rows_, Q_cols_);
-
-    DEBUG("P({} x {}) Q({} x {}) setted", P.rows(), P.cols(), Q.rows(), Q.cols());
+    DEBUG("P({} x {}) Q({} x {}) setted",
+            P_.rows(), P_.cols(), Q_.rows(), Q_.cols());
 }
 
 
 void CALS::precompute(int axis)
 {
-    Map<FactorTypeRowMajor> Q(Q_data_, Q_rows_, Q_cols_);   // Q = Q.transpose();
-    Map<FactorTypeRowMajor> P(P_data_, P_rows_, P_cols_);   // P = P.transpose();
     if (axis == 0) { // rowwise
-        FF_ = Q.transpose() * Q;
+        FF_ = Q_.transpose() * Q_;
     } else  { // colwise
-        FF_ = P.transpose() * P;
+        FF_ = P_.transpose() * P_;
     }
 }
 
@@ -71,8 +81,8 @@ double CALS::partial_update(
         int start_x,
         int next_x,
         int64_t* indptr,
-        Map<VectorXi>& keys,
-        Map<VectorXf>& vals,
+        int32_t* keys,
+        float* vals,
         int axis)
 {
     if( (next_x - start_x) == 0) {
@@ -81,30 +91,26 @@ double CALS::partial_update(
     }
 
     float reg = 0.0;
-    float* P_data = P_data_, *Q_data = Q_data_;
-    int P_rows = P_rows_, P_cols = P_cols_, Q_rows = Q_rows_, Q_cols = Q_cols_;
+    int P_rows = P_.rows(),
+        P_cols = P_.cols(),
+        Q_rows = Q_.rows(),
+        Q_cols = Q_.cols();
+
     if (axis == 0) {
         reg = opt_["reg_u"].number_value();
     }
     else { // if (axis == 1) {
         reg = opt_["reg_i"].number_value();
-        P_data = Q_data_; P_rows = Q_rows_; Q_cols = Q_cols_;
-        Q_data = P_data_; Q_rows = P_rows_; Q_cols = P_cols_;
+        swap(P_rows, Q_rows);
+        swap(P_cols, Q_cols);
     }
-
-    Map<FactorTypeRowMajor> P(P_data, P_rows, P_cols),
-                            Q(Q_data, Q_rows, Q_cols);
+    Map<FactorTypeRowMajor>& P = axis == 0 ? P_ : Q_;
+    Map<FactorTypeRowMajor>& Q = axis == 0 ? Q_ : P_;
 
     int D = opt_["d"].int_value();
-    int num_iteration_for_cg = opt_["num_iteration_for_conjugate_gradient"].int_value();
-    if (num_iteration_for_cg == -1) {  // auto
-        // NOTE: According to Eigen docs, the default number of iteration for conjugate gradient method is twice times number of columns.
-        num_iteration_for_cg = (int)(max(int(sqrt(D)), 3));
-    }
     int num_workers = opt_["num_workers"].int_value();
     bool adaptive_reg = opt_["adaptive_reg"].bool_value();
     bool compute_loss_on_training = opt_["compute_loss_on_training"].bool_value();
-    bool use_conjugate_gradient = opt_["use_conjugate_gradient"].bool_value();
     float alpha = opt_["alpha"].number_value();
 
     ConjugateGradient<FactorTypeRowMajor, Lower|Upper> cg[num_workers];
@@ -134,8 +140,7 @@ double CALS::partial_update(
             FactorTypeRowMajor Fs(data_size, D);
             FactorTypeRowMajor Fs2(data_size, D);
 
-            Matrix<float, Dynamic, 1> Fxy;
-            Fxy.resize(D, 1);
+            VectorType Fxy(D);
             Fxy.setZero();
             for (int64_t idx=0, it = beg; it < end; ++it, ++idx) {
                 const int& c = keys[it - shifted];
@@ -150,14 +155,7 @@ double CALS::partial_update(
             for (int d=0; d < D; ++d)
                 m(d, d) += (reg * ada_reg);
 
-            if (use_conjugate_gradient) {
-                cg[worker_id].setMaxIterations(num_iteration_for_cg).compute(m);
-                P.row(u).noalias() = cg[worker_id].solve(Fxy);
-            }
-            else{
-                P.row(u).noalias() = m.ldlt().solve(Fxy);
-            }
-
+            _leastsquare(P, u, m, Fxy);
             if (compute_loss_on_training and axis == 1) {  // for only on item side
                 for (int64_t it=beg; it < end; ++it) {
                     const int& c = keys[it - shifted];

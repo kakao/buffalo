@@ -3,91 +3,19 @@
 # -*- coding: utf-8 -*-
 import time
 import json
-import logging
-
-import tqdm
-import cython
-from libcpp cimport bool
-from libc.stdint cimport int32_t, uint32_t, int64_t
-from libcpp.string cimport string
-from eigency.core cimport MatrixXf, Map, VectorXi, VectorXf, FlattenedMapWithOrder, Matrix, RowMajor, Dynamic
 
 import numpy as np
-cimport numpy as np
-from numpy.linalg import norm
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
 from buffalo.data.base import Data
 from buffalo.misc import aux, log
+from buffalo.algo._w2v import PyW2V
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import W2vOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataStream
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
-
-
-cdef extern from "buffalo/algo_impl/w2v/w2v.hpp" namespace "w2v":
-    cdef cppclass CW2V:
-        void release() nogil except +
-        bool init(string) nogil except +
-        void initialize_model(FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor]&,
-                              int32_t*,
-                              uint32_t*,
-                              int32_t*,
-                              int64_t) nogil except +
-        void launch_workers()
-        void add_jobs(int,
-                      int,
-                      int64_t*,
-                      Map[VectorXi]&) nogil except +
-        double join()
-
-
-cdef class PyW2V:
-    """CW2V object holder"""
-    cdef CW2V* obj  # C-W2V object
-
-    def __cinit__(self):
-        self.obj = new CW2V()
-
-    def __dealloc__(self):
-        self.obj.release()
-        del self.obj
-
-    def init(self, option_path):
-        return self.obj.init(option_path)
-
-    def initialize_model(self,
-                    np.ndarray[np.float32_t, ndim=2] L0,
-                    np.ndarray[np.int32_t, ndim=1] index,
-                    np.ndarray[np.uint32_t, ndim=1] scale,
-                    np.ndarray[np.int32_t, ndim=1] dist,
-                    int64_t total_word_count):
-        self.obj.initialize_model(FlattenedMapWithOrder[Matrix, float, Dynamic, Dynamic, RowMajor](L0),
-                                  &index[0],
-                                  &scale[0],
-                                  &dist[0],
-                                  total_word_count)
-
-    def launch_workers(self):
-        self.obj.launch_workers()
-
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
-    def add_jobs(self,
-                 int start_x,
-                 int next_x,
-                 np.ndarray[np.int64_t, ndim=1] indptr,
-                 np.ndarray[np.int32_t, ndim=1] sequences):
-        self.obj.add_jobs(start_x,
-                          next_x,
-                          &indptr[0],
-                          Map[VectorXi](sequences))
-
-
-    def join(self):
-        return self.obj.join()
 
 
 class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
@@ -100,7 +28,7 @@ class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExte
         Serializable.__init__(self, *args, **kwargs)
         Optimizable.__init__(self, *args, **kwargs)
 
-        self.logger = log.get_logger('BPRMF')
+        self.logger = log.get_logger('W2V')
         self.opt, self.opt_path = self.get_option(opt_path)
         self.obj = PyW2V()
         assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
@@ -205,8 +133,7 @@ class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExte
     def init_factors(self, vocab_size):
         self.L0 = None
         self.L0 = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
-                                         size=(vocab_size, self.opt.d)).astype("float32"),
-                         order='C')
+                                         size=(vocab_size, self.opt.d)).astype("float32"))
 
     def get_sampling_distribution(self, uni, use, total_vocab):
         dist0 = np.zeros(shape=total_vocab, dtype=np.float64, order='C')

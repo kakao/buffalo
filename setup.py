@@ -59,8 +59,8 @@ extend_compile_flags = get_extend_compile_flags()
 
 extensions = [
     CMakeExtension(name="cbuffalo"),
-    Extension(name="buffalo.algo.als",
-              sources=['buffalo/algo/als.cpp'],
+    Extension(name="buffalo.algo._als",
+              sources=['buffalo/algo/_als.cpp'],
               include_dirs=['./include',
                             numpy_include_dirs,
                             '3rd/json11',
@@ -79,8 +79,8 @@ extensions = [
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.algo.bpr",
-              sources=['buffalo/algo/bpr.cpp'],
+    Extension(name="buffalo.algo._bpr",
+              sources=['buffalo/algo/_bpr.cpp'],
               include_dirs=['./include',
                             numpy_include_dirs,
                             '3rd/json11',
@@ -89,8 +89,8 @@ extensions = [
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.algo.w2v",
-              sources=['buffalo/algo/w2v.cpp'],
+    Extension(name="buffalo.algo._w2v",
+              sources=['buffalo/algo/_w2v.cpp'],
               include_dirs=['./include',
                             numpy_include_dirs,
                             '3rd/json11',
@@ -163,9 +163,9 @@ class BuildExtention(build_ext, object):
         super(BuildExtention, self).run()
 
     def cythonize(self):
-        ext_files = ['buffalo/algo/als.pyx',
-                     'buffalo/algo/bpr.pyx',
-                     'buffalo/algo/w2v.pyx',
+        ext_files = ['buffalo/algo/_als.pyx',
+                     'buffalo/algo/_bpr.pyx',
+                     'buffalo/algo/_w2v.pyx',
                      'buffalo/misc/log.pyx',
                      'buffalo/algo/_cfr.pyx',
                      'buffalo/evaluate/quickselect.pyx',

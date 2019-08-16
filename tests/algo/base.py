@@ -85,12 +85,12 @@ class TestBase(unittest.TestCase):
         c.initialize()
         c.train()
         self.assertTrue(len(c.topk_recommendation('1', 10)['1']), 10)
-        ret_a = [x for x, _ in c.most_similar('49.Star_Wars_(1977)')]
-        self.assertIn('180.Return_of_the_Jedi_(1983)', ret_a)
+        ret_a = [x for x, _ in c.most_similar('180.Return_of_the_Jedi_(1983)', topk=100)]
+        self.assertIn('229.Star_Trek_IV:_The_Voyage_Home_(1986)', ret_a)
         c.normalize()
-        ret_b = [x for x, _ in c.most_similar('49.Star_Wars_(1977)')]
-        self.assertIn('180.Return_of_the_Jedi_(1983)', ret_b)
-        self.assertEqual(ret_a, ret_b)
+        ret_b = [x for x, _ in c.most_similar('180.Return_of_the_Jedi_(1983)', topk=100)]
+        self.assertIn('229.Star_Trek_IV:_The_Voyage_Home_(1986)', ret_b)
+        self.assertEqual(ret_a[:10], ret_b[:10])
 
     def _test7_train_ml_20m(self, cls, opt):
         set_log_level(2)
@@ -119,13 +119,13 @@ class TestBase(unittest.TestCase):
         c = cls(opt, data_opt=data_opt)
         c.initialize()
         c.train()
-        ret_a = [x for x, _ in c.most_similar('49.Star_Wars_(1977)')]
-        self.assertIn('180.Return_of_the_Jedi_(1983)', ret_a)
+        ret_a = [x for x, _ in c.most_similar('180.Return_of_the_Jedi_(1983)', topk=100)]
+        self.assertIn('229.Star_Trek_IV:_The_Voyage_Home_(1986)', ret_a)
         c.save('model.bin')
         c.load('model.bin')
         os.remove('model.bin')
-        ret_a = [x for x, _ in c.most_similar('49.Star_Wars_(1977)')]
-        self.assertIn('180.Return_of_the_Jedi_(1983)', ret_a)
+        ret_a = [x for x, _ in c.most_similar('180.Return_of_the_Jedi_(1983)', topk=100)]
+        self.assertIn('229.Star_Trek_IV:_The_Voyage_Home_(1986)', ret_a)
 
     def _test9_compact_serialization(self, cls, opt):
         set_log_level(1)
@@ -139,17 +139,17 @@ class TestBase(unittest.TestCase):
         c = cls(opt, data_opt=data_opt)
         c.initialize()
         c.train()
-        ret_a = [x for x, _ in c.most_similar('49.Star_Wars_(1977)')]
-        self.assertIn('180.Return_of_the_Jedi_(1983)', ret_a)
+        ret_a = [x for x, _ in c.most_similar('180.Return_of_the_Jedi_(1983)', topk=100)]
+        self.assertIn('229.Star_Trek_IV:_The_Voyage_Home_(1986)', ret_a)
         c.save('model.bin', with_userid_map=False)
         c = cls(opt)
         c.load('model.bin', data_fields=['Q', '_idmanager'])
-        ret_a = [x for x, _ in c.most_similar('49.Star_Wars_(1977)')]
-        self.assertIn('180.Return_of_the_Jedi_(1983)', ret_a)
+        ret_a = [x for x, _ in c.most_similar('180.Return_of_the_Jedi_(1983)', topk=100)]
+        self.assertIn('229.Star_Trek_IV:_The_Voyage_Home_(1986)', ret_a)
         self.assertFalse(hasattr(c, 'P'))
         c.normalize(group='item')
-        ret_a = [x for x, _ in c.most_similar('49.Star_Wars_(1977)')]
-        self.assertIn('180.Return_of_the_Jedi_(1983)', ret_a)
+        ret_a = [x for x, _ in c.most_similar('180.Return_of_the_Jedi_(1983)', topk=100)]
+        self.assertIn('229.Star_Trek_IV:_The_Voyage_Home_(1986)', ret_a)
 
     def _test10_fast_most_similar(self, cls, opt):
         set_log_level(1)
@@ -164,17 +164,17 @@ class TestBase(unittest.TestCase):
         c.initialize()
         c.train()
 
-        keys = [x for x, _ in c.most_similar('49.Star_Wars_(1977)', 10)]
+        keys = [x for x, _ in c.most_similar('49.Star_Wars_(1977)', topk=100)]
         start_t = time.time()
         for i in range(100):
             for key in keys:
-                _ = c.most_similar(key)
+                c.most_similar(key)
         elapsed_a = time.time() - start_t
 
         c.normalize(group='item')
         start_t = time.time()
         for i in range(100):
             for key in keys:
-                _ = c.most_similar(key)
+                c.most_similar(key)
         elapsed_b = time.time() - start_t
         self.assertTrue(elapsed_a > elapsed_b)
