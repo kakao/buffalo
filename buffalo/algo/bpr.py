@@ -65,6 +65,7 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
             self.opt._nrz_P = True
 
     def initialize(self):
+        super().initialize()
         assert self.data, 'Data is not setted'
         if self.opt.random_seed:
             np.random.seed(self.opt.random_seed)
@@ -197,10 +198,9 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
                                 for k, v in self.validation_result.items()})
             self.logger.info('Iteration %s: PR-Loss %.3f Elapsed %.3f secs' % (i + 1, loss, time.time() - start_t))
             self.update_tensorboard_data(metrics)
-
-            if self.opt.save_best and best_loss > loss and self.periodical(self.opt.save_period, i):
-                best_loss = loss
-                self.save(self.model_path)
+            best_loss = self.save_best_only(loss, best_loss, i)
+            if self.early_stopping(loss):
+                break
         loss = self.obj.join()
 
         ret = {'train_loss': loss}
