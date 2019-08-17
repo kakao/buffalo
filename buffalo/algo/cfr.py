@@ -26,12 +26,14 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     Paper link: http://dawenl.github.io/publications/LiangACB16-cofactor.pdf
     """
-    def __init__(self, opt_path, *args, **kwargs):
+    def __init__(self, opt_path=None, *args, **kwargs):
         Algo.__init__(self, *args, **kwargs)
         CFROption.__init__(self, *args, **kwargs)
         Evaluable.__init__(self, *args, **kwargs)
         Serializable.__init__(self, *args, **kwargs)
         Optimizable.__init__(self, *args, **kwargs)
+        if opt_path is None:
+            opt_path = CFROption().get_default_option()
 
         self.logger = log.get_logger('CFR')
 
@@ -98,13 +100,13 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
             self.obj.set_embedding(getattr(self, attr), name.encode("utf8"))
         self.is_initialized = True
 
-    def _get_topk_recommendation(self, rows, topk):
+    def _get_topk_recommendation(self, rows, topk, pool=None):
         u = self.U[rows]
-        topks = self.get_topk(u.dot(self.I.T), k=topk, num_threads=self.opt.num_workers)
+        topks = super()._get_topk_recommendation(u, self.I, pool, topk, self.opt.num_workers)
         return zip(rows, topks)
 
-    def _get_most_similar_item(self, col, topk):
-        return super()._get_most_similar_item(col, topk, self.I, self.opt._nrz_I)
+    def _get_most_similar_item(self, col, topk, pool):
+        return super()._get_most_similar_item(col, topk, self.I, self.opt._nrz_I, pool)
 
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.U[r].dot(self.I[c]) for r, c in row_col_pairs}

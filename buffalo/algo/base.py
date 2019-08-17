@@ -46,59 +46,116 @@ class Algo(abc.ABC):
     def normalize(self, group='item'):
         raise NotImplemented
 
-    def topk_recommendation(self, keys, topk) -> dict:
+    def _get_topk_recommendation(self, p, Q, pool, topk, num_workers):
+        if pool is None:
+            topks = self.get_topk(p.dot(Q.T), k=topk, num_threads=num_workers)
+        else:
+            topks = self.get_topk(p.dot(Q[pool].T), k=topk, num_threads=num_workers)
+            topks = np.array([pool[t] for t in topks])
+        return topks
+
+    def topk_recommendation(self, keys, topk=10, pool=None):
         """Return TopK recommendation for each users(keys)
+
+        :param keys: Query key(s)
+        :type keys: list or str
+        :param int topk: Number of recommendation
+        :param pool: See the pool parameter of `most_similar`
+        :rtype: dict or list
         """
-        if not isinstance(keys, list):
+        is_many = isinstance(keys, list)
+        if not is_many:
             keys = [keys]
         if not self._idmanager.userid_mapped:
             self.build_userid_map()
         if not self._idmanager.itemid_mapped:
             self.build_itemid_map()
+        if pool is not None:
+            if isinstance(pool, list):
+                pool = self.get_index(pool, group='item')
+                pool = np.array([p for p in pool if p is not None])
+            elif isinstance(pool, np.ndarray):
+                pass
+            else:
+                raise ValueError('Unexpected type for pool: %s' % type(pool))
+            if len(pool) == 0:
+                return []
         rows = [self._idmanager.userid_map[k] for k in keys
                 if k in self._idmanager.userid_map]
-        topks = self._get_topk_recommendation(rows, topk)
-        return {self._idmanager.userids[k]: [self._idmanager.itemids[v] for v in vv]
-                for k, vv in topks}
+        topks = self._get_topk_recommendation(rows, topk, pool)
+        if not topks:
+            return []
+        if is_many:
+            return {self._idmanager.userids[k]: [self._idmanager.itemids[v] for v in vv]
+                    for k, vv in topks}
+        else:
+            for k, vv in topks:
+                return [self._idmanager.itemids[v] for v in vv]
 
-    def most_similar(self, key, topk=10, group='item'):
+    def most_similar(self, key, topk=10, group='item', pool=None):
+        """Return top-k most similar items
+
+        :param str key: Query key
+        :param int topk: The number of results (default: 10)
+        :param str group: Data group where to find (default: item)
+        :param pool: The list of item keys to find for.
+            If it is a numpy.ndarray instance then it treat as index of items and it would be helpful for calculation speed. (default: None)
+        :type pool: list or numpy.ndarray
+        :return: Top-k most similar items for given query.
+        :rtype: list
+        """
         if group == 'item':
             if not self._idmanager.itemid_mapped:
                 self.build_itemid_map()
-            return self.most_similar_item(key, topk)
+            return self._most_similar_item(key, topk, pool)
         return []
 
-    def _get_most_similar_item(self, col, topk, Factor, nrz):
+    def _get_most_similar_item(self, col, topk, Factor, nrz, pool):
         if isinstance(col, np.ndarray):
             q = col
         else:
             topk += 1
             q = Factor[col]
         if nrz:
-            dot = q.dot(Factor.T)
+            if pool is not None:
+                dot = q.dot(Factor[pool].T)
+            else:
+                dot = q.dot(Factor.T)
             topks = np.argsort(dot)[-topk:][::-1]
         else:
-            dot = q.dot(Factor.T)
-            dot = dot / (np.linalg.norm(q) * np.linalg.norm(Factor, axis=1))
+            if pool is not None:
+                dot = q.dot(Factor[pool].T)
+                dot = dot / (np.linalg.norm(q) * np.linalg.norm(Factor[pool], axis=1))
+            else:
+                dot = q.dot(Factor.T)
+                dot = dot / (np.linalg.norm(q) * np.linalg.norm(Factor, axis=1))
             topks = np.argsort(dot)[-topk:][::-1]
         scores = dot[topks]
+        if pool is not None:
+            topks = np.array([pool[t] for t in topks])
         return topks, scores
 
-    def most_similar_item(self, key, topk=10):
-        """Return most similar items for key
-        """
+    def _most_similar_item(self, key, topk=10, pool=None):
         is_vector = False
         if isinstance(key, np.ndarray):
             f = key
             is_vector = True
         else:
-            if not self._idmanager.itemid_mapped:
-                self.build_itemid_map()
             col = self._idmanager.itemid_map.get(key)
             if not col:
                 return []
             f = col
-        topks, scores = self._get_most_similar_item(f, topk + 1)
+        if pool is not None:
+            if isinstance(pool, list):
+                pool = self.get_index(pool, group='item')
+                pool = np.array([p for p in pool if p is not None])
+            elif isinstance(pool, np.ndarray):
+                pass
+            else:
+                raise ValueError('Unexpected type for pool: %s' % type(pool))
+            if len(pool) == 0:
+                return []
+        topks, scores = self._get_most_similar_item(f, topk, pool)
         if is_vector:
             return [(self._idmanager.itemids[k], v)
                     for (k, v) in zip(topks, scores)]
@@ -132,19 +189,9 @@ class Algo(abc.ABC):
         self._idmanager.userid_mapped = True
 
     def get_feature(self, name, group='item'):
-        index = None
-        if group == 'item':
-            if not self._idmanager.itemid_mapped:
-                self.build_itemid_map()
-            index = self._idmanager.itemid_map.get(name)
-            if not index:
-                return None
-        elif group == 'user':
-            if not self._idmanager.userid_mapped:
-                self.build_userid_map()
-            index = self._idmanager.userid_map.get(name)
-            if not index:
-                return None
+        index = self.get_index(name, group=group)
+        if not index:
+            return None
         return self._get_feature(index, group)
 
     @abc.abstractmethod
@@ -186,12 +233,39 @@ class Algo(abc.ABC):
             return True
         return False
 
+    def get_index(self, key, group='item'):
+        """Get index list of given item keys.
+        If there is no index for such key, return None.
+
+        :param key: Query key(s)
+        :type key: str or list
+        :param str group: Data group where to find (default: item)
+        :rtype: int or list
+        """
+        is_many = isinstance(key, list)
+        if not is_many:
+            key = [key]
+        indexes = []
+        if group == 'item':
+            if not self._idmanager.itemid_mapped:
+                self.build_itemid_map()
+            indexes = [self._idmanager.itemid_map.get(k) for k in key]
+        elif group == 'user':
+            if not self._idmanager.userid_mapped:
+                self.build_userid_map()
+            indexes = [self._idmanager.userid_map.get(k) for k in key]
+        if not is_many:
+            return indexes[0]
+        return np.array(indexes)
+
 
 class Serializable(abc.ABC):
     def __init__(self, *args, **kwargs):
         pass
 
-    def save(self, path, with_itemid_map=True, with_userid_map=True, data_fields=[]):
+    def save(self, path=None, with_itemid_map=True, with_userid_map=True, data_fields=[]):
+        if path is None:
+            path = self.opt.model_path
         if with_itemid_map and not self._idmanager.itemid_mapped:
             self.build_itemid_map()
         if with_userid_map and not self._idmanager.userid_mapped:

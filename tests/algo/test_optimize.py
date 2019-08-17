@@ -7,7 +7,7 @@ from hyperopt import fmin, tpe
 from buffalo.misc import aux
 from buffalo.algo.als import ALS
 from buffalo.misc.log import set_log_level
-from buffalo.algo.options import AlsOption
+from buffalo.algo.options import ALSOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.mm import MatrixMarketOptions
 
@@ -36,7 +36,7 @@ class TestOptimize(TestBase):
             loss += 1.0 / opt['reg_u']
             return loss
 
-        option = AlsOption().get_default_optimize_option()
+        option = ALSOption().get_default_optimize_option()
         space = Optimizable()._get_space(option.space)
         best = fmin(fn=mock_fn,
                     space=space,
@@ -55,7 +55,7 @@ class TestOptimize(TestBase):
 
     def test4_optimize(self):
         set_log_level(2)
-        opt = AlsOption().get_default_option()
+        opt = ALSOption().get_default_option()
         opt.d = 5
         opt.num_workers = 2
         opt.model_path = 'als.bin'
