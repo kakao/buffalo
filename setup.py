@@ -12,11 +12,6 @@ from setuptools import setup
 from configparser import ConfigParser
 from distutils.extension import Extension
 from setuptools.command.build_ext import build_ext
-try:
-    from sphinx.setup_command import BuildDoc
-    HAVE_SPHINX = True
-except:
-    HAVE_SPHINX = False
 
 import numpy
 import eigency
@@ -206,8 +201,6 @@ class BuildExtention(build_ext, object):
 def setup_package():
     write_version_py()
     cmdclass = {'build_ext': BuildExtention}
-    if HAVE_SPHINX:
-        cmdclass.update({'build_sphinx': BuildDoc})
 
     build_requires = [l.strip() for l in open('requirements.txt')]
 
