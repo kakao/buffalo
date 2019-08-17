@@ -165,7 +165,7 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
         assert(dist[-1] == domain)
         return dist
 
-    def _get_topk_recommendation(self, rows, topk):
+    def _get_topk_recommendation(self, rows, topk, pool=None):
         raise NotImplemented
 
     def _get_most_similar_item(self, col, topk, pool):

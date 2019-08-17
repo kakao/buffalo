@@ -138,7 +138,7 @@ class TestBase(unittest.TestCase):
         c = cls(opt, data_opt=data_opt)
         c.initialize()
         c.train()
-        self.assertTrue(len(c.topk_recommendation('1', 10)['1']), 10)
+        self.assertTrue(len(c.topk_recommendation('1', 10)), 10)
         ret_a = [x for x, _ in c.most_similar('180.Return_of_the_Jedi_(1983)', topk=100)]
         self.assertIn('49.Star_Wars_(1977)', ret_a)
         c.normalize()
