@@ -3,12 +3,13 @@ import os
 import time
 import unittest
 
+import numpy as np
 from hyperopt import STATUS_OK
 
 from buffalo.misc import aux, log
 from buffalo.algo.base import Algo
 from buffalo.misc.log import set_log_level
-from buffalo.algo.options import AlsOption
+from buffalo.algo.options import ALSOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.mm import MatrixMarketOptions
 from buffalo.algo.base import TensorboardExtention
@@ -20,8 +21,8 @@ class MockAlgo(Algo, Optimizable, TensorboardExtention):
         Optimizable.__init__(self, *args, **kwargs)
         TensorboardExtention.__init__(self, *args, **kwargs)
         self.logger = log.get_logger('MockAlgo')
-        option = AlsOption().get_default_option()
-        optimize_option = AlsOption().get_default_optimize_option()
+        option = ALSOption().get_default_option()
+        optimize_option = ALSOption().get_default_optimize_option()
         optimize_option.start_with_default_parameters = False
         option.optimize = optimize_option
         option.model_path = 'hello.world.bin'
@@ -59,7 +60,6 @@ class MockAlgo(Algo, Optimizable, TensorboardExtention):
             self.last_iteration = i
             if self.early_stopping(loss):
                 break
-
 
 
 class TestBase(unittest.TestCase):
@@ -232,3 +232,35 @@ class TestBase(unittest.TestCase):
                 c.most_similar(key)
         elapsed_b = time.time() - start_t
         self.assertTrue(elapsed_a > elapsed_b)
+
+    def _test_most_similar(self, model, q1, q2, q3):
+        self.assertEqual(len(model.most_similar(q1, pool=[q2])), 1)
+
+        index = model.get_index(q2)
+        ret = model.most_similar(q1, pool=np.array([index]))
+        self.assertEqual(ret[0][0], q2)
+
+        pool = [q2, q3]
+        ret_a = model.most_similar(q1, pool=pool)
+        indexes = model.get_index(pool)
+        self.assertEqual(len(indexes), 2)
+        ret_b = model.most_similar(q1, pool=indexes)
+        self.assertEqual(ret_a, ret_b)
+
+        keys = [k[0] for k in model.most_similar(q1, topk=100)]
+        keys += ['fake_key', 10]
+        indexes = model.get_index(keys)
+        self.assertEqual(len(keys), len(indexes))
+        indexes = np.array([i for i in indexes if i is not None])
+        self.assertEqual(len(indexes), 100)
+
+        start_t = time.time()
+        for i in range(100):
+            model.most_similar(q1, pool=keys)
+        elapsed_a = time.time() - start_t
+
+        start_t = time.time()
+        for i in range(100):
+            model.most_similar(q1, pool=indexes)
+        elapsed_b = time.time() - start_t
+        self.assertTrue(elapsed_a > elapsed_b * 1.5)

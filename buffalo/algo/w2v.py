@@ -10,27 +10,29 @@ from hyperopt import STATUS_OK as HOPT_STATUS_OK
 import buffalo.data
 from buffalo.data.base import Data
 from buffalo.misc import aux, log
-from buffalo.algo._w2v import PyW2V
+from buffalo.algo._w2v import CyW2V
 from buffalo.evaluate import Evaluable
-from buffalo.algo.options import W2vOption
+from buffalo.algo.options import W2VOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataStream
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
 
-class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
+class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
     """Python implementation for C-W2V
     """
-    def __init__(self, opt_path, *args, **kwargs):
+    def __init__(self, opt_path=None, *args, **kwargs):
         Algo.__init__(self, *args, **kwargs)
-        W2vOption.__init__(self, *args, **kwargs)
+        W2VOption.__init__(self, *args, **kwargs)
         Evaluable.__init__(self, *args, **kwargs)
         Serializable.__init__(self, *args, **kwargs)
         Optimizable.__init__(self, *args, **kwargs)
+        if opt_path is None:
+            opt_path = W2VOption().get_default_option()
 
         self.logger = log.get_logger('W2V')
         self.opt, self.opt_path = self.get_option(opt_path)
-        self.obj = PyW2V()
+        self.obj = CyW2V()
         assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
             'cannot parse option file: %s' % opt_path
         self.data = None
@@ -56,7 +58,7 @@ class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     @staticmethod
     def new(path, data_fields=[]):
-        return W2V.instantiate(W2vOption, path, data_fields)
+        return W2V.instantiate(W2VOption, path, data_fields)
 
     def set_data(self, data):
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
@@ -67,12 +69,20 @@ class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExte
             self.L0 = self._normalize(self.L0)
             self.opt._nrz_L0 = True
 
+    def get_index(self, key, group='item'):
+        is_many = isinstance(key, list)
+        indexes = super().get_index(key, group)
+        if not is_many:
+            indexes = [indexes]
+        indexes = [i if i is None or self._vocab.index[i] < 1 else self._vocab.index[i] - 1
+                   for i in indexes]
+        if not is_many:
+            return indexes[0]
+        return np.array(indexes)
+
     def _get_feature(self, index, group='item'):
         if group == 'item':
-            index = self._vocab.index[index]
-            if not index:
-                return None
-            return self.L0[index - 1]
+            return self.L0[index]
         return None
 
     def initialize(self):
@@ -158,12 +168,12 @@ class W2V(Algo, W2vOption, Evaluable, Serializable, Optimizable, TensorboardExte
     def _get_topk_recommendation(self, rows, topk):
         raise NotImplemented
 
-    def _get_most_similar_item(self, col, topk):
+    def _get_most_similar_item(self, col, topk, pool):
         if not isinstance(col, np.ndarray):
             col = self._vocab.index[col] - 1
             if col < 0:
                 return [], []
-        topks, scores = super()._get_most_similar_item(col, topk, self.L0, self.opt._nrz_L0)
+        topks, scores = super()._get_most_similar_item(col, topk, self.L0, self.opt._nrz_L0, pool)
         topks = self._vocab.inv_index[topks]
         return topks, scores
 

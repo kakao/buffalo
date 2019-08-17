@@ -41,9 +41,9 @@ class AlgoOption(InputOptions):
         return b
 
 
-class AlsOption(AlgoOption):
+class ALSOption(AlgoOption):
     def __init__(self, *args, **kwargs):
-        super(AlsOption, self).__init__(*args, **kwargs)
+        super(ALSOption, self).__init__(*args, **kwargs)
 
     def get_default_option(self):
         opt = super().get_default_option()
@@ -170,7 +170,7 @@ class CFROption(AlgoOption):
         return b
 
 
-class BprmfOption(AlgoOption):
+class BPRMFOption(AlgoOption):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -225,7 +225,7 @@ class BprmfOption(AlgoOption):
         return Option(opt)
 
 
-class W2vOption(AlgoOption):
+class W2VOption(AlgoOption):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 

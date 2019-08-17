@@ -27,7 +27,7 @@ cdef extern from "buffalo/algo_impl/w2v/w2v.hpp" namespace "w2v":
         double join()
 
 
-cdef class PyW2V:
+cdef class CyW2V:
     """CW2V object holder"""
     cdef CW2V* obj  # C-W2V object
 

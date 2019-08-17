@@ -58,8 +58,8 @@ class Benchmark(object):
     def get_option(self, lib_name, algo_name, **kwargs):
         if lib_name == 'buffalo':
             if algo_name == 'als':
-                from buffalo.algo.options import AlsOption
-                opt = AlsOption().get_default_option()
+                from buffalo.algo.options import ALSOption
+                opt = ALSOption().get_default_option()
                 opt.update({'d': kwargs.get('d', 100),
                             'use_conjugate_gradient': kwargs.get('use_cg', True),
                             'num_iters': kwargs.get('num_iters', 10),
@@ -67,8 +67,8 @@ class Benchmark(object):
                             'compute_loss_on_training': kwargs.get('compute_loss_on_training', False)})
                 return opt
             if algo_name == 'bpr':
-                from buffalo.algo.options import BprmfOption
-                opt = BprmfOption().get_default_option()
+                from buffalo.algo.options import BPRMFOption
+                opt = BPRMFOption().get_default_option()
                 opt.update({'d': kwargs.get('d', 100),
                             'num_iters': kwargs.get('num_iters', 10),
                             'num_workers': kwargs.get('num_workers', 10),

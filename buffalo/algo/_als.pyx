@@ -25,7 +25,7 @@ cdef extern from "buffalo/algo_impl/als/als.hpp" namespace "als":
                               int) nogil except +
 
 
-cdef class PyALS:
+cdef class CyALS:
     """CALS object holder"""
     cdef CALS* obj  # C-ALS object
 

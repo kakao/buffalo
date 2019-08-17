@@ -33,7 +33,7 @@ cdef extern from "buffalo/algo_impl/bpr/bpr.hpp" namespace "bpr":
         void update_parameters()
 
 
-cdef class PyBPRMF:
+cdef class CyBPRMF:
     """CBPRMF object holder"""
     cdef CBPRMF* obj  # C-BPRMF object
 
