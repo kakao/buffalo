@@ -79,9 +79,9 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
                                        size=(rows, self.opt.d)).astype("float32")))
         self.obj.initialize_model(self.P, self.Q)
 
-    def _get_topk_recommendation(self, rows, topk):
+    def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
-        topks = np.argsort(p.dot(self.Q.T), axis=1)[:, -topk:][:,::-1]
+        topks = super()._get_topk_recommendation(p, self.Q, pool, topk, self.opt.num_workers)
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk, pool):

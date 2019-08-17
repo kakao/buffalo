@@ -100,9 +100,9 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
             self.obj.set_embedding(getattr(self, attr), name.encode("utf8"))
         self.is_initialized = True
 
-    def _get_topk_recommendation(self, rows, topk):
+    def _get_topk_recommendation(self, rows, topk, pool=None):
         u = self.U[rows]
-        topks = self.get_topk(u.dot(self.I.T), k=topk, num_threads=self.opt.num_workers)
+        topks = super()._get_topk_recommendation(u, self.I, pool, topk, self.opt.num_workers)
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk, pool):

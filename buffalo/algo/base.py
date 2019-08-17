@@ -46,20 +46,51 @@ class Algo(abc.ABC):
     def normalize(self, group='item'):
         raise NotImplemented
 
-    def topk_recommendation(self, keys, topk) -> dict:
+    def _get_topk_recommendation(self, p, Q, pool, topk, num_workers):
+        if pool is None:
+            topks = self.get_topk(p.dot(Q.T), k=topk, num_threads=num_workers)
+        else:
+            topks = self.get_topk(p.dot(Q[pool].T), k=topk, num_threads=num_workers)
+            topks = np.array([pool[t] for t in topks])
+        return topks
+
+    def topk_recommendation(self, keys, topk=10, pool=None):
         """Return TopK recommendation for each users(keys)
+
+        :param keys: Query key(s)
+        :type keys: list or str
+        :param int topk: Number of recommendation
+        :param pool: See the pool parameter of `most_similar`
+        :rtype: dict or list
         """
-        if not isinstance(keys, list):
+        is_many = isinstance(keys, list)
+        if not is_many:
             keys = [keys]
         if not self._idmanager.userid_mapped:
             self.build_userid_map()
         if not self._idmanager.itemid_mapped:
             self.build_itemid_map()
+        if pool is not None:
+            if isinstance(pool, list):
+                pool = self.get_index(pool, group='item')
+                pool = np.array([p for p in pool if p is not None])
+            elif isinstance(pool, np.ndarray):
+                pass
+            else:
+                raise ValueError('Unexpected type for pool: %s' % type(pool))
+            if len(pool) == 0:
+                return []
         rows = [self._idmanager.userid_map[k] for k in keys
                 if k in self._idmanager.userid_map]
-        topks = self._get_topk_recommendation(rows, topk)
-        return {self._idmanager.userids[k]: [self._idmanager.itemids[v] for v in vv]
-                for k, vv in topks}
+        topks = self._get_topk_recommendation(rows, topk, pool)
+        if not topks:
+            return []
+        if is_many:
+            return {self._idmanager.userids[k]: [self._idmanager.itemids[v] for v in vv]
+                    for k, vv in topks}
+        else:
+            for k, vv in topks:
+                return [self._idmanager.itemids[v] for v in vv]
 
     def most_similar(self, key, topk=10, group='item', pool=None):
         """Return top-k most similar items

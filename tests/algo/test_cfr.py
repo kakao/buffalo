@@ -102,7 +102,7 @@ class TestCFR(TestBase):
         c = CFR(opt, data_opt=data_opt)
         c.initialize()
         c.train()
-        self.assertTrue(len(c.topk_recommendation('1', 10)['1']), 10)
+        self.assertTrue(len(c.topk_recommendation('1', 10)), 10)
         ret_a = [x for x, _ in c.most_similar('49.Star_Wars_(1977)')]
         self.assertIn('180.Return_of_the_Jedi_(1983)', ret_a)
         c.normalize()
@@ -197,14 +197,14 @@ class TestCFR(TestBase):
         start_t = time.time()
         for i in range(100):
             for key in keys:
-                _ = c.most_similar(key)
+                c.most_similar(key)
         elapsed_a = time.time() - start_t
 
         c.normalize(group='item')
         start_t = time.time()
         for i in range(100):
             for key in keys:
-                _ = c.most_similar(key)
+                c.most_similar(key)
         elapsed_b = time.time() - start_t
         self.assertTrue(elapsed_a > elapsed_b)
 

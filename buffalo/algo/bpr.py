@@ -105,9 +105,9 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
                 self.sampling_table_[i - 1] = i
         self.obj.set_cumulative_table(self.sampling_table_, header['num_items'])
 
-    def _get_topk_recommendation(self, rows, topk):
+    def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
-        topks = np.argsort(p.dot(self.Q.T) + self.Qb.T, axis=1)[:, -topk:][:,::-1]
+        topks = super()._get_topk_recommendation(p, self.Q, pool, topk, self.opt.num_workers)
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk, pool):
