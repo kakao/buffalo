@@ -8,30 +8,32 @@ from hyperopt import STATUS_OK as HOPT_STATUS_OK
 import buffalo.data
 from buffalo.misc import aux, log
 from buffalo.data.base import Data
-from buffalo.algo._als import PyALS
+from buffalo.algo._als import CyALS
 from buffalo.evaluate import Evaluable
-from buffalo.algo.options import AlsOption
+from buffalo.algo.options import ALSOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
 
-class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
+class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
     """Python implementation for C-ALS.
 
     Implementation of Collaborative Filtering for Implicit Feedback datasets.
 
     Reference: http://yifanhu.net/PUB/cf.pdf"""
-    def __init__(self, opt_path, *args, **kwargs):
+    def __init__(self, opt_path=None, *args, **kwargs):
         Algo.__init__(self, *args, **kwargs)
-        AlsOption.__init__(self, *args, **kwargs)
+        ALSOption.__init__(self, *args, **kwargs)
         Evaluable.__init__(self, *args, **kwargs)
         Serializable.__init__(self, *args, **kwargs)
         Optimizable.__init__(self, *args, **kwargs)
+        if opt_path is None:
+            opt_path = ALSOption().get_default_option()
 
         self.logger = log.get_logger('ALS')
         self.opt, self.opt_path = self.get_option(opt_path)
-        self.obj = PyALS()
+        self.obj = CyALS()
         assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
             'cannot parse option file: %s' % opt_path
         self.data = None
@@ -50,7 +52,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     @staticmethod
     def new(path, data_fields=[]):
-        return ALS.instantiate(AlsOption, path, data_fields)
+        return ALS.instantiate(ALSOption, path, data_fields)
 
     def set_data(self, data):
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
@@ -82,8 +84,8 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
         topks = np.argsort(p.dot(self.Q.T), axis=1)[:, -topk:][:,::-1]
         return zip(rows, topks)
 
-    def _get_most_similar_item(self, col, topk):
-        return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q)
+    def _get_most_similar_item(self, col, topk, pool):
+        return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q, pool)
 
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.P[r].dot(self.Q[c]) for r, c in row_col_pairs}
