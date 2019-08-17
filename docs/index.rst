@@ -6,13 +6,16 @@
 Welcome to Buffalo's documentation!
 ===================================
 
+.. image:: ./buffalo.png
+   :width: 480px 
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
     Quickstart <quickstart>
     Algorithms <algo>
-    Approximate Nearest Neighbors <n2>
+    Parallels <parallels>
     Examples <example>
     Benchmark <benchmark>
 

@@ -66,14 +66,14 @@ class ALSOption(AlgoOption):
         return Option(opt)
 
     def get_default_optimize_option(self):
-        """Optimization Options for ALS
-        options:
-            loss(str): Target loss to optimize.
-            max_trials(int, option): Maximum experiments for optimization. If not given, run forever.
-            min_trials(int, option): Minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
-            deployment(bool): Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
-            start_with_default_parameters(bool): If set to True, the loss value of the default parameter is used as the starting loss to beat.
-            space(dict): Parameter space definition. For more information, pleases reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Pleases see optimize.py to check how we deal with `randint`.k
+        """Optimization Options for ALS.
+
+        :param str loss: Target loss to optimize.
+        :param int max_trials: Maximum experiments for optimization. If not given, run forever.
+        :param int min_trials: Minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
+        :param bool deployment: Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
+        :param bool start_with_default_parameters: If set to True, the loss value of the default parameter is used as the starting loss to beat.
+        :param dict space: Parameter space definition. For more information, pleases reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Pleases see optimize.py to check how we deal with `randint`.k
         """
         opt = super().get_default_optimize_option()
         opt.update({
@@ -97,20 +97,20 @@ class CFROption(AlgoOption):
         super(CFROption, self).__init__(*args, **kwargs)
 
     def get_default_option(self):
-        """ Basic Options for CoFactor
-        options:
-            dim(int): latent space dimension
-            num_iters(int): number of iterations for training
-            num_workers(int): number of threads
-            num_cg_max_iters(int): number of maximum iterations for conjuaget gradient optimizer
-            reg_u(float): L2 regularization coefficient for user embedding matrix
-            reg_i(float): L2 regularization coefficient for item embedding matrix
-            reg_c(float): L2 regularization coefficient for context embedding matrix
-            cg_tolerance(float): tolerance for early stopping conjugate gradient optimizer
-            alpha(float): coefficient of giving more weights to losses on positive samples
-            l(float): relative weight of loss on user-item relation over item-context relation
-            compute_loss(bool): true if one wants to compute train loss
-            optimizer(string): optimizer, should be in [llt, ldlt, manual_cg, eigen_cg]
+        """ Basic Options for CoFactor.
+
+        :param int dim: latent space dimension
+        :param int num_iters: number of iterations for training
+        :param int num_workers: number of threads
+        :param int num_cg_max_iters: number of maximum iterations for conjuaget gradient optimizer
+        :param float reg_u: L2 regularization coefficient for user embedding matrix
+        :param float reg_i: L2 regularization coefficient for item embedding matrix
+        :param float reg_c: L2 regularization coefficient for context embedding matrix
+        :param float cg_tolerance: tolerance for early stopping conjugate gradient optimizer
+        :param float alpha: coefficient of giving more weights to losses on positive samples
+        :param float l: relative weight of loss on user-item relation over item-context relation
+        :param bool compute_loss: true if one wants to compute train loss
+        :param str optimizer: optimizer, should be in [llt, ldlt, manual_cg, eigen_cg]
         """
         opt = super().get_default_option()
         opt.update({
@@ -133,14 +133,14 @@ class CFROption(AlgoOption):
         return Option(opt)
 
     def get_default_optimize_option(self):
-        """Optimization Options for CoFactor
-        options:
-            loss(str): Target loss to optimize.
-            max_trials(int, option): Maximum experiments for optimization. If not given, run forever.
-            min_trials(int, option): Minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
-            deployment(bool): Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
-            start_with_default_parameters(bool): If set to True, the loss value of the default parameter is used as the starting loss to beat.
-            space(dict): Parameter space definition. For more information, pleases reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Pleases see optimize.py to check how we deal with `randint`.k
+        """Optimization Options for CoFactor.
+
+        :param str loss: Target loss to optimize.
+        :param int max_trials: Maximum experiments for optimization. If not given, run forever.
+        :param int min_trials: Minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
+        :param bool deployment(: Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
+        :param bool start_with_default_parameters: If set to True, the loss value of the default parameter is used as the starting loss to beat.
+        :param dict space: Parameter space definition. For more information, pleases reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Pleases see optimize.py to check how we deal with `randint`.k
         """
         opt = super().get_default_optimize_option()
         opt.update({
