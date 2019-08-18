@@ -87,6 +87,7 @@ void dot_topn(
         int32_t* indexes, int num_queries,
         float* _P, int p_rows, int p_cols,
         float* _Q, int q_rows, int q_cols,
+        float* _Qb, int qb_rows,
         int32_t* _out_keys, float* _out_scores,
         int32_t* _pool, int pool_size,
         int k, int num_threads)
@@ -94,6 +95,7 @@ void dot_topn(
     bool is_same = _P == _Q;
     Map<Matrix<float, Dynamic, Dynamic, RowMajor>> P(_P, p_rows, p_cols);
     Map<Matrix<float, Dynamic, Dynamic, RowMajor>> Q(_Q, q_rows, q_cols);
+    Map<Matrix<float, Dynamic, Dynamic, RowMajor>> Qb(_Qb, qb_rows, 1);
     Map<Matrix<int, Dynamic, Dynamic, RowMajor>> out_keys(_out_keys, num_queries, k);
     Map<Matrix<float , Dynamic, Dynamic, RowMajor>> out_scores(_out_scores, num_queries, k);
 
@@ -118,6 +120,8 @@ void dot_topn(
             if (pool_size and pool.find(j) == pool.end())
                 continue;
             float score = P.row(q).dot(Q.row(j));
+            if (qb_rows)
+                score += Qb(j);
             if (score > last_one) {
                 topn.update(j, score);
                 last_one = topn.nns[correct_k - 1].val;
