@@ -20,9 +20,10 @@ class Parallel(abc.ABC):
         self.num_workers = int(kwargs['num_workers'])
 
     def _most_similar(self, indexes, Factor, topk, pool):
+        dummy_bias = np.array([], dtype=np.float32)
         out_keys = np.zeros(shape=(len(indexes), topk), dtype=np.int32)
         out_scores = np.zeros(shape=(len(indexes), topk), dtype=np.float32)
-        dot_topn(indexes, Factor, Factor, out_keys, out_scores, pool, topk, self.num_workers)
+        dot_topn(indexes, Factor, Factor, dummy_bias, out_keys, out_scores, pool, topk, self.num_workers)
         return out_keys, out_scores
 
     def _most_similar_bias(self, indexes, Factor, Bias, topk, pool):
@@ -44,13 +45,17 @@ class Parallel(abc.ABC):
         raise NotImplemented
 
     def _topk_recommendation(self, indexes, FactorP, FactorQ, topk, pool):
+        dummy_bias = np.array([], dtype=np.float32)
         out_keys = np.zeros(shape=(len(indexes), topk), dtype=np.int32)
         out_scores = np.zeros(shape=(len(indexes), topk), dtype=np.float32)
-        dot_topn(indexes, FactorP, FactorQ, out_keys, out_scores, pool, topk, self.num_workers)
+        dot_topn(indexes, FactorP, FactorQ, dummy_bias, out_keys, out_scores, pool, topk, self.num_workers)
         return out_keys, out_scores
 
     def _topk_recommendation_bias(self, indexes, FactorP, FactorQ, FactorQb, topk, pool):
-        pass
+        out_keys = np.zeros(shape=(len(indexes), topk), dtype=np.int32)
+        out_scores = np.zeros(shape=(len(indexes), topk), dtype=np.float32)
+        dot_topn(indexes, FactorP, FactorQ, FactorQb, out_keys, out_scores, pool, topk, self.num_workers)
+        return out_keys, out_scores
 
     @abc.abstractmethod
     def topk_recommendation(self, keys, topk=10, pool=None, repr=False):
@@ -120,7 +125,25 @@ class ParALS(Parallel):
 
 class ParBPRMF(ParALS):
     def topk_recommendation(self, keys, topk=10, pool=None, repr=False):
-        raise NotImplemented
+        """See the documentation of Parallel."""
+        if self.algo.opt._nrz_P or self.algo.opt._nrz_Q:
+            raise RuntimeError('Cannot make topk recommendation with normalized factors')
+        # It is possible to skip make recommendation for not-existed keys.
+        indexes = self.algo.get_index_pool(keys, group='user')
+        keys = [k for k, i in zip(keys, indexes) if i is not None]
+        indexes = np.array([i for i in indexes if i is not None], dtype=np.int32)
+        if pool is not None:
+            pool = self.algo.get_index_pool(pool, group='item')
+            if len(pool) == 0:
+                raise RuntimeError('pool is empty')
+        else:
+            # It assume that empty pool menas for all items
+            pool = np.array([], dtype=np.int32)
+        topks, scores = super()._topk_recommendation_bias(indexes, self.algo.P, self.algo.Q, self.algo.Qb, topk, pool)
+        if repr:
+            topks = [[self.algo._idmanager.itemids[t] for t in tt if t != -1] for tt in topks]
+        return keys, topks, scores
+
 
 
 class ParW2V(Parallel):

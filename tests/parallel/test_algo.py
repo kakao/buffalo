@@ -188,5 +188,25 @@ class TestAlgo(TestBase):
         for q, t in zip(qkeys1, topks1):
             self.assertEqual(naive[q], t)
 
+    def test07_topk_pool(self):
+        set_log_level(2)
+        data_opt = self.get_ml100k_mm_opt()
+        opt = BPRMFOption().get_default_option()
+        opt.d = 20
+        opt.num_workers = 1
+        model = BPRMF(opt, data_opt=data_opt)
+        model.initialize()
+        model.train()
+        par = ParBPRMF(model)
+
+        pool = np.array([i for i in range(5)], dtype=np.int32)
+        model.build_userid_map()
+        all_keys = model._idmanager.userids[::][:10]
+        naive = model.topk_recommendation(all_keys, topk=10, pool=pool)
+        qkeys1, topks1, scores1 = par.topk_recommendation(all_keys, topk=10, pool=pool, repr=True)
+        for q, t in zip(qkeys1, topks1):
+            self.assertEqual(naive[q], t)
+
+
 if __name__ == '__main__':
     unittest.main()
