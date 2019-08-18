@@ -2,7 +2,7 @@
 import math
 
 import numpy as np
-from buffalo.evaluate.quickselect import quickselect
+from buffalo.parallel._core import quickselect
 
 
 class Evaluable(object):
@@ -39,10 +39,17 @@ class Evaluable(object):
         return results
 
     def get_topk(self, scores, k, sorted=True, num_threads=4):
-        assert k < scores.shape[1], f"k ({k}) should be smaller than cols ({scores.shape[1]})"
+        # NOTE: Is it necessary condition?
+        # assert k < scores.shape[1], f"k ({k}) should be smaller than cols ({scores.shape[1]})"
+        is_many = True
+        if len(scores.shape) == 1:
+            scores = scores.reshape(1, scores.shape[0])
+            is_many = False
+        k = min(k, scores.shape[1])
+        assert k > 0, f'k({k}) or cols({scores.shape[1]}) should be greater than 0'
         result = np.empty(shape=(scores.shape[0], k), dtype=np.int32)
         quickselect(scores, result, sorted, num_threads)
-        return result
+        return result if is_many else result[0]
 
     def _evaluate_ranking_metrics(self):
         batch_size = self.opt.validation.get('batch', 128)

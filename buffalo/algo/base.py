@@ -47,6 +47,7 @@ class Algo(abc.ABC):
         raise NotImplemented
 
     def _get_topk_recommendation(self, p, Q, pool, topk, num_workers):
+        # Warning: This should be inherited.
         if pool is None:
             topks = self.get_topk(p.dot(Q.T), k=topk, num_threads=num_workers)
         else:
@@ -71,13 +72,7 @@ class Algo(abc.ABC):
         if not self._idmanager.itemid_mapped:
             self.build_itemid_map()
         if pool is not None:
-            if isinstance(pool, list):
-                pool = self.get_index(pool, group='item')
-                pool = np.array([p for p in pool if p is not None])
-            elif isinstance(pool, np.ndarray):
-                pass
-            else:
-                raise ValueError('Unexpected type for pool: %s' % type(pool))
+            pool = self.get_index_pool(pool, group='item')
             if len(pool) == 0:
                 return []
         rows = [self._idmanager.userid_map[k] for k in keys
@@ -121,7 +116,8 @@ class Algo(abc.ABC):
                 dot = q.dot(Factor[pool].T)
             else:
                 dot = q.dot(Factor.T)
-            topks = np.argsort(dot)[-topk:][::-1]
+            # topks = np.argsort(dot)[-topk:][::-1]
+            topks = self.get_topk(dot, k=topk, num_threads=self.opt.num_workers)
         else:
             if pool is not None:
                 dot = q.dot(Factor[pool].T)
@@ -129,7 +125,8 @@ class Algo(abc.ABC):
             else:
                 dot = q.dot(Factor.T)
                 dot = dot / (np.linalg.norm(q) * np.linalg.norm(Factor, axis=1))
-            topks = np.argsort(dot)[-topk:][::-1]
+            # topks = np.argsort(dot)[-topk:][::-1]
+            topks = self.get_topk(dot, k=topk, num_threads=self.opt.num_workers)
         scores = dot[topks]
         if pool is not None:
             topks = np.array([pool[t] for t in topks])
@@ -142,17 +139,11 @@ class Algo(abc.ABC):
             is_vector = True
         else:
             col = self._idmanager.itemid_map.get(key)
-            if not col:
+            if col is None:
                 return []
             f = col
         if pool is not None:
-            if isinstance(pool, list):
-                pool = self.get_index(pool, group='item')
-                pool = np.array([p for p in pool if p is not None])
-            elif isinstance(pool, np.ndarray):
-                pass
-            else:
-                raise ValueError('Unexpected type for pool: %s' % type(pool))
+            pool = self.get_index_pool(pool, group='item')
             if len(pool) == 0:
                 return []
         topks, scores = self._get_most_similar_item(f, topk, pool)
@@ -233,30 +224,49 @@ class Algo(abc.ABC):
             return True
         return False
 
-    def get_index(self, key, group='item'):
+    def get_index(self, keys, group='item'):
         """Get index list of given item keys.
         If there is no index for such key, return None.
 
-        :param key: Query key(s)
-        :type key: str or list
+        :param keys: Query key(s)
+        :type keys: str or list
         :param str group: Data group where to find (default: item)
         :rtype: int or list
         """
-        is_many = isinstance(key, list)
+        is_many = isinstance(keys, list)
         if not is_many:
-            key = [key]
+            keys = [keys]
         indexes = []
         if group == 'item':
             if not self._idmanager.itemid_mapped:
                 self.build_itemid_map()
-            indexes = [self._idmanager.itemid_map.get(k) for k in key]
+            indexes = [self._idmanager.itemid_map.get(k) for k in keys]
         elif group == 'user':
             if not self._idmanager.userid_mapped:
                 self.build_userid_map()
-            indexes = [self._idmanager.userid_map.get(k) for k in key]
+            indexes = [self._idmanager.userid_map.get(k) for k in keys]
         if not is_many:
             return indexes[0]
         return np.array(indexes)
+
+    # NOTE: Ugly naming?
+    def get_index_pool(self, pool, group='item'):
+        """Simple wrapper of get_index.
+        For np.ndarray pool, it returns asis with nothing. But list, it perform get_index with keys in pool.
+
+        :param pool: The list of keys.
+        :param str group: Data group where to find (default: item)
+        :rtype: np.ndarray
+        """
+        if isinstance(pool, list):
+            pool = self.get_index(pool, group)
+            pool = np.array([p for p in pool if p is not None])
+        elif isinstance(pool, np.ndarray):
+            pass
+        else:
+            raise ValueError('Unexpected type for pool: %s' % type(pool))
+        assert isinstance(pool, np.ndarray)
+        return pool
 
 
 class Serializable(abc.ABC):
