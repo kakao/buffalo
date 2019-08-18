@@ -108,8 +108,8 @@ extensions = [
               sources=['buffalo/data/fileio.cpp'],
               libraries=['gomp'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.evaluate.quickselect",
-              sources=['buffalo/evaluate/quickselect.cpp'],
+    Extension(name="buffalo.parallel._core",
+              sources=['buffalo/parallel/_core.cpp'],
               libraries=['gomp'],
               include_dirs=[numpy_include_dirs,
                             site_cfg.get("eigen", "include_dirs")],
@@ -163,7 +163,7 @@ class BuildExtention(build_ext, object):
                      'buffalo/algo/_w2v.pyx',
                      'buffalo/misc/log.pyx',
                      'buffalo/algo/_cfr.pyx',
-                     'buffalo/evaluate/quickselect.pyx',
+                     'buffalo/parallel/_core.pyx',
                      'buffalo/data/fileio.pyx']
         for path in ext_files:
             from Cython.Build import cythonize
@@ -217,6 +217,7 @@ def setup_package():
         packages=['buffalo/algo/',
                   'buffalo/data/',
                   'buffalo/evaluate/',
+                  'buffalo/parallel/',
                   'buffalo/misc/',
                   'buffalo/'],
         cmdclass=cmdclass,
