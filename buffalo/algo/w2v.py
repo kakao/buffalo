@@ -65,7 +65,7 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.data = data
 
     def normalize(self, group='item'):
-        if group == 'item':
+        if group == 'item' and not self.opt._nrz_L0:
             self.L0 = self._normalize(self.L0)
             self.opt._nrz_L0 = True
 

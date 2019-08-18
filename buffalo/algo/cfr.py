@@ -73,13 +73,13 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
     def normalize(self, group='item'):
         assert group in ["user", "item", "context"], \
             f"group ({group}) is not properly provided"
-        if group == 'user':
+        if group == 'user' and not self.opt._nrz_U:
             self.U = self._normalize(self.U)
             self.opt._nrz_U = True
-        elif group == 'item':
+        elif group == 'item' and not self.opt._nrz_I:
             self.I = self._normalize(self.I)
             self.opt._nrz_I = True
-        elif group == 'context':
+        elif group == 'context' and not self.opt._nrz_C:
             self.C = self._normalize(self.C)
             self.opt._nrz_C = True
 

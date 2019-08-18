@@ -59,10 +59,10 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
         self.data = data
 
     def normalize(self, group='item'):
-        if group == 'item':
+        if group == 'item' and not self.opt._nrz_Q:
             self.Q = self._normalize(self.Q)
             self.opt._nrz_Q = True
-        elif group == 'user':
+        elif group == 'user' and not self.opt._nrz_P:
             self.P = self._normalize(self.P)
             self.opt._nrz_P = True
 
