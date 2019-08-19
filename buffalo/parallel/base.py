@@ -20,7 +20,7 @@ class Parallel(abc.ABC):
         self.num_workers = int(kwargs['num_workers'])
 
     def _most_similar(self, indexes, Factor, topk, pool):
-        dummy_bias = np.array([], dtype=np.float32)
+        dummy_bias = np.array([[]], dtype=np.float32)
         out_keys = np.zeros(shape=(len(indexes), topk), dtype=np.int32)
         out_scores = np.zeros(shape=(len(indexes), topk), dtype=np.float32)
         dot_topn(indexes, Factor, Factor, dummy_bias, out_keys, out_scores, pool, topk, self.num_workers)
@@ -45,7 +45,7 @@ class Parallel(abc.ABC):
         raise NotImplemented
 
     def _topk_recommendation(self, indexes, FactorP, FactorQ, topk, pool):
-        dummy_bias = np.array([], dtype=np.float32)
+        dummy_bias = np.array([[]], dtype=np.float32)
         out_keys = np.zeros(shape=(len(indexes), topk), dtype=np.int32)
         out_scores = np.zeros(shape=(len(indexes), topk), dtype=np.float32)
         dot_topn(indexes, FactorP, FactorQ, dummy_bias, out_keys, out_scores, pool, topk, self.num_workers)
