@@ -15,6 +15,13 @@ from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
+try:
+    from buffalo.algo.cupy._als import CupyALS
+except Exception as e:
+    import sys
+    print(f"Error message: {e}", file=sys.stderr)
+    print("No cupy library", file=sys.stderr)
+
 
 class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
     """Python implementation for C-ALS.
@@ -31,14 +38,21 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
         self.logger = log.get_logger('ALS')
         self.opt, self.opt_path = self.get_option(opt_path)
-        self.obj = PyALS()
-        assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
-            'cannot parse option file: %s' % opt_path
+        if self.opt.accelerator:
+            self.obj = CupyALS(self.opt)
+        else:
+            self.obj = PyALS()
+            assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
+                'cannot parse option file: %s' % opt_path
         self.data = None
         data = kwargs.get('data')
         data_opt = self.opt.get('data_opt')
         data_opt = kwargs.get('data_opt', data_opt)
         if data_opt:
+            if self.opt.accelerator:
+                data_opt.data.add_rows = True
+                # throttling gpu memory
+                data_opt.data.batch_mb = self.opt.accelerator.batch_mb / self.opt.d / 2
             self.data = buffalo.data.load(data_opt)
             self.data.create()
         elif isinstance(data, Data):
@@ -72,9 +86,20 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
         header = self.data.get_header()
         for name, rows in [('P', header['num_users']), ('Q', header['num_items'])]:
             setattr(self, name, None)
-            setattr(self, name, np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
-                                       size=(rows, self.opt.d)).astype("float32")))
-        self.obj.initialize_model(self.P, self.Q)
+            if self.opt.accelerator:
+                self.obj.init_variable(name, (rows, self.opt.d))
+            else:
+                setattr(self, name, np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
+                                           size=(rows, self.opt.d)).astype("float32")))
+        if not self.opt.accelerator:
+            self.obj.initialize_model(self.P, self.Q)
+
+    def synchronize_with_obj(self):
+        if not self.opt.accelerator:
+            return
+        for name in ["P", "Q"]:
+            setattr(self, name, None)
+            setattr(self, name, self.obj.get_variable(name))
 
     def _get_topk_recommendation(self, rows, topk):
         p = self.P[rows]
@@ -90,28 +115,33 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def _get_buffer(self):
         buf = BufferedDataMatrix()
-        buf.initialize(self.data)
+        buf.initialize(self.data, with_rows=bool(self.opt.accelerator))
         return buf
 
     def _iterate(self, buf, group='rowwise'):
         header = self.data.get_header()
         # end = header['num_users'] if group == 'rowwise' else header['num_items']
         int_group = 0 if group == 'rowwise' else 1
+        st = time.time()
         self.obj.precompute(int_group)
+        el, st = time.time() - st, time.time()
         err = 0.0
-        update_t, feed_t, updated = 0, 0, 0
+        update_t, feed_t, updated = el, 0, 0
         buf.set_group(group)
         with log.pbar(log.DEBUG, desc='%s' % group,
                       total=header['num_nnz'], mininterval=30) as pbar:
-            start_t = time.time()
             for sz in buf.fetch_batch():
                 updated += sz
-                feed_t += time.time() - start_t
+                _feed_t, st = time.time() - st, time.time()
                 start_x, next_x, indptr, keys, vals = buf.get()
-                start_t = time.time()
                 err += self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)
-                update_t += time.time() - start_t
+                _update_t, st = time.time() - st, time.time()
                 pbar.update(sz)
+                feed_t += _feed_t
+                update_t += _update_t
+        if self.opt.accelerator:
+            err += self.obj.get_err()
+            update_t += time.time() - st
         self.logger.debug(f'{group} updated: processed({updated}) elapsed(data feed: {feed_t:0.3f}s update: {update_t:0.03}s)')
         return err
 
@@ -129,6 +159,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
             metrics = {'train_loss': rmse}
             if self.opt.validation and self.opt.evaluation_on_learning and self.periodical(self.opt.evaluation_period, i):
                 start_t = time.time()
+                self.synchronize_with_obj()
                 self.validation_result = self.get_validation_results()
                 vali_t = time.time() - start_t
                 val_str = ' '.join([f'{k}:{v:0.5f}' for k, v in self.validation_result.items()])
@@ -144,6 +175,7 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
         ret.update({'val_%s' % k: v
                     for k, v in self.validation_result.items()})
         self.finalize_tensorboard()
+        self.synchronize_with_obj()
         return ret
 
     def _optimize(self, params):
