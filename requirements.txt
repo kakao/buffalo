@@ -8,4 +8,4 @@ psutil
 h5py
 hyperopt
 tensorflow==1.14.0
-cupy-cuda100==6.2.0
+cupy==6.2.0
