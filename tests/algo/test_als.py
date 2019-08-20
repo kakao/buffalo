@@ -76,9 +76,11 @@ class TestALS(TestBase):
         self._test10_fast_most_similar(ALS, opt)
 
     def test11_train_ml_20m_on_gpu(self):
-        opt = AlsOption().get_default_option()
+        opt = ALSOption().get_default_option()
         opt.d = 128
         opt.validation = aux.Option({'topk': 10})
+        opt.validation = None
+        opt.compute_loss_on_training = False
         opt.accelerator = {"batch_mb": 32 * 1024}
         opt.num_cg_max_iters = 2
         self._test7_train_ml_20m(ALS, opt)
