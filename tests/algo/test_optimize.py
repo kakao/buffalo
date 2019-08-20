@@ -2,53 +2,16 @@
 import os
 import unittest
 
-from hyperopt import fmin, tpe, STATUS_OK
+from hyperopt import fmin, tpe
 
+from buffalo.misc import aux
 from buffalo.algo.als import ALS
-from buffalo.misc import log, aux
-from buffalo.algo.base import Algo
 from buffalo.misc.log import set_log_level
-from buffalo.algo.options import AlsOption
+from buffalo.algo.options import ALSOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.mm import MatrixMarketOptions
-from buffalo.algo.base import TensorboardExtention
 
-from .base import TestBase
-
-
-class MockAlgo(Algo, Optimizable, TensorboardExtention):
-    def __init__(self, *args, **kwargs):
-        Algo.__init__(self, *args, **kwargs)
-        Optimizable.__init__(self, *args, **kwargs)
-        TensorboardExtention.__init__(self, *args, **kwargs)
-        self.logger = log.get_logger('MockAlgo')
-        option = AlsOption().get_default_option()
-        optimize_option = AlsOption().get_default_optimize_option()
-        optimize_option.start_with_default_parameters = False
-        option.optimize = optimize_option
-        option.model_path = 'hello.world.bin'
-        self.opt = option
-        self._optimize_loss = {'loss': 987654321.0}
-
-    def _optimize(self, params):
-        self._optimize_params = params
-        loss = 1.0 - params['adaptive_reg'] / 1.0
-        loss += 1.0 / params['d']
-        loss += 1.0 / params['alpha']
-        loss += 1.0 / params['reg_i']
-        loss += 1.0 / params['reg_u']
-        self.validation_result = {'loss': loss}
-        return {'loss': loss,
-                'status': STATUS_OK}
-
-    def save(self, path):
-        return path
-
-    def _get_feature(self, index, group='item'):
-        pass
-
-    def normalize(self, group='item'):
-        pass
+from .base import TestBase, MockAlgo
 
 
 class TestOptimize(TestBase):
@@ -73,7 +36,7 @@ class TestOptimize(TestBase):
             loss += 1.0 / opt['reg_u']
             return loss
 
-        option = AlsOption().get_default_optimize_option()
+        option = ALSOption().get_default_optimize_option()
         space = Optimizable()._get_space(option.space)
         best = fmin(fn=mock_fn,
                     space=space,
@@ -92,7 +55,7 @@ class TestOptimize(TestBase):
 
     def test4_optimize(self):
         set_log_level(2)
-        opt = AlsOption().get_default_option()
+        opt = ALSOption().get_default_option()
         opt.d = 5
         opt.num_workers = 2
         opt.model_path = 'als.bin'

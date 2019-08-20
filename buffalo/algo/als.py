@@ -8,9 +8,9 @@ from hyperopt import STATUS_OK as HOPT_STATUS_OK
 import buffalo.data
 from buffalo.misc import aux, log
 from buffalo.data.base import Data
-from buffalo.algo._als import PyALS
+from buffalo.algo._als import CyALS
 from buffalo.evaluate import Evaluable
-from buffalo.algo.options import AlsOption
+from buffalo.algo.options import ALSOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
@@ -23,25 +23,27 @@ except Exception as e:
     print("No cupy library", file=sys.stderr)
 
 
-class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
+class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
     """Python implementation for C-ALS.
 
     Implementation of Collaborative Filtering for Implicit Feedback datasets.
 
     Reference: http://yifanhu.net/PUB/cf.pdf"""
-    def __init__(self, opt_path, *args, **kwargs):
+    def __init__(self, opt_path=None, *args, **kwargs):
         Algo.__init__(self, *args, **kwargs)
-        AlsOption.__init__(self, *args, **kwargs)
+        ALSOption.__init__(self, *args, **kwargs)
         Evaluable.__init__(self, *args, **kwargs)
         Serializable.__init__(self, *args, **kwargs)
         Optimizable.__init__(self, *args, **kwargs)
+        if opt_path is None:
+            opt_path = ALSOption().get_default_option()
 
         self.logger = log.get_logger('ALS')
         self.opt, self.opt_path = self.get_option(opt_path)
         if self.opt.accelerator:
             self.obj = CupyALS(self.opt)
         else:
-            self.obj = PyALS()
+            self.obj = CyALS()
             assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
                 'cannot parse option file: %s' % opt_path
         self.data = None
@@ -64,21 +66,22 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     @staticmethod
     def new(path, data_fields=[]):
-        return ALS.instantiate(AlsOption, path, data_fields)
+        return ALS.instantiate(ALSOption, path, data_fields)
 
     def set_data(self, data):
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
         self.data = data
 
     def normalize(self, group='item'):
-        if group == 'item':
+        if group == 'item' and not self.opt._nrz_Q:
             self.Q = self._normalize(self.Q)
             self.opt._nrz_Q = True
-        elif group == 'user':
+        elif group == 'user' and not self.opt._nrz_P:
             self.P = self._normalize(self.P)
             self.opt._nrz_P = True
 
     def initialize(self):
+        super().initialize()
         self.init_factors()
 
     def init_factors(self):
@@ -101,13 +104,13 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
             setattr(self, name, None)
             setattr(self, name, self.obj.get_variable(name))
 
-    def _get_topk_recommendation(self, rows, topk):
+    def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
-        topks = np.argsort(p.dot(self.Q.T), axis=1)[:, -topk:][:,::-1]
+        topks = super()._get_topk_recommendation(p, self.Q, pool, topk, self.opt.num_workers)
         return zip(rows, topks)
 
-    def _get_most_similar_item(self, col, topk):
-        return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q)
+    def _get_most_similar_item(self, col, topk, pool):
+        return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q, pool)
 
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.P[r].dot(self.Q[c]) for r, c in row_col_pairs}
@@ -168,9 +171,9 @@ class ALS(Algo, AlsOption, Evaluable, Serializable, Optimizable, TensorboardExte
                                 for k, v in self.validation_result.items()})
             self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, train_t))
             self.update_tensorboard_data(metrics)
-            if self.opt.save_best and best_loss > rmse and self.periodical(self.opt.save_period, i):
-                best_loss = rmse
-                self.save(self.model_path)
+            best_loss = self.save_best_only(rmse, best_loss, i)
+            if self.early_stopping(rmse):
+                break
         ret = {'train_loss': rmse}
         ret.update({'val_%s' % k: v
                     for k, v in self.validation_result.items()})

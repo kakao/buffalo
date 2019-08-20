@@ -26,12 +26,14 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     Paper link: http://dawenl.github.io/publications/LiangACB16-cofactor.pdf
     """
-    def __init__(self, opt_path, *args, **kwargs):
+    def __init__(self, opt_path=None, *args, **kwargs):
         Algo.__init__(self, *args, **kwargs)
         CFROption.__init__(self, *args, **kwargs)
         Evaluable.__init__(self, *args, **kwargs)
         Serializable.__init__(self, *args, **kwargs)
         Optimizable.__init__(self, *args, **kwargs)
+        if opt_path is None:
+            opt_path = CFROption().get_default_option()
 
         self.logger = log.get_logger('CFR')
 
@@ -71,17 +73,18 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
     def normalize(self, group='item'):
         assert group in ["user", "item", "context"], \
             f"group ({group}) is not properly provided"
-        if group == 'user':
+        if group == 'user' and not self.opt._nrz_U:
             self.U = self._normalize(self.U)
             self.opt._nrz_U = True
-        elif group == 'item':
+        elif group == 'item' and not self.opt._nrz_I:
             self.I = self._normalize(self.I)
             self.opt._nrz_I = True
-        elif group == 'context':
+        elif group == 'context' and not self.opt._nrz_C:
             self.C = self._normalize(self.C)
             self.opt._nrz_C = True
 
     def initialize(self):
+        super().initialize()
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
         num_users, num_items, dim = \
@@ -97,13 +100,13 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
             self.obj.set_embedding(getattr(self, attr), name.encode("utf8"))
         self.is_initialized = True
 
-    def _get_topk_recommendation(self, rows, topk):
+    def _get_topk_recommendation(self, rows, topk, pool=None):
         u = self.U[rows]
-        topks = self.get_topk(u.dot(self.I.T), k=topk, num_threads=self.opt.num_workers)
+        topks = super()._get_topk_recommendation(u, self.I, pool, topk, self.opt.num_workers)
         return zip(rows, topks)
 
-    def _get_most_similar_item(self, col, topk):
-        return super()._get_most_similar_item(col, topk, self.I, self.opt._nrz_I)
+    def _get_most_similar_item(self, col, topk, pool):
+        return super()._get_most_similar_item(col, topk, self.I, self.opt._nrz_I, pool)
 
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.U[r].dot(self.I[c]) for r, c in row_col_pairs}
@@ -199,9 +202,9 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
                                 for k, v in self.validation_result.items()})
             self.logger.info('Iteration %d: Loss %.3f Elapsed %.3f secs' % (i + 1, loss, train_t))
             self.update_tensorboard_data(metrics)
-            if self.opt.save_best and best_loss > loss and self.periodical(self.opt.save_period, i):
-                best_loss = loss
-                self.save(self.model_path)
+            best_loss = self.save_best_only(loss, best_loss, i)
+            if self.early_stopping(loss):
+                break
         ret = {'train_loss': loss}
         ret.update({'vali_%s' % k: v
                     for k, v in self.validation_result.items()})

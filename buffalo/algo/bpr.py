@@ -11,27 +11,29 @@ from hyperopt import STATUS_OK as HOPT_STATUS_OK
 import buffalo.data
 from buffalo.data.base import Data
 from buffalo.misc import aux, log
-from buffalo.algo._bpr import PyBPRMF
+from buffalo.algo._bpr import CyBPRMF
 from buffalo.evaluate import Evaluable
-from buffalo.algo.options import BprmfOption
+from buffalo.algo.options import BPRMFOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
 
-class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
+class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
     """Python implementation for C-BPRMF.
     """
-    def __init__(self, opt_path, *args, **kwargs):
+    def __init__(self, opt_path=None, *args, **kwargs):
         Algo.__init__(self, *args, **kwargs)
-        BprmfOption.__init__(self, *args, **kwargs)
+        BPRMFOption.__init__(self, *args, **kwargs)
         Evaluable.__init__(self, *args, **kwargs)
         Serializable.__init__(self, *args, **kwargs)
         Optimizable.__init__(self, *args, **kwargs)
+        if opt_path is None:
+            opt_path = BPRMFOption().get_default_option()
 
         self.logger = log.get_logger('BPRMF')
         self.opt, self.opt_path = self.get_option(opt_path)
-        self.obj = PyBPRMF()
+        self.obj = CyBPRMF()
         assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
             'cannot parse option file: %s' % opt_path
         self.data = None
@@ -50,21 +52,22 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     @staticmethod
     def new(path, data_fields=[]):
-        return BPRMF.instantiate(BprmfOption, path, data_fields)
+        return BPRMF.instantiate(BPRMFOption, path, data_fields)
 
     def set_data(self, data):
         assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
         self.data = data
 
     def normalize(self, group='item'):
-        if group == 'item':
+        if group == 'item' and not self.opt._nrz_Q:
             self.Q = self._normalize(self.Q)
             self.opt._nrz_Q = True
-        elif group == 'user':
+        elif group == 'user' and not self.opt._nrz_P:
             self.P = self._normalize(self.P)
             self.opt._nrz_P = True
 
     def initialize(self):
+        super().initialize()
         assert self.data, 'Data is not setted'
         if self.opt.random_seed:
             np.random.seed(self.opt.random_seed)
@@ -102,13 +105,13 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
                 self.sampling_table_[i - 1] = i
         self.obj.set_cumulative_table(self.sampling_table_, header['num_items'])
 
-    def _get_topk_recommendation(self, rows, topk):
+    def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
-        topks = np.argsort(p.dot(self.Q.T) + self.Qb.T, axis=1)[:, -topk:][:,::-1]
+        topks = super()._get_topk_recommendation(p, self.Q, pool, topk, self.opt.num_workers)
         return zip(rows, topks)
 
-    def _get_most_similar_item(self, col, topk):
-        return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q)
+    def _get_most_similar_item(self, col, topk, pool):
+        return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q, pool)
 
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.P[r].dot(self.Q[c]) + self.Qb[c][0] for r, c in row_col_pairs}
@@ -197,10 +200,9 @@ class BPRMF(Algo, BprmfOption, Evaluable, Serializable, Optimizable, Tensorboard
                                 for k, v in self.validation_result.items()})
             self.logger.info('Iteration %s: PR-Loss %.3f Elapsed %.3f secs' % (i + 1, loss, time.time() - start_t))
             self.update_tensorboard_data(metrics)
-
-            if self.opt.save_best and best_loss > loss and self.periodical(self.opt.save_period, i):
-                best_loss = loss
-                self.save(self.model_path)
+            best_loss = self.save_best_only(loss, best_loss, i)
+            if self.early_stopping(loss):
+                break
         loss = self.obj.join()
 
         ret = {'train_loss': loss}

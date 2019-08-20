@@ -12,11 +12,6 @@ from setuptools import setup
 from configparser import ConfigParser
 from distutils.extension import Extension
 from setuptools.command.build_ext import build_ext
-try:
-    from sphinx.setup_command import BuildDoc
-    HAVE_SPHINX = True
-except:
-    HAVE_SPHINX = False
 
 import numpy
 import eigency
@@ -113,8 +108,8 @@ extensions = [
               sources=['buffalo/data/fileio.cpp'],
               libraries=['gomp'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.evaluate.quickselect",
-              sources=['buffalo/evaluate/quickselect.cpp'],
+    Extension(name="buffalo.parallel._core",
+              sources=['buffalo/parallel/_core.cpp'],
               libraries=['gomp'],
               include_dirs=[numpy_include_dirs,
                             site_cfg.get("eigen", "include_dirs")],
@@ -168,7 +163,7 @@ class BuildExtention(build_ext, object):
                      'buffalo/algo/_w2v.pyx',
                      'buffalo/misc/log.pyx',
                      'buffalo/algo/_cfr.pyx',
-                     'buffalo/evaluate/quickselect.pyx',
+                     'buffalo/parallel/_core.pyx',
                      'buffalo/data/fileio.pyx']
         for path in ext_files:
             from Cython.Build import cythonize
@@ -206,8 +201,6 @@ class BuildExtention(build_ext, object):
 def setup_package():
     write_version_py()
     cmdclass = {'build_ext': BuildExtention}
-    if HAVE_SPHINX:
-        cmdclass.update({'build_sphinx': BuildDoc})
 
     build_requires = [l.strip() for l in open('requirements.txt')]
 
@@ -225,6 +218,7 @@ def setup_package():
                   'buffalo/algo/cupy',
                   'buffalo/data/',
                   'buffalo/evaluate/',
+                  'buffalo/parallel/',
                   'buffalo/misc/',
                   'buffalo/'],
         cmdclass=cmdclass,
