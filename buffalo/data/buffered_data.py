@@ -38,8 +38,9 @@ class BufferedDataMatrix(BufferedData):
         buf['keys'] = None
         buf['vals'] = None
 
-    def initialize(self, data, with_sppmi=False):
+    def initialize(self, data, with_sppmi=False, with_rows=False):
         self.data = data
+        self.with_rows = with_rows
         # 16 bytes(indptr8, keys4, vals4)
         limit = max(int(((self.data.opt.data.batch_mb * 1024 * 1024) / 16.)), 64)
         minimum_required_batch_size = 0
@@ -61,6 +62,8 @@ class BufferedDataMatrix(BufferedData):
             m['indptr'] = group['indptr'][::]
             minimum_required_batch_size = max([m['indptr'][i] - m['indptr'][i - 1]
                                                for i in range(1, len(m['indptr']))])
+            if with_rows:
+                m['rows'] = np.zeros(shape=(lim,), dtype=np.int32, order='C')
             m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='C')
             m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order='C')
         self.logger.info(f'Set data buffer size as {limit}(minimum required batch size is {minimum_required_batch_size}).')
@@ -73,6 +76,8 @@ class BufferedDataMatrix(BufferedData):
                 m = self.major[G]
                 lim = minimum_required_batch_size + 1
                 m['limit'] = lim
+                if with_rows:
+                    m['rows'] = np.zeros(shape=(lim,), dtype=np.int32, order='C')
                 m['keys'] = np.zeros(shape=(lim,), dtype=np.int32, order='C')
                 m['vals'] = np.zeros(shape=(lim,), dtype=np.float32, order='C')
 
@@ -82,6 +87,7 @@ class BufferedDataMatrix(BufferedData):
         while True:
             if m['start_x'] == 0 and m['next_x'] + 1 >= m['max_x']:
                 if not flushed:
+                    m["sz"] = m["indptr"][-1]
                     yield m['indptr'][-1]
                 raise StopIteration
 
@@ -103,10 +109,13 @@ class BufferedDataMatrix(BufferedData):
             end = m['indptr'][where - 1]
             m['next_x'] = where
             size = end - beg
+            if self.with_rows:
+                m['rows'][:size] = group['row'][beg:end]
             m['keys'][:size] = group['key'][beg:end]
             m['vals'][:size] = group['val'][beg:end]
             if m['next_x'] + 1 >= m['max_x']:
                 flushed = True
+            m["sz"] = size
             yield size
 
     def get_specific_chunk(self, group, start_x, next_x):
@@ -161,11 +170,12 @@ class BufferedDataMatrix(BufferedData):
 
     def get(self):
         m = self.major[self.group]
-        return (m['start_x'],
-                m['next_x'],
-                m['indptr'],
-                m['keys'],
-                m['vals'])
+        if self.with_rows:
+            sz = m["sz"]
+            return [m["start_x"], m["next_x"],
+                    m["rows"][: sz], m["keys"][: sz], m["vals"][: sz]]
+        else:
+            return [m[k] for k in ["start_x", "next_x", "indptr", "keys", "vals"]]
 
 
 class BufferedDataStream(BufferedData):
