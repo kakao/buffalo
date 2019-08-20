@@ -78,7 +78,6 @@ class TestALS(TestBase):
     def test11_train_ml_20m_on_gpu(self):
         opt = ALSOption().get_default_option()
         opt.d = 128
-        opt.validation = aux.Option({'topk': 10})
         opt.validation = None
         opt.compute_loss_on_training = False
         opt.accelerator = {"batch_mb": 32 * 1024}
