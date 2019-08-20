@@ -59,6 +59,8 @@ class AlsOption(AlgoOption):
             'alpha': 8,
             'optimizer': 'manual_cg',
             'num_cg_max_iters': 3,
+            'cg_tolerance': 1e-10,
+            'eps': 1e-10,
 
             'model_path': '',
             'data_opt': {}
@@ -121,6 +123,7 @@ class CFROption(AlgoOption):
             'early_stopping_rounds': 5,
             'compute_loss': True,
             'cg_tolerance': 1e-10,
+            'eps': 1e-10,
             'reg_u': 0.1,
             'reg_i': 0.1,
             'reg_c': 0.1,

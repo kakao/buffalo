@@ -222,6 +222,7 @@ def setup_package():
         include_package_data=False,
         license='Apache2',
         packages=['buffalo/algo/',
+                  'buffalo/algo/cupy',
                   'buffalo/data/',
                   'buffalo/evaluate/',
                   'buffalo/misc/',

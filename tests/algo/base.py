@@ -93,7 +93,7 @@ class TestBase(unittest.TestCase):
         self.assertEqual(ret_a[:10], ret_b[:10])
 
     def _test7_train_ml_20m(self, cls, opt):
-        set_log_level(2)
+        set_log_level(3)
 
         data_opt = MatrixMarketOptions().get_default_option()
         data_opt.input.main = self.ml_20m + 'main'
