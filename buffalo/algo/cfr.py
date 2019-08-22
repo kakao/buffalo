@@ -98,6 +98,8 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
             F = np.random.normal(scale=1.0/(dim ** 2), size=shape).astype(np.float32)
             setattr(self, attr, F)
             self.obj.set_embedding(getattr(self, attr), name.encode("utf8"))
+        self.P = self.U
+        self.Q = self.I
         self.is_initialized = True
 
     def _get_topk_recommendation(self, rows, topk, pool=None):

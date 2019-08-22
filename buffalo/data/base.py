@@ -326,20 +326,6 @@ class Data(object):
         for path in job_files:
             os.remove(path)
 
-    def _add_rows(self, gp, chunk_size=1000):
-        indptr = gp["indptr"]
-        num_rows, sz = indptr.shape[0], indptr[-1]
-        rows_dset = gp.create_dataset("row", shape=(sz,), dtype=np.int32)
-        for offset in range(0, num_rows, chunk_size):
-            limit = min(num_rows, chunk_size + offset)
-            _indptr = indptr[offset: limit]
-            _rows = np.arange(offset, limit, dtype=np.int32)
-            _indptr_prev = np.empty(limit - offset, dtype=np.int64)
-            beg = 0 if offset == 0 else indptr[offset - 1]
-            _indptr_prev[0] = beg
-            _indptr_prev[1:] = _indptr[: -1]
-            rows_dset[beg: _indptr[-1]] = np.repeat(_rows, _indptr - _indptr_prev)
-
     def _build_data(self,
                     db,
                     working_data_path,
@@ -391,8 +377,6 @@ class Data(object):
             self.prepro.post(db[group])
             if group == 'rowwise':
                 self.fill_validation_data(db, validation_data)
-            if self.opt.data.add_rows:
-                self._add_rows(db[group])
             self.logger.info('Finished')
 
 
