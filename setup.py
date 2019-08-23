@@ -11,7 +11,7 @@ import subprocess
 from setuptools import setup
 from configparser import ConfigParser
 from distutils.extension import Extension
-from setuptools.command.build_ext import build_ext
+from cuda_setup import CUDA, build_ext
 
 import numpy
 import eigency
@@ -117,12 +117,12 @@ extensions = [
 ]
 
 if CUDA:
-    extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
+    extra_compile_args = ['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags
     extensions.append(Extension("buffalo.algo.cuda._als",
                                 sources=["buffalo/algo/cuda/_als.pyx",
                                          "lib/cuda/als/als.cu"],
                                 language="c++",
-                                extend_compile_args=extend_compile_args,
+                                extra_compile_args=extra_compile_args,
                                 library_dirs=[CUDA['lib64']],
                                 libraries=['cudart', 'cublas', 'curand'],
                                 include_dirs=[numpy_include_dirs, CUDA['include'], '.']))
@@ -162,16 +162,17 @@ git_revision = '%(git_revision)s'
                           'git_revision': GIT_REVISION})
 
 
-class BuildExtention(build_ext, object):
+class BuildExtension(build_ext, object):
     def run(self):
         for ext in self.extensions:
             if hasattr(ext, 'extension_type') and ext.extension_type == 'cmake':
                 self.cmake(ext)
         self.cythonize()
-        super(BuildExtention, self).run()
+        super(BuildExtension, self).run()
 
     def cythonize(self):
         ext_files = ['buffalo/algo/_als.pyx',
+                     'buffalo/algo/cuda/_als.pyx',
                      'buffalo/algo/_bpr.pyx',
                      'buffalo/algo/_w2v.pyx',
                      'buffalo/misc/log.pyx',
@@ -213,7 +214,7 @@ class BuildExtention(build_ext, object):
 
 def setup_package():
     write_version_py()
-    cmdclass = {'build_ext': BuildExtention}
+    cmdclass = {'build_ext': BuildExtension}
 
     build_requires = [l.strip() for l in open('requirements.txt')]
 
@@ -228,7 +229,7 @@ def setup_package():
         include_package_data=False,
         license='Apache2',
         packages=['buffalo/algo/',
-                  'buffalo/algo/cuda'
+                  'buffalo/algo/cuda',
                   'buffalo/algo/tensorflow',
                   'buffalo/data/',
                   'buffalo/evaluate/',
@@ -239,7 +240,6 @@ def setup_package():
         classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
         platforms=['Linux', 'Mac OSX', 'Unix'],
         ext_modules=extensions,
-        build_ext={'build_ext': build_ext}
         install_requires=build_requires,
         entry_points={
             'console_scripts': [
