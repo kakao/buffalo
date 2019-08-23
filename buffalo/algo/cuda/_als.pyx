@@ -4,6 +4,7 @@
 import cython
 from libcpp cimport bool
 from libcpp.string cimport string
+from libcpp cimport bool as bool_t;
 from libc.stdint cimport int32_t
 
 import numpy as np
@@ -18,7 +19,7 @@ cdef extern from "buffalo/cuda/als/als.h" namespace "cuda_als":
         void initialize_model(float*, int,
                               float*, int) nogil except +
         void precompute(int) nogil except +
-        void synchronize(int) nogil except +
+        void synchronize(int, bool_t) nogil except +
         float partial_update(int, int,
                              int32_t*, int32_t*,
                              float*, int) nogil except +
@@ -49,8 +50,8 @@ cdef class CyALS:
     def precompute(self, axis):
         self.obj.precompute(axis)
 
-    def synchronize(self, axis):
-        self.obj.synchronize(axis)
+    def synchronize(self, axis, device_to_host):
+        self.obj.synchronize(axis, device_to_host)
 
     def get_vdim(self):
         return self.obj.get_vdim()

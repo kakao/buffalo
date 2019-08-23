@@ -101,9 +101,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
     def synchronize_with_obj(self, int_group):
         if not self.opt.accelerator:
             return
-        self.obj.synchronize(int_group)
-        P = self.P if int_group == 0 else self.Q
-        P[:, self.opt.d:] = 0
+        self.obj.synchronize(int_group, device_to_host=True)
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
@@ -159,6 +157,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         best_loss, rmse, self.validation_result = 987654321.0, None, {}
         self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
+        full_st = time.time()
         for i in range(self.opt.num_iters):
             start_t = time.time()
             self._iterate(buf, group='rowwise')
@@ -179,6 +178,11 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
             best_loss = self.save_best_only(rmse, best_loss, i)
             if self.early_stopping(rmse):
                 break
+        full_el = time.time() - full_st
+        self.logger.info(f"elapsed for full epochs: {full_el:.2f} sec")
+        if self.opt.accelerator:
+            self.P = self.P[:, :self.opt.d]
+            self.Q = self.Q[:, :self.opt.d]
         ret = {'train_loss': rmse}
         ret.update({'val_%s' % k: v
                     for k, v in self.validation_result.items()})
