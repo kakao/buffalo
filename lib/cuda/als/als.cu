@@ -225,7 +225,7 @@ float CuALS::partial_update(int start_x,
     CHECK_CUDA(cudaFree(_indptr));
     CHECK_CUDA(cudaFree(_keys));
     CHECK_CUDA(cudaFree(_vals));
-    CHECK_CUDA(cudaFree(dev_losses));
+    CHECK_CUDA(cudaFree(device_losses));
 
     return loss;
 }
