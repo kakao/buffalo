@@ -17,7 +17,7 @@ from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
 try:
-    from buffalo.algo._als import CuALS
+    from buffalo.algo.cuda._als import CyALS as CuALS
 except Exception as e:
     import sys
     print(f"Error message: {e}", file=sys.stderr)
@@ -44,10 +44,10 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.vdim = self.opt.d
         if self.opt.accelerator:
             self.obj = CuALS()
-            self.obj.init(self.opt.compute_loss_on_training,
-                          self.opt.dim, self.opt.num_cg_max_iters,
-                          self.opt.alpha, self.opt.reg_u, self.opt.reg_i,
-                          self.opt.cg_tolerance, self.opt.eps)
+            self.obj.set_options(self.opt.compute_loss_on_training,
+                                 self.opt.d, self.opt.num_cg_max_iters,
+                                 self.opt.alpha, self.opt.reg_u, self.opt.reg_i,
+                                 self.opt.cg_tolerance, self.opt.eps)
             self.vdim = self.obj.get_vdim()
         else:
             self.obj = CyALS()
@@ -94,6 +94,8 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
             setattr(self, name, None)
             setattr(self, name, np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
                                        size=(rows, self.vdim)).astype("float32")))
+        self.P[:, self.opt.d:] = 0.0
+        self.Q[:, self.opt.d:] = 0.0
         self.obj.initialize_model(self.P, self.Q)
 
     def synchronize_with_obj(self, int_group):
@@ -139,7 +141,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
                     _indptr = np.empty(next_x - start_x + 1, dtype=np.int64)
                     _indptr[0] = 0 if start_x == 0 else indptr[start_x - 1]
                     _indptr[1:] = indptr[start_x: next_x]
-                    indptr = (_indptr - start_x).astype(np.int32)
+                    indptr = (_indptr - _indptr[0]).astype(np.int32)
                 _feed_t, st = time.time() - st, time.time()
 
                 err += self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)

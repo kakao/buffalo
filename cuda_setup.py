@@ -58,9 +58,9 @@ def locate_cuda():
 
     if sys.platform == "win32":
         cudaconfig['lib64'] = os.path.join(home, 'lib', 'x64')
-        post_args += ['-Xcompiler', '/MD']
+        post_args += ['-Xcompiler', '/MD', '-std=c++14']
     else:
-        post_args += ['-c', '--compiler-options', "'-fPIC'"]
+        post_args += ['-c', '--compiler-options', "'-fPIC'", '-std=c++14']
 
     for k, v in cudaconfig.items():
         if not os.path.exists(v):
@@ -174,4 +174,5 @@ class cuda_build_ext(setuptools_build_ext):
 
 
 CUDA = locate_cuda()
+print(CUDA)
 build_ext = cuda_build_ext if CUDA else setuptools_build_ext

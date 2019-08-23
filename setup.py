@@ -117,15 +117,16 @@ extensions = [
 ]
 
 if CUDA:
-    extra_compile_args = ['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags
+    extra_compile_args = ['-std=c++14', '-ggdb', '-O3'] + extend_compile_flags
     extensions.append(Extension("buffalo.algo.cuda._als",
-                                sources=["buffalo/algo/cuda/_als.pyx",
+                                sources=["buffalo/algo/cuda/_als.cpp",
                                          "lib/cuda/als/als.cu"],
                                 language="c++",
                                 extra_compile_args=extra_compile_args,
                                 library_dirs=[CUDA['lib64']],
                                 libraries=['cudart', 'cublas', 'curand'],
-                                include_dirs=["./include", numpy_include_dirs, CUDA['include'], '.']))
+                                include_dirs=["./include", numpy_include_dirs,
+                                              CUDA['include']]))
 else:
     print("Failed to find CUDA toolkit. Building without GPU acceleration.")
 

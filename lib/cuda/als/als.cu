@@ -1,18 +1,23 @@
-#include "buffalo/cuda/als/als.cuh"
+#include <cuda_runtime.h>
+#include "cublas_v2.h"
+
+#include "buffalo/cuda/als/als.h"
+#include "buffalo/cuda/utils.cuh"
 
 
 namespace cuda_als{
 
 using std::invalid_argument;
+using namespace cuda_buffalo;
 
-__device__ void least_squares_cg_kernel(const int dim, const int vdim, 
+__global__ void least_squares_cg_kernel(const int dim, const int vdim, 
         const int rows, const int op_rows, 
         float* P, const float* Q, const float* FF, float* loss,
+        const int start_x, const int next_x,
         const int* indptr, const int* keys, const float* vals, 
         const float alpha, const float reg, const float cg_tolerance,
         const int num_cg_max_iters, const bool compute_loss,
         const float eps){
-
     extern __shared__ float shared_memory[];
     float* Ap = &shared_memory[0];
     float* r = &shared_memory[vdim];
@@ -22,8 +27,8 @@ __device__ void least_squares_cg_kernel(const int dim, const int vdim,
         Ap[idx] = 0;
     __syncthreads();
 
-    for (int row=blockIdx.x; row<rows; idx+=gridDim.x){
-        float* _P = &P[row*vdim];
+    for (int row=blockIdx.x; row<next_x-start_x; row+=gridDim.x){
+        float* _P = &P[(row+start_x)*vdim];
 
         if (indptr[row] == indptr[row + 1]) {
             _P[threadIdx.x] = 0;
@@ -76,7 +81,7 @@ __device__ void least_squares_cg_kernel(const int dim, const int vdim,
             _P[threadIdx.x] = 0.0;
         }
         if (compute_loss){
-            _loss += dot(l, l);
+            float _loss = dot(l, l);
             if (threadIdx.x == 0)
                 atomicAdd(loss, _loss);
         }
@@ -86,9 +91,9 @@ __device__ void least_squares_cg_kernel(const int dim, const int vdim,
 CuALS::CuALS(){}
 
 CuALS::~CuALS(){
-    CHECK_CUDA(cudaFree(devFF_));
     CHECK_CUDA(cudaFree(devP_));
     CHECK_CUDA(cudaFree(devQ_));
+    CHECK_CUDA(cudaFree(devFF_));
     devP_ = nullptr, devQ_ = nullptr, devFF_ = nullptr;
     hostP_ = nullptr, hostQ_ = nullptr;
 }
@@ -108,7 +113,7 @@ void CuALS::set_options(bool compute_loss, int dim, int num_cg_max_iters,
     CHECK_CUBLAS(cublasCreate(&blas_handle_));
 }
 
-void initialize_model(
+void CuALS::initialize_model(
         float* P, int P_rows,
         float* Q, int Q_rows){
     hostP_ = P;
@@ -123,41 +128,47 @@ void initialize_model(
                 cudaMemcpyHostToDevice));
 }
 
-void precompute(int axis){
+void CuALS::precompute(int axis){
     int op_rows = axis == 0? Q_rows_: P_rows_;
     float* opF = axis == 0? devQ_: devP_;
     float alpha = 1.0, beta = 0.0;
     CHECK_CUBLAS(cublasSgemm(blas_handle_, CUBLAS_OP_N, CUBLAS_OP_T,
                 vdim_, vdim_, op_rows, &alpha, 
-                opF, vdim_, opF, vdim, &beta, devFF_, vdim_));
+                opF, vdim_, opF, vdim_, &beta, devFF_, vdim_));
 }
 
-void synchronize(int axis){
+void CuALS::synchronize(int axis){
+    printf("synchronize1\n");
     float* devF = axis == 0? devP_: devQ_;
     float* hostF = axis == 0? hostP_: hostQ_;
+    printf("hello\n");
+    printf("%f, %f\n", hostP_[0], hostQ_[0]);
     int rows = axis == 0? P_rows_: Q_rows_;
+    printf("rows: %d\n", rows);
     CHECK_CUDA(cudaMemcpy(hostF, devF, sizeof(float)*rows*vdim_, 
                 cudaMemcpyDeviceToHost));
+    printf("%f, %f\n", hostP_[0], hostQ_[0]);
+    printf("synchronize2\n");
 }
 
-int get_vdim(){
+int CuALS::get_vdim(){
     return vdim_;
 }
 
-float partial_update(int start_x, 
+float CuALS::partial_update(int start_x, 
         int next_x,
         int* indptr,
         int* keys,
         float* vals,
-        int axis);
-
+        int axis){
+    printf("update1\n");
     int devId;
     CHECK_CUDA(cudaGetDevice(&devId));
     int mp_cnt;
     CHECK_CUDA(cudaDeviceGetAttribute(&mp_cnt, cudaDevAttrMultiProcessorCount, devId));
     int block_cnt = 128 * mp_cnt;
     int thread_cnt = dim_;
-    size_t shared_memory_size = sizeof(float) * (4 * factors);
+    size_t shared_memory_size = sizeof(float) * (4 * vdim_);
     float loss = 0.0;
     int rows = axis == 0? P_rows_: Q_rows_;
     int op_rows = axis == 0? Q_rows_: P_rows_;
@@ -165,8 +176,27 @@ float partial_update(int start_x,
     float* Q = axis == 0? devQ_: devP_;
     float reg = axis == 0? reg_u_: reg_i_;
     bool compute_loss = compute_loss_ and axis == 1;
-    least_square_cg_kernel<<<block_cnt, thread_cnt, shared_memory_size>>>(
-            dim_, vdim_, rows_, op_rows, P, Q, devFF_, &loss, indptr, keys, vals,
-           alpha_, reg_, cg_tolerance_, num_cg_max_iters_, compute_loss, eps_);
+   
+    int sz1 = next_x - start_x;
+    int sz2 = indptr[sz1];
+    int *_indptr, *_keys;
+    float* _vals;
+    CHECK_CUDA(cudaMalloc(&_indptr, sizeof(int)*(sz1+1)));
+    CHECK_CUDA(cudaMemcpy(_indptr, indptr, sizeof(int)*(sz1+1), 
+                cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMalloc(&_keys, sizeof(int)*sz2));
+    CHECK_CUDA(cudaMemcpy(_keys, keys, sizeof(int)*sz2, 
+                cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMalloc(&_vals, sizeof(float)*sz2));
+    CHECK_CUDA(cudaMemcpy(_vals, vals, sizeof(float)*sz2, 
+                cudaMemcpyHostToDevice));
+
+    least_squares_cg_kernel<<<block_cnt, thread_cnt, shared_memory_size>>>(
+            dim_, vdim_, rows, op_rows, P, Q, devFF_, &loss, start_x, next_x,
+            _indptr, _keys, _vals, alpha_, reg, 
+            cg_tolerance_, num_cg_max_iters_, compute_loss, eps_);
+    printf("update2, %d\n", loss);
     return loss;
 }
+
+} // namespace cuda_als
