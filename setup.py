@@ -125,7 +125,7 @@ if CUDA:
                                 extra_compile_args=extra_compile_args,
                                 library_dirs=[CUDA['lib64']],
                                 libraries=['cudart', 'cublas', 'curand'],
-                                include_dirs=[numpy_include_dirs, CUDA['include'], '.']))
+                                include_dirs=["./include", numpy_include_dirs, CUDA['include'], '.']))
 else:
     print("Failed to find CUDA toolkit. Building without GPU acceleration.")
 
