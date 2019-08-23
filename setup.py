@@ -116,6 +116,19 @@ extensions = [
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
 ]
 
+if CUDA:
+    extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
+    extensions.append(Extension("buffalo.algo.cuda._als",
+                                sources=["buffalo/algo/cuda/_als.pyx",
+                                         "lib/cuda/als/als.cu"],
+                                language="c++",
+                                extend_compile_args=extend_compile_args,
+                                library_dirs=[CUDA['lib64']],
+                                libraries=['cudart', 'cublas', 'curand'],
+                                include_dirs=[numpy_include_dirs, CUDA['include'], '.']))
+else:
+    print("Failed to find CUDA toolkit. Building without GPU acceleration.")
+
 
 # Return the git revision as a string
 def git_version():
@@ -215,6 +228,7 @@ def setup_package():
         include_package_data=False,
         license='Apache2',
         packages=['buffalo/algo/',
+                  'buffalo/algo/cuda'
                   'buffalo/algo/tensorflow',
                   'buffalo/data/',
                   'buffalo/evaluate/',
@@ -225,6 +239,7 @@ def setup_package():
         classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
         platforms=['Linux', 'Mac OSX', 'Unix'],
         ext_modules=extensions,
+        build_ext={'build_ext': build_ext}
         install_requires=build_requires,
         entry_points={
             'console_scripts': [
