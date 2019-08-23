@@ -24,9 +24,6 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
     float* Ap = &shared_memory[0];
     float* r = &shared_memory[vdim];
     float* p = &shared_memory[2*vdim];
-    for (int idx=threadIdx.x; idx<3*vdim; idx+=blockDim.x)
-        shared_memory[idx] = 0;
-    __syncthreads();
 
     for (int row=blockIdx.x; row<next_x-start_x; row+=gridDim.x){
         float* _P = &P[(row+start_x)*vdim];
@@ -37,6 +34,7 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
         }
 
         float tmp = -_P[threadIdx.x] * reg;
+        // not necessary to compute vdim times
         for (int d=0; d<dim; ++d)
             tmp -= _P[d] * FF[d * vdim + threadIdx.x];
         
@@ -53,10 +51,11 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
         p[threadIdx.x] = r[threadIdx.x] = tmp;
 
         float rsold = dot(r, r);
+        // early stopping
         if (rsold < cg_tolerance)
             continue;
 
-
+        // iterate cg
         for (int it=0; it<num_cg_max_iters; ++it){
             Ap[threadIdx.x] = reg * p[threadIdx.x];
             for (int d=0; d<dim; ++d){
@@ -89,6 +88,7 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
 CuALS::CuALS(){}
 
 CuALS::~CuALS(){
+    // destructor
     CHECK_CUDA(cudaFree(devP_));
     CHECK_CUDA(cudaFree(devQ_));
     CHECK_CUDA(cudaFree(devFF_));
@@ -99,6 +99,7 @@ CuALS::~CuALS(){
 
 void CuALS::set_options(bool compute_loss, int dim, int num_cg_max_iters, 
         float alpha, float reg_u, float reg_i, float cg_tolerance, float eps){
+    // set options
     compute_loss_ = compute_loss;
     dim_ = dim, num_cg_max_iters_ = num_cg_max_iters;
     alpha_ = alpha, reg_u_  = reg_u, reg_i_ = reg_i;
@@ -114,6 +115,7 @@ void CuALS::set_options(bool compute_loss, int dim, int num_cg_max_iters,
 void CuALS::initialize_model(
         float* P, int P_rows,
         float* Q, int Q_rows){
+    // initialize parameters and send to gpu memory
     hostP_ = P;
     hostQ_ = Q;
     P_rows_ = P_rows;
@@ -128,6 +130,7 @@ void CuALS::initialize_model(
 }
 
 void CuALS::precompute(int axis){
+    // precompute FF using cublas
     int op_rows = axis == 0? Q_rows_: P_rows_;
     float* opF = axis == 0? devQ_: devP_;
     float alpha = 1.0, beta = 0.0;
@@ -138,6 +141,7 @@ void CuALS::precompute(int axis){
 }
 
 void CuALS::synchronize(int axis, bool device_to_host){
+    // synchronize parameters between cpu memory and gpu memory
     float* devF = axis == 0? devP_: devQ_;
     float* hostF = axis == 0? hostP_: hostQ_;
     int rows = axis == 0? P_rows_: Q_rows_;
@@ -174,7 +178,8 @@ float CuALS::partial_update(int start_x,
     float* Q = axis == 0? devQ_: devP_;
     float reg = axis == 0? reg_u_: reg_i_;
     bool compute_loss = compute_loss_ and axis == 1;
-   
+    
+    // copy data to gpu memory
     int sz1 = next_x - start_x;
     int sz2 = indptr[sz1];
     int *_indptr, *_keys;
@@ -189,6 +194,7 @@ float CuALS::partial_update(int start_x,
     CHECK_CUDA(cudaMemcpy(_vals, vals, sizeof(float)*sz2, 
                 cudaMemcpyHostToDevice));
 
+    // allocate memory for measuring losses
     float* host_losses = (float*) malloc(sizeof(float)*block_cnt);
     for (size_t i=0; i<block_cnt; ++i)
         host_losses[i] = 0;
@@ -199,12 +205,14 @@ float CuALS::partial_update(int start_x,
     
     CHECK_CUDA(cudaDeviceSynchronize());
     
+    // compute least square
     least_squares_cg_kernel<<<block_cnt, thread_cnt, shared_memory_size>>>(
             dim_, vdim_, rows, op_rows, P, Q, devFF_, device_losses, start_x, next_x,
             _indptr, _keys, _vals, alpha_, reg, 
             cg_tolerance_, num_cg_max_iters_, compute_loss, eps_);
     CHECK_CUDA(cudaDeviceSynchronize());
     
+    // accumulate losses
     CHECK_CUDA(cudaMemcpy(host_losses, device_losses, sizeof(float)*block_cnt, 
                cudaMemcpyDeviceToHost));
     CHECK_CUDA(cudaDeviceSynchronize());
@@ -212,6 +220,7 @@ float CuALS::partial_update(int start_x,
     for (size_t i=0; i<block_cnt; ++i)
         loss += host_losses[i];
     free(host_losses);
+
     return loss;
 }
 
