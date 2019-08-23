@@ -219,7 +219,13 @@ float CuALS::partial_update(int start_x,
     float loss = 0;
     for (size_t i=0; i<block_cnt; ++i)
         loss += host_losses[i];
+
+    // free memory
     free(host_losses);
+    CHECK_CUDA(cudaFree(_indptr));
+    CHECK_CUDA(cudaFree(_keys));
+    CHECK_CUDA(cudaFree(_vals));
+    CHECK_CUDA(cudaFree(dev_losses));
 
     return loss;
 }
