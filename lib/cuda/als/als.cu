@@ -94,6 +94,7 @@ CuALS::~CuALS(){
     CHECK_CUDA(cudaFree(devFF_));
     devP_ = nullptr, devQ_ = nullptr, devFF_ = nullptr;
     hostP_ = nullptr, hostQ_ = nullptr;
+    CHECK_CUBLAS(cublasDestroy(blas_handle));
 }
 
 void CuALS::set_options(bool compute_loss, int dim, int num_cg_max_iters, 
