@@ -61,12 +61,12 @@ def _test1(algo_name, database, lib):
 def benchmark1(algo_name, database, libs=['buffalo', 'implicit', 'lightfm', 'qmf', 'pyspark']):
     assert database in ['ml100k', 'ml20m', 'kakao_reco_730m', 'kakao_brunch_12m']
     assert algo_name in ['als', 'bpr']
+    if isinstance(libs, str):
+        libs = [libs]
     if algo_name == 'als':
         libs = [l for l in libs if l not in ['lightfm']]
     elif algo_name == 'bpr':
         libs = [l for l in libs if l not in ['pyspark']]
-    if isinstance(libs, str):
-        libs = [libs]
     R = {'buffalo': BuffaloLib,
          'implicit': ImplicitLib,
          'lightfm': LightfmLib,
@@ -74,7 +74,7 @@ def benchmark1(algo_name, database, libs=['buffalo', 'implicit', 'lightfm', 'qmf
          'pyspark': PysparkLib}
     results = {l: _test1(algo_name, database, R[l]()) for l in libs}
 
-    for f in ['D', 'T']:
+    for f in ['D', 'T', 'M', 'A', 'B']:
         table = []
         for lib_name in libs:
             data = sorted([(k, v) for k, v in results[lib_name].items()

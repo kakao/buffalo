@@ -113,7 +113,6 @@ double CALS::partial_update(
     bool compute_loss_on_training = opt_["compute_loss_on_training"].bool_value();
     float alpha = opt_["alpha"].number_value();
 
-    ConjugateGradient<FactorTypeRowMajor, Lower|Upper> cg[num_workers];
     omp_set_num_threads(num_workers);
 
     vector<float> errs(num_workers, 0.0);
@@ -142,12 +141,13 @@ double CALS::partial_update(
 
             VectorType Fxy(D);
             Fxy.setZero();
-            for (int64_t idx=0, it = beg; it < end; ++it, ++idx) {
-                const int& c = keys[it - shifted];
-                const float& v = vals[it - shifted];
-                Fs.row(idx) = v * Q.row(c);
-                Fs2.row(idx) = Q.row(c);
-                Fxy.noalias() += (Q.row(c) * (1.0 + v * alpha));
+            for (int64_t idx=0, it = beg - shifted; it < end - shifted; ++it, ++idx) {
+                const int& c = keys[it];
+                const float& v = vals[it];
+                const auto& q = Q.row(c);
+                Fs.row(idx) = v * q;
+                Fs2.row(idx) = q;
+                Fxy.noalias() += (q * (1.0 + v * alpha));
             }
             FiF = Fs.transpose() * Fs2 * alpha;
             m = FF_ + FiF;

@@ -26,9 +26,6 @@ class Parallel(abc.ABC):
         dot_topn(indexes, Factor, Factor, dummy_bias, out_keys, out_scores, pool, topk, self.num_workers)
         return out_keys, out_scores
 
-    def _most_similar_bias(self, indexes, Factor, Bias, topk, pool):
-        pass
-
     @abc.abstractmethod
     def most_similar(self, keys, topk=10, group='item', pool=None, repr=False):
         """Caculate TopK most similar items for each keys in parallel processing.

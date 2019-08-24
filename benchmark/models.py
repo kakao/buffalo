@@ -140,7 +140,7 @@ class ImplicitLib(Benchmark):
             ratings.data = np.ones(len(ratings.data))
             ratings = ratings.tocsr()
             return ratings
-        elif name == ['kakao_reco_730m', 'kakao_brunch_12m']:
+        elif name in ['kakao_reco_730m', 'kakao_brunch_12m']:
             db = h5py.File(DB[name])
             ratings = db_to_coo(db)
             db.close()
