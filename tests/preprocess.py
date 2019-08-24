@@ -54,17 +54,17 @@ def make_mm_from_stream(stream_dir, to_dir):
 
 def prepare_dataset():
     logger = log.get_logger()
-    if not os.path.isdir('ml-100k/'):
-        logger.warn('Cannot find the ./ml-100k directory')
+    if not os.path.isdir('ext/ml-100k/'):
+        logger.warn('Cannot find the ./ext/ml-100k directory')
     else:
-        if not os.path.isfile('./ml-100k/main'):
+        if not os.path.isfile('./ext/ml-100k/main'):
             logger.info('preprocessing for matrix market format of ml-100k...')
-            in_path = "./ml-100k/u.data"
-            stream_out_path = "./ml-100k/stream"
+            in_path = "./ext/ml-100k/u.data"
+            stream_out_path = "./ext/ml-100k/stream"
             aux.psort(in_path, field_seperator="\t", key=4)
             aux.psort(in_path, field_seperator="\t", key=1)
 
-            with open('./ml-100k/main', 'w') as fout:
+            with open('./ext/ml-100k/main', 'w') as fout:
                 fout.write('%%MatrixMarket matrix coordinate integer general\n%\n%\n943 1682 80000\n')
                 with open(in_path) as fin:
                     for line in fin:
@@ -72,14 +72,14 @@ def prepare_dataset():
                         fout.write('%s %s %s\n' % (u, i, v))
 
             iids = []
-            with open('./ml-100k/iid', 'w') as fout:
-                with open('./ml-100k/u.item', encoding='ISO-8859-1') as fin:
+            with open('./ext/ml-100k/iid', 'w') as fout:
+                with open('./ext/ml-100k/u.item', encoding='ISO-8859-1') as fin:
                     iids = [line.strip().split('|')[1].replace(' ', '_') for line in fin]
                 iids = [f"{idx}.{key}" for idx, key in enumerate(iids)]
                 fout.write("\n".join(iids))
 
-            with open('./ml-100k/uid', 'w') as fout:
-                for line in open('./ml-100k/u.user'):
+            with open('./ext/ml-100k/uid', 'w') as fout:
+                for line in open('./ext/ml-100k/u.user'):
                     userid = line.strip().split('|')[0]
                     fout.write('%s\n' % userid)
 
@@ -97,13 +97,13 @@ def prepare_dataset():
                 if bag:
                     fout.write(" ".join(bag))
 
-    if not os.path.isdir('ml-20m'):
+    if not os.path.isdir('ext/ml-20m'):
         logger.warn('Cannot find the ./ml-20m directory')
     else:
-        if not os.path.isfile('./ml-20m/main'):
+        if not os.path.isfile('./ext/ml-20m/main'):
             logger.info('preprocessing for matrix market format of ml-20m...')
             uids, iids = {}, {}
-            in_path = "./ml-20m/ratings.csv"
+            in_path = "./ext/ml-20m/ratings.csv"
             aux.psort(in_path, field_seperator=",", key=4)
             aux.psort(in_path, field_seperator=",", key=1)
             with open(in_path) as fin:
@@ -112,20 +112,20 @@ def prepare_dataset():
                     uid = line.split(',')[0]
                     if uid not in uids:
                         uids[uid] = len(uids) + 1
-            with open('./ml-20m/uid', 'w') as fout:
+            with open('./ext/ml-20m/uid', 'w') as fout:
                 for uid, _ in sorted(uids.items(), key=lambda x: x[1]):
                     fout.write('%s\n' % uid)
-            with open('./ml-20m/movies.csv') as fin:
+            with open('./ext/ml-20m/movies.csv') as fin:
                 fin.readline()
                 for line in fin:
                     iid = line.split(',')[0]
                     iids[iid] = len(iids) + 1
-            with open('./ml-20m/iid', 'w') as fout:
+            with open('./ext/ml-20m/iid', 'w') as fout:
                 for iid, _ in sorted(iids.items(), key=lambda x: x[1]):
                     fout.write('%s\n' % iid)
-            with open('./ml-20m/main', 'w') as fout:
+            with open('./ext/ml-20m/main', 'w') as fout:
                 fout.write('%%MatrixMarket matrix coordinate real general\n%\n%\n138493 27278 20000263\n')
-                with open('./ml-20m/ratings.csv') as fin:
+                with open('./ext/ml-20m/ratings.csv') as fin:
                     fin.readline()
                     for line in fin:
                         uid, iid, r, *_ = line.split(',')
@@ -133,7 +133,7 @@ def prepare_dataset():
                         fout.write(f'{uid} {iid} {r}\n')
             logger.info('preprocessing for stream format of ml-20m...')
             probe, bag = None, []
-            stream_out_path = "./ml-20m/stream"
+            stream_out_path = "./ext/ml-20m/stream"
             with open(in_path, "r") as fin, open(stream_out_path, "w") as fout:
                 fin.readline()
                 for line in fin:
@@ -146,28 +146,28 @@ def prepare_dataset():
                     bag.append(i)
                 if bag:
                     fout.write(" ".join(bag))
-    if not os.path.isdir('text8'):
+    if not os.path.isdir('ext/text8'):
         logger.warn('Cannot find the text8 directory')
     else:
-        if not os.path.isfile('./text8/main'):
-            with open('./text8/text8') as fin:
+        if not os.path.isfile('./ext/text8/main'):
+            with open('./ext/text8/text8') as fin:
                 words = fin.readline().strip().split()
-                with open('./text8/main', 'w') as fout:
+                with open('./ext/text8/main', 'w') as fout:
                     for i in range(0, len(words), 1000):
                         fout.write('%s\n' % ' '.join(words[i:i + 1000]))
 
     if not os.path.isdir('brunch'):
-        logger.warn('Cannot find the ./brunch directory')
+        logger.warn('Cannot find the brunch directory')
     else:
-        if not os.path.isfile('./brunch/main'):
-            os.makedirs('./brunch/tmp', exist_ok=True)
-            to_dir = './brunch/tmp'
+        if not os.path.isfile('./ext/brunch/main'):
+            os.makedirs('./ext/brunch/tmp', exist_ok=True)
+            to_dir = './ext/brunch/tmp'
 
             logger.info('dividing...')
             num_chunks = 30
             fouts = {i: open(os.path.join(to_dir, str(i)), 'w')
                     for i in range(num_chunks)}
-            for path, fname in iterate_brunch_data_files('./brunch'):
+            for path, fname in iterate_brunch_data_files('./ext/brunch'):
                 for line in open(path):
                     uid = line.strip().split()[0]
                     fid = hash(uid) % num_chunks
@@ -176,8 +176,8 @@ def prepare_dataset():
                 val.close()
 
             logger.info('merging...')
-            with open('./brunch/main', 'w') as fout, \
-                    open('./brunch/uid', 'w') as fout_uid:
+            with open('./ext/brunch/main', 'w') as fout, \
+                    open('./ext/brunch/uid', 'w') as fout_uid:
                 for fid in fouts.keys():
                     seens = {}
                     chunk_path = os.path.join(to_dir, str(fid))
@@ -191,7 +191,7 @@ def prepare_dataset():
                 for fid in fouts.keys():
                     chunk_path = os.path.join(to_dir, str(fid))
                     os.remove(chunk_path)
-    make_mm_from_stream('./brunch/', './brunch/mm')
+    make_mm_from_stream('./ext/brunch/', './ext/brunch/mm')
 
 
 
