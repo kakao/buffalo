@@ -58,9 +58,9 @@ def locate_cuda():
 
     if sys.platform == "win32":
         cudaconfig['lib64'] = os.path.join(home, 'lib', 'x64')
-        post_args += ['-Xcompiler', '/MD', '-std=c++14']
+        post_args += ['-Xcompiler', '/MD', '-std=c++11']
     else:
-        post_args += ['-c', '--compiler-options', "'-fPIC'", '-std=c++14']
+        post_args += ['-c', '--compiler-options', "'-fPIC'", '-std=c++11']
 
     for k, v in cudaconfig.items():
         if not os.path.exists(v):
