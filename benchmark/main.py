@@ -25,7 +25,7 @@ def _get_elapsed_time(algo_name, database, lib, repeat, **options):
 
 def _test1(algo_name, database, lib):
     results = {}
-    repeat = 3
+    repeat = 1
     options = {'als': {'num_workers': 8,
                        'compute_loss_on_training': False,
                        'd': 40},
@@ -77,14 +77,17 @@ def benchmark1(algo_name, database, libs=['buffalo', 'implicit', 'lightfm', 'qmf
     for f in ['D', 'T', 'M', 'A', 'B']:
         table = []
         for lib_name in libs:
+            if lib_name not in results:
+                continue
             data = sorted([(k, v) for k, v in results[lib_name].items()
                         if k.startswith(f)],
                         key=lambda x: (len(x[0]), x[0]))
             rows = [v for _, v in data]
             headers = ['method'] + [k for k, _ in data]
             table.append([lib_name] + rows)
-        print(tabulate(table, headers=headers, tablefmt="github"))
-        print('')
+        if table:
+            print(tabulate(table, headers=headers, tablefmt="github"))
+            print('')
 
 
 def _test2(algo_name, database, lib):
@@ -132,8 +135,10 @@ def benchmark2(algo_name, database, libs=['buffalo', 'implicit']):
             rows = [v for _, v in data]
             headers = ['method'] + [k for k, _ in data]
             table.append([lib_name] + rows)
-        print(tabulate(table, headers=headers, tablefmt="github"))
-        print('')
+        if table:
+            print(tabulate(table, headers=headers, tablefmt="github"))
+            print('')
+
 
 
 if __name__ == '__main__':

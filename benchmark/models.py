@@ -98,7 +98,6 @@ class Benchmark(object):
         elif lib_name == 'lightfm':
             if algo_name == 'bpr':
                 return {'epochs': kwargs.get('num_iters', 10),
-                        'loss': 'bpr',
                         'verbose': True,
                         'num_threads': kwargs.get('num_workers', 10)}
         elif lib_name == 'pyspark':
@@ -236,7 +235,8 @@ class LightfmLib(Benchmark):
         from lightfm import LightFM
         opts = self.get_option('lightfm', 'bpr', **kwargs)
         data = self.get_database(database, **kwargs)
-        bpr = LightFM(no_components=kwargs.get('num_workers'),
+        bpr = LightFM(loss='bpr',
+                      no_components=kwargs.get('num_workers'),
                       max_sampled=1)
         elapsed, mem_info = self.run(bpr.fit, data, data, **opts)
         bpr = None
@@ -376,6 +376,7 @@ class PysparkLib(Benchmark):
                .setAppName("pyspark")\
                .setMaster('local[%s]' % kwargs.get('num_workers'))\
                .set('spark.local.dir', './tmp/')\
+               .set('spark.worker.cleanup.enabled', 'true')\
                .set('spark.driver.memory', '32G')
         context = SparkContext(conf=conf)
         context.setLogLevel('WARN')
