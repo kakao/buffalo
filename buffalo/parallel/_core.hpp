@@ -13,6 +13,9 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
+#include "n2/hnsw.h"
+
+
 using namespace std;
 using namespace Eigen;
 
@@ -136,6 +139,63 @@ void dot_topn(
             out_scores(i, j) = 0.0;
         }
         topn.free();
+    }
+}
+
+
+void ann_search(
+        string index_path,
+        bool use_mmap,
+        int32_t* indexes, int num_queries,
+        float* _P, int p_rows, int p_cols,
+        float* _Q, int q_rows, int q_cols,
+        float* _Qb, int qb_rows,
+        int32_t* _out_keys, float* _out_scores,
+        int32_t* _pool, int pool_size,
+        int k, int num_threads)
+{
+    Map<Matrix<float, Dynamic, Dynamic, RowMajor>> P(_P, p_rows, p_cols);
+    Map<Matrix<float, Dynamic, Dynamic, RowMajor>> Q(_Q, q_rows, q_cols);
+    Map<Matrix<float, Dynamic, Dynamic, RowMajor>> Qb(_Qb, qb_rows, 1);
+    Map<Matrix<int, Dynamic, Dynamic, RowMajor>> out_keys(_out_keys, num_queries, k);
+    Map<Matrix<float , Dynamic, Dynamic, RowMajor>> out_scores(_out_scores, num_queries, k);
+
+    unordered_set<int32_t> pool;
+    for (int i=0; i < pool_size; ++i)
+        pool.insert(_pool[i]);
+
+    int correct_k = min(q_rows, k);
+    if (pool_size)
+        correct_k = min(pool_size, correct_k);
+
+    omp_set_num_threads(num_threads);
+    n2::Hnsw hnsws[num_threads];
+    for (int i=0; i < num_threads; ++i) {
+        hnsws[i].LoadModel(index_path.c_str(), use_mmap);
+    }
+
+    #pragma omp parallel
+    {
+        int worker_id = omp_get_thread_num();
+        #pragma omp for schedule(guided)
+        for (int i=0; i < num_queries; ++i)
+        {
+            auto& hnsw = hnsws[worker_id];
+            int q = indexes[i];
+            vector<pair<int, float>> result;
+            hnsw.SearchById(q, correct_k, -1, result);
+            for (int j=0; j < (int)result.size(); ++j) {
+                out_keys(i, j) = result[j].first;
+                out_scores(i, j) = result[j].second;
+            }
+            for (int j=(int)result.size(); j < k; ++j) {
+                out_keys(i, j) = -1;
+                out_scores(i, j) = 0.0;
+            }
+        }
+    }
+    for (int i=0; i < num_threads; ++i) {
+        hnsws[i].UnloadModel();
     }
 }
 
