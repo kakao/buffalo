@@ -22,6 +22,15 @@ cdef extern from "_core.hpp":
                                              int32_t*, int,
                                              int, int) nogil except +
 
+    cdef void _ann_search "parallel::ann_search"(string,
+                                                 bool_t,
+                                                 int32_t*, int,
+                                                 float*, int, int,
+                                                 float*, int, int,
+                                                 float*, int,
+                                                 int32_t*, float*,
+                                                 int32_t*, int,
+                                                 int, int) nogil except +
 
 
 @cython.boundscheck(False)
@@ -50,3 +59,26 @@ def dot_topn(np.ndarray[np.int32_t, ndim=1] indexes,
               &out_keys[0, 0], &out_scores[0, 0],
               &pool[0], pool.shape[0],
               k, num_threads)
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def ann_search(index_path,
+               use_mmap,
+               np.ndarray[np.int32_t, ndim=1] indexes,
+               np.ndarray[np.float32_t, ndim=2] P,
+               np.ndarray[np.float32_t, ndim=2] Q,
+               np.ndarray[np.float32_t, ndim=2] Qb,
+               np.ndarray[np.int32_t, ndim=2]  out_keys,
+               np.ndarray[np.float32_t, ndim=2]  out_scores,
+               np.ndarray[np.int32_t, ndim=1] pool,
+               k, num_threads):
+    _ann_search(index_path,
+                use_mmap,
+                &indexes[0], indexes.shape[0],
+                &P[0, 0], P.shape[0], P.shape[1],
+                &Q[0, 0], Q.shape[0], Q.shape[1],
+                &Qb[0, 0], Qb.shape[0],
+                &out_keys[0, 0], &out_scores[0, 0],
+                &pool[0], pool.shape[0],
+                k, num_threads)

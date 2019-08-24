@@ -109,9 +109,12 @@ extensions = [
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.parallel._core",
               sources=['buffalo/parallel/_core.cpp'],
-              libraries=['gomp'],
+              libraries=['gomp', 'n2'],
               include_dirs=[numpy_include_dirs,
+                            '3rd/n2/include',
+                            '3rd/spdlog/include',
                             site_cfg.get("eigen", "include_dirs")],
+              library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
 ]
 
