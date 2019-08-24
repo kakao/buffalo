@@ -25,7 +25,7 @@ def _get_elapsed_time(algo_name, database, lib, repeat, **options):
 
 def _test1(algo_name, database, lib):
     results = {}
-    repeat = 1
+    repeat = 3
     options = {'als': {'num_workers': 8,
                        'compute_loss_on_training': False,
                        'd': 40},
