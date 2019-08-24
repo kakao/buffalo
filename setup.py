@@ -14,7 +14,6 @@ from distutils.extension import Extension
 from setuptools.command.build_ext import build_ext
 
 import numpy
-import eigency
 
 # TODO: Python3 Support
 if sys.version_info[:3] < (3, 6):
@@ -60,7 +59,7 @@ extensions = [
                             numpy_include_dirs,
                             '3rd/json11',
                             '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
+                            site_cfg.get('eigen', 'include_dirs')],
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
@@ -70,7 +69,7 @@ extensions = [
                             numpy_include_dirs,
                             '3rd/json11',
                             '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
+                            site_cfg.get('eigen', 'include_dirs')],
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
@@ -80,7 +79,7 @@ extensions = [
                             numpy_include_dirs,
                             '3rd/json11',
                             '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
+                            site_cfg.get('eigen', 'include_dirs')],
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
@@ -90,7 +89,7 @@ extensions = [
                             numpy_include_dirs,
                             '3rd/json11',
                             '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
+                            site_cfg.get('eigen', 'include_dirs')],
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
@@ -100,7 +99,7 @@ extensions = [
                             numpy_include_dirs,
                             '3rd/json11',
                             '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
+                            site_cfg.get('eigen', 'include_dirs')],
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
