@@ -115,7 +115,7 @@ void dot_topn(
     for (int i=0; i < num_queries; ++i){
         topn_t topn;
         topn.alloc(correct_k);
-        float last_one = 0.0f;
+        float last_one = -987654321.0f;
         int q = indexes[i];
         for (int j=0; j < q_rows; ++j) {
             if (is_same and q == j)
@@ -145,6 +145,7 @@ void dot_topn(
 
 void ann_search(
         string index_path,
+        int ef_search,
         bool use_mmap,
         int32_t* indexes, int num_queries,
         float* _P, int p_rows, int p_cols,
@@ -183,7 +184,7 @@ void ann_search(
             auto& hnsw = hnsws[worker_id];
             int q = indexes[i];
             vector<pair<int, float>> result;
-            hnsw.SearchById(q, correct_k, -1, result);
+            hnsw.SearchById(q, correct_k, ef_search, result);
             for (int j=0; j < (int)result.size(); ++j) {
                 out_keys(i, j) = result[j].first;
                 out_scores(i, j) = result[j].second;
