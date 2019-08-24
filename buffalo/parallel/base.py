@@ -20,12 +20,14 @@ class Parallel(abc.ABC):
         self.num_workers = int(kwargs['num_workers'])
         self._ann_list = {}
 
-    def _most_similar(self, group, indexes, Factor, topk, pool, use_mmap):
+    def _most_similar(self, group, indexes, Factor, topk, pool, ef_search, use_mmap):
         dummy_bias = np.array([[]], dtype=np.float32)
         out_keys = np.zeros(shape=(len(indexes), topk), dtype=np.int32)
         out_scores = np.zeros(shape=(len(indexes), topk), dtype=np.float32)
         if group in self._ann_list:
-            ann_search(self._ann_list[group], use_mmap, indexes, Factor, Factor, dummy_bias, out_keys, out_scores, pool, topk, self.num_workers)
+            if ef_search == -1:
+                ef_search = topk * 10
+            ann_search(self._ann_list[group].encode('utf8'), ef_search, use_mmap, indexes, Factor, Factor, dummy_bias, out_keys, out_scores, pool, topk, self.num_workers)
         else:
             dot_topn(indexes, Factor, Factor, dummy_bias, out_keys, out_scores, pool, topk, self.num_workers)
         return out_keys, out_scores
@@ -34,7 +36,7 @@ class Parallel(abc.ABC):
         self._ann_list[group] = path
 
     @abc.abstractmethod
-    def most_similar(self, keys, topk=10, group='item', pool=None, repr=False, use_mmap=True):
+    def most_similar(self, keys, topk=10, group='item', pool=None, repr=False, ef_search=-1, use_mmap=True):
         """Caculate TopK most similar items for each keys in parallel processing.
 
         :param list keys: Query Keys
@@ -44,6 +46,7 @@ class Parallel(abc.ABC):
             If it is a numpy.ndarray instance then it treat as index of items and it would be helpful for calculation speed. (default: None)
         :type pool: list or numpy.ndarray
         :param bool repr: Set True, to return as item key instead index.
+        :param int ef_search: This parameter passed to N2 when hnsw_index given for the group. (default: -1 which means topk * 10)
         :param use_mmap: This parameter passed to N2 when hnsw_index given for the group.
         :return: list of tuple(key, score)
         """
@@ -77,13 +80,12 @@ class Parallel(abc.ABC):
         raise NotImplemented
 
 
-class ParALS(Parallel, ANN):
+class ParALS(Parallel):
     def __init__(self, algo, **kwargs):
         num_workers = int(kwargs.get('num_workers', algo.opt.num_workers))
-        super(Parallel, self).__init__(algo, num_workers=num_workers)
-        super(ANN, self).__init__()
+        super().__init__(algo, num_workers=num_workers)
 
-    def most_similar(self, keys, topk=10, group='item', pool=None, repr=False, use_mmap=True):
+    def most_similar(self, keys, topk=10, group='item', pool=None, repr=False, ef_search=-1, use_mmap=True):
         """See the documentation of Parallel."""
         self.algo.normalize(group=group)
         indexes = self.algo.get_index_pool(keys, group=group)
@@ -97,12 +99,12 @@ class ParALS(Parallel, ANN):
             # It assume that empty pool menas for all items
             pool = np.array([], dtype=np.int32)
         if group == 'item':
-            topks, scores = super()._most_similar(group, indexes, self.algo.Q, topk, pool, use_mmap)
+            topks, scores = super()._most_similar(group, indexes, self.algo.Q, topk, pool, ef_search, use_mmap)
             if repr:
                 topks = [[self.algo._idmanager.itemids[t] for t in tt if t != -1] for tt in topks]
             return topks, scores
         elif group == 'user':
-            topks, scores = super()._most_similar(group, indexes, self.algo.Q, topk, pool, use_mmap)
+            topks, scores = super()._most_similar(group, indexes, self.algo.P, topk, pool, ef_search, use_mmap)
             if repr:
                 topks = [[self.algo._idmanager.userids[t] for t in tt if t != -1] for tt in topks]
             return topks, scores
@@ -151,13 +153,12 @@ class ParBPRMF(ParALS):
         return keys, topks, scores
 
 
-
 class ParW2V(Parallel):
     def __init__(self, algo, **kwargs):
         num_workers = int(kwargs.get('num_workers', algo.opt.num_workers))
         super().__init__(algo, num_workers=num_workers)
 
-    def most_similar(self, keys, topk=10, pool=None, repr=False):
+    def most_similar(self, keys, topk=10, pool=None, repr=False, ef_search=-1, use_mmap=True):
         """See the documentation of Parallel."""
         self.algo.normalize(group='item')
         indexes = self.algo.get_index_pool(keys, group='item')
@@ -170,7 +171,7 @@ class ParW2V(Parallel):
         else:
             # It assume that empty pool menas for all items
             pool = np.array([], dtype=np.int32)
-        topks, scores = super()._most_similar('item', indexes, self.algo.L0, topk, pool, use_mmap)
+        topks, scores = super()._most_similar('item', indexes, self.algo.L0, topk, pool, ef_search, use_mmap)
         if repr:
             topks = [[self.algo._idmanager.itemids[t] for t in tt if t != -1] for tt in topks]
         return topks, scores
