@@ -100,9 +100,6 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
             self.sampling_table_ **= int(self.opt.sampling_power)
             for i in range(1, header['num_items']):
                 self.sampling_table_[i] += self.sampling_table_[i - 1]
-        else:
-            for i in range(1, header['num_items'] + 1):
-                self.sampling_table_[i - 1] = i
         self.obj.set_cumulative_table(self.sampling_table_, header['num_items'])
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
