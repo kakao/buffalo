@@ -139,4 +139,4 @@ void dot_topn(
     }
 }
 
-} // namespace evaluate
+}
