@@ -10,7 +10,6 @@ import threading
 import h5py
 import psutil
 import numpy as np
-from implicit.datasets.movielens import get_movielens
 
 
 DB = {'kakao_reco_730m': './kakao_reco_730m.h5py',
@@ -23,8 +22,8 @@ def collect_memory_usage(stop_event, result_queue):
     p = psutil.Process(os.getpid())
     data = []
     while not stop_event.is_set():
-        time.sleep(5)
         data.append(p.memory_info().rss)
+        time.sleep(5)
     result_queue.put(data)
 
 
@@ -117,13 +116,19 @@ class Benchmark(object):
         result_queue = queue.Queue()
         t = threading.Thread(target=collect_memory_usage, args=(stop_event, result_queue))
         t.start()
+        time.sleep(0.1)  # context switching
         start_t = time.time()
-        func(*args, **kwargs)
+        if kwargs.get('iterable'):
+            iterable = kwargs.get('iterable')
+            kwargs.pop('iterable')
+            for data in iterable:
+                func(data, **kwargs)
+        else:
+            func(*args, **kwargs)
         elapsed = time.time() - start_t
         stop_event.set()
         t.join()
-        memory_usage = result_queue.get()
-        model = None
+        memory_usage = result_queue.get(block=True, timeout=10)
         return elapsed, {'min': min(memory_usage) / 1024 / 1024.0,
                          'avg': sum(memory_usage) / len(memory_usage) / 1024 / 1024.0,
                          'max': max(memory_usage) / 1024 / 1024.0}
@@ -134,12 +139,7 @@ class ImplicitLib(Benchmark):
         super().__init__()
 
     def get_database(self, name, **kwargs):
-        if name in ['ml20m', 'ml100k']:
-            _, ratings = get_movielens({'ml20m': '20m', 'ml100k': '100k'}.get(name))
-            ratings.data = np.ones(len(ratings.data))
-            ratings = ratings.tocsr()
-            return ratings
-        elif name in ['kakao_reco_730m', 'kakao_brunch_12m']:
+        if name in ['ml20m', 'ml100k', 'kakao_reco_730m', 'kakao_brunch_12m']:
             db = h5py.File(DB[name])
             ratings = db_to_coo(db)
             db.close()
@@ -152,6 +152,8 @@ class ImplicitLib(Benchmark):
             **opts
         )
         ratings = self.get_database(database, **kwargs)
+        if kwargs.get('return_instance_before_train'):
+            return (model, ratings)
 
         elapsed, mem_info = self.run(model.fit, ratings)
         model = None
@@ -164,9 +166,17 @@ class ImplicitLib(Benchmark):
             **opts
         )
         ratings = self.get_database(database, **kwargs)
+        if kwargs.get('return_instance_before_train'):
+            return (model, ratings)
 
         elapsed, mem_info = self.run(model.fit, ratings)
         model = None
+        return elapsed, mem_info
+
+    def most_similar(self, keys, **kwargs):
+        model = kwargs['model']
+        kwargs.pop('model')
+        elapsed, mem_info = self.run(model.similar_items, keys, **kwargs)
         return elapsed, mem_info
 
 
@@ -202,6 +212,8 @@ class BuffaloLib(Benchmark):
         data_opt = self.get_database(database, **kwargs)
         als = ALS(opts, data_opt=data_opt)
         als.initialize()
+        if kwargs.get('return_instance_before_train'):
+            return als
         elapsed, mem_info = self.run(als.train)
         als = None
         return elapsed, mem_info
@@ -212,8 +224,16 @@ class BuffaloLib(Benchmark):
         data_opt = self.get_database(database, **kwargs)
         bpr = BPRMF(opts, data_opt=data_opt)
         bpr.initialize()
+        if kwargs.get('return_instance_before_train'):
+            return bpr
         elapsed, mem_info = self.run(bpr.train)
         bpr = None
+        return elapsed, mem_info
+
+    def most_similar(self, keys, **kwargs):
+        model = kwargs['model']
+        kwargs.pop('model')
+        elapsed, mem_info = self.run(model.most_similar, keys, **kwargs)
         return elapsed, mem_info
 
 
@@ -229,7 +249,7 @@ class LightfmLib(Benchmark):
             return ratings
 
     def als(self, database, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
 
     def bpr(self, database, **kwargs):
         from lightfm import LightFM
@@ -389,4 +409,4 @@ class PysparkLib(Benchmark):
         return elapsed, memory_usage
 
     def bpr(self, database, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
