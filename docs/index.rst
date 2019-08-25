@@ -17,6 +17,7 @@ Buffalo provides the following algorithms:
   - Bayesian Personalized Ranking Matrix Factorization
   - Word2Vec
   - CoFactors
+
 all algorithms are optimized for multi-threading and some algorithm supports GPU accelerators.
  
 One of the good things about the library is its very low memory usage compared to other libraries. Chunked data management and batch learning with HDF5 can handle large data, even bigger than memory size, on laptop machine. Check out the benchmarks page for more details on Buffalo performance.
@@ -32,7 +33,7 @@ Besides, buffalo provides a variety of convenient features for research and prod
     Algorithms <algo>
     Parallels <parallels>
     Examples <example>
-    Benchmark <benchmark>
+    Benchmarks <https://github.daumkakao.com/toros/buffalo/tree/dev/benchmark>
 
 
 Indices and tables

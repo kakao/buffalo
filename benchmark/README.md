@@ -24,7 +24,7 @@ We tested two algorithms, ALS, BPRMF and measured training speed and memory usag
 To download the databases, please see the README.md on ./tests/.
 - Databases
   - KakaoBrunch12M
-    - Sampled user reading history from Kakao Brunch service, which kind of blog server, during 6 months.
+    - Sampled user reading history from Kakao Brunch service, which kind of blog service, during 6 months.
   - KakaoReco730
     - Sampled user reading history from Kakao annoymous service during 8 days.
   - Movielens20M

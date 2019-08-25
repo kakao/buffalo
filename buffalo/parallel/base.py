@@ -77,9 +77,6 @@ class Parallel(abc.ABC):
     def topk_recommendation(self, keys, topk=10, pool=None, repr=False):
         """Caculate TopK recommendation for each users in parallel processing.
 
-        .. warning::
-            It may not works with normalized factors.
-
         :param list keys: Query Keys
         :param int topk: Number of topK
         :param bool repr: Set True, to return as item key instead index.
