@@ -1,6 +1,6 @@
 Parallels
 ==========
-Parallel processing for algorithms.
+Provides parallel processing feature to algorithm classes.
 
 .. autoclass:: buffalo.parallel.base.Parallel
    :members: most_similar, topk_recommendation

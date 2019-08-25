@@ -33,6 +33,14 @@ class Parallel(abc.ABC):
         return out_keys, out_scores
 
     def set_hnsw_index(self, path, group):
+        """ Set N2 HNSW Index for apporximate nearest neighbor features.
+
+        N2 is a open source project for approximate nearest neighbor.
+        For more detail please see the https://github.com/kakao/n2.
+
+        :param str path: The path of hnsw index file.
+        :param str group: Indexed data group.
+        """
         self._ann_list[group] = path
 
     @abc.abstractmethod
@@ -46,8 +54,8 @@ class Parallel(abc.ABC):
             If it is a numpy.ndarray instance then it treat as index of items and it would be helpful for calculation speed. (default: None)
         :type pool: list or numpy.ndarray
         :param bool repr: Set True, to return as item key instead index.
-        :param int ef_search: This parameter passed to N2 when hnsw_index given for the group. (default: -1 which means topk * 10)
-        :param use_mmap: This parameter passed to N2 when hnsw_index given for the group.
+        :param int ef_search: This parameter is passed to N2 when hnsw_index was given for the group. (default: -1 which means topk * 10)
+        :param use_mmap: This parameter is passed to N2 when hnsw_index given for the group. (default: True)
         :return: list of tuple(key, score)
         """
         raise NotImplemented

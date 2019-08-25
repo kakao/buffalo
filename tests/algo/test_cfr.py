@@ -33,7 +33,7 @@ class TestCFR(TestBase):
     def test3_init(self):
         set_log_level(3)
         opt = CFROption().get_default_option()
-        opt.dim = 20
+        opt.d = 20
         data_opt = StreamOptions().get_default_option()
         data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
