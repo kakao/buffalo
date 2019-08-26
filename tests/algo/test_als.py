@@ -75,6 +75,16 @@ class TestALS(TestBase):
         opt.validation = aux.Option({'topk': 10})
         self._test10_fast_most_similar(ALS, opt)
 
+    def test11_train_ml_20m_on_gpu(self):
+        opt = ALSOption().get_default_option()
+        opt.num_workers = 8
+        opt.d = 100
+        opt.validation = aux.Option({'topk': 10})
+        opt.compute_loss_on_training = True
+        opt.accelerator = True
+        opt.num_cg_max_iters = 3
+        self._test7_train_ml_20m(ALS, opt)
+
 
 if __name__ == '__main__':
     unittest.main()

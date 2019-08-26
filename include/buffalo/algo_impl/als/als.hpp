@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <utility>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -26,12 +27,12 @@ public:
             float* P, int P_rows,
             float* Q, int Q_rows);
     void precompute(int axis);
-    double partial_update(int start_x,
-                          int next_x,
-                          int64_t* indptr,
-                          int32_t* keys,
-                          float* vals,
-                          int axis);
+    pair<double, double> partial_update(int start_x,
+                                        int next_x,
+                                        int64_t* indptr,
+                                        int32_t* keys,
+                                        float* vals,
+                                        int axis);
 
 private:
     Json opt_;

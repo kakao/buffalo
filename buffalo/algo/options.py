@@ -69,6 +69,7 @@ class ALSOption(AlgoOption):
 
         :ivar bool adaptive_reg: Set True, for adaptive regularization. (default: False)
         :ivar bool save_factors: Set True, to save models. (default: False)
+        :ivar bool accelerator: Set True, to accelerate training using GPU. (default: False)
         :ivar int d: The number of latent feature dimension. (default: 20)
         :ivar int num_iters: The number of iterations for training. (default: 10)
         :ivar int num_workers: The number of threads. (default: 1)
@@ -85,6 +86,7 @@ class ALSOption(AlgoOption):
         opt.update({
             'adaptive_reg': False,
             'save_factors': False,
+            'accelerator': False,
 
             'd': 20,
             'num_iters': 10,
@@ -94,6 +96,8 @@ class ALSOption(AlgoOption):
             'alpha': 8,
             'optimizer': 'manual_cg',
             'num_cg_max_iters': 3,
+            'cg_tolerance': 1e-10,
+            'eps': 1e-10,
 
             'model_path': '',
             'data_opt': {}
@@ -155,6 +159,7 @@ class CFROption(AlgoOption):
             'num_iters': 10,
             'num_workers': 1,
             'cg_tolerance': 1e-10,
+            'eps': 1e-10,
             'reg_u': 0.1,
             'reg_i': 0.1,
             'reg_c': 0.1,

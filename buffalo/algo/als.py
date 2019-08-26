@@ -12,8 +12,14 @@ from buffalo.algo._als import CyALS
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import ALSOption
 from buffalo.algo.optimize import Optimizable
+from buffalo.algo.tensorflow._als import TFALS
 from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
+
+try:
+    from buffalo.algo.cuda._als import CyALS as CuALS
+except Exception as e:
+    aux.get_logger("system").error(f"ImportError CuALS, no cuda library exists. error message: {e}")
 
 
 class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
@@ -33,9 +39,10 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
         self.logger = log.get_logger('ALS')
         self.opt, self.opt_path = self.get_option(opt_path)
-        self.obj = CyALS()
+        self.obj = CuALS() if self.opt.accelerator else CyALS()
         assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
             'cannot parse option file: %s' % opt_path
+        self.vdim = self.obj.get_vdim() if self.opt.accelerator else self.opt.d
         self.data = None
         data = kwargs.get('data')
         data_opt = self.opt.get('data_opt')
@@ -76,8 +83,15 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         for name, rows in [('P', header['num_users']), ('Q', header['num_items'])]:
             setattr(self, name, None)
             setattr(self, name, np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
-                                       size=(rows, self.opt.d)).astype("float32")))
+                                       size=(rows, self.vdim)).astype("float32")))
+        self.P[:, self.opt.d:] = 0.0
+        self.Q[:, self.opt.d:] = 0.0
         self.obj.initialize_model(self.P, self.Q)
+
+    def synchronize_with_obj(self, int_group):
+        if not self.opt.accelerator:
+            return
+        self.obj.synchronize(int_group, device_to_host=True)
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
@@ -100,35 +114,62 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         header = self.data.get_header()
         # end = header['num_users'] if group == 'rowwise' else header['num_items']
         int_group = 0 if group == 'rowwise' else 1
+        st = time.time()
         self.obj.precompute(int_group)
-        err = 0.0
-        update_t, feed_t, updated = 0, 0, 0
+        el, st = time.time() - st, time.time()
+        loss_nume, loss_deno = 0.0, 0.0
+        update_t, feed_t, updated = el, 0, 0
         buf.set_group(group)
         with log.pbar(log.DEBUG, desc='%s' % group,
                       total=header['num_nnz'], mininterval=30) as pbar:
-            start_t = time.time()
             for sz in buf.fetch_batch():
                 updated += sz
-                feed_t += time.time() - start_t
                 start_x, next_x, indptr, keys, vals = buf.get()
-                start_t = time.time()
-                err += self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)
-                update_t += time.time() - start_t
+                if self.opt.accelerator:
+                    _indptr = np.empty(next_x - start_x + 1, dtype=np.int64)
+                    _indptr[0] = 0 if start_x == 0 else indptr[start_x - 1]
+                    _indptr[1:] = indptr[start_x: next_x]
+                    indptr = (_indptr - _indptr[0]).astype(np.int32)
+                _feed_t, st = time.time() - st, time.time()
+
+                _loss_nume, _loss_deno = self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)
+                loss_nume += _loss_nume
+                loss_deno += _loss_deno
+                self.synchronize_with_obj(int_group)
+
+                _update_t, st = time.time() - st, time.time()
                 pbar.update(sz)
+                feed_t += _feed_t
+                update_t += _update_t
         self.logger.debug(f'{group} updated: processed({updated}) elapsed(data feed: {feed_t:0.3f}s update: {update_t:0.03}s)')
-        return err
+        return loss_nume, loss_deno
 
     def train(self):
+        if self.opt.accelerator:
+            for attr in ["P", "Q"]:
+                F = getattr(self, attr)
+                if F.shape[1] < self.vdim:
+                    _F = np.empty(shape=(F.shape[0], self.vdim), dtype=np.float32)
+                    _F[:, :self.P.shape[1]] = F
+                    _F[:, self.opt.d: ] = 0.0
+                    setattr(self, attr, _F)
+            self.obj.initialize_model(self.P, self.Q)
+
         buf = self._get_buffer()
         best_loss, rmse, self.validation_result = 987654321.0, None, {}
         self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
+        full_st = time.time()
         for i in range(self.opt.num_iters):
             start_t = time.time()
-            self._iterate(buf, group='rowwise')
-            err = self._iterate(buf, group='colwise')
+
+            _loss_nume1, _loss_deno1 = self._iterate(buf, group='rowwise')
+            _loss_nume2, _loss_deno2 = self._iterate(buf, group='colwise')
+            loss_nume = _loss_nume1 + _loss_nume2
+            loss_deno = _loss_deno1 + _loss_deno2
+
             train_t = time.time() - start_t
-            rmse = (err / self.data.get_header()['num_nnz']) ** 0.5
+            rmse = (loss_nume / (loss_deno + self.opt.eps)) ** 0.5
             metrics = {'train_loss': rmse}
             if self.opt.validation and self.opt.evaluation_on_learning and self.periodical(self.opt.evaluation_period, i):
                 start_t = time.time()
@@ -143,6 +184,11 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
             best_loss = self.save_best_only(rmse, best_loss, i)
             if self.early_stopping(rmse):
                 break
+        full_el = time.time() - full_st
+        self.logger.info(f"elapsed for full epochs: {full_el:.2f} sec")
+        if self.opt.accelerator and self.opt.d < self.vdim:
+            self.P = self.P[:, :self.opt.d]
+            self.Q = self.Q[:, :self.opt.d]
         ret = {'train_loss': rmse}
         ret.update({'val_%s' % k: v
                     for k, v in self.validation_result.items()})

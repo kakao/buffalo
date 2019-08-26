@@ -77,7 +77,7 @@ void CALS::precompute(int axis)
     }
 }
 
-double CALS::partial_update(
+pair<double, double> CALS::partial_update(
         int start_x,
         int next_x,
         int64_t* indptr,
@@ -87,7 +87,7 @@ double CALS::partial_update(
 {
     if( (next_x - start_x) == 0) {
         // WARN0("No data to process");
-        return 0.0;
+        return make_pair(0.0, 0.0);
     }
 
     float reg = 0.0;
@@ -115,7 +115,8 @@ double CALS::partial_update(
 
     omp_set_num_threads(num_workers);
 
-    vector<float> errs(num_workers, 0.0);
+    vector<double> loss_nume(num_workers, 0.0);
+    vector<double> loss_deno(num_workers, 0.0);
     int end_loop = next_x - start_x;
     const int64_t shifted = start_x == 0 ? 0 : indptr[start_x - 1];
     #pragma omp parallel
@@ -141,35 +142,42 @@ double CALS::partial_update(
 
             VectorType Fxy(D);
             Fxy.setZero();
-            for (int64_t idx=0, it = beg - shifted; it < end - shifted; ++it, ++idx) {
-                const int& c = keys[it];
-                const float& v = vals[it];
-                const auto& q = Q.row(c);
-                Fs.row(idx) = v * q;
-                Fs2.row(idx) = q;
-                Fxy.noalias() += (q * (1.0 + v * alpha));
+            
+            // compute loss on negative samples (only item side)
+            if (compute_loss_on_training and axis == 1){
+                loss_nume[worker_id] += P.row(u).dot(P.row(u) * FF_);
+                loss_deno[worker_id] += Q.rows();
+            }
+
+            for (int64_t idx=0, it = beg; it < end; ++it, ++idx) {
+                const int& c = keys[it - shifted];
+                const float& v = vals[it - shifted];
+                Fs.row(idx) = v * Q.row(c);
+                Fs2.row(idx) = Q.row(c);
+                Fxy.noalias() += (Q.row(c) * (1.0 + v * alpha));
+                // taking postive samples into account for computing loss (only item side)
+                if (compute_loss_on_training and axis == 1){
+                    float dot = P.row(u).dot(Q.row(c));
+                    loss_nume[worker_id] -= dot * dot;
+                    loss_nume[worker_id] += (dot - 1) * (dot - 1) * (1.0 + v * alpha);
+                    loss_deno[worker_id] += v * alpha;
+                }
             }
             FiF = Fs.transpose() * Fs2 * alpha;
             m = FF_ + FiF;
             float ada_reg = adaptive_reg ? (float)data_size : 1.0;
+            // compute loss on regularizatio term (both user and item side)
+            if (compute_loss_on_training){
+                loss_nume[worker_id] += ada_reg * reg * P.row(u).dot(P.row(u));
+            }
             for (int d=0; d < D; ++d)
                 m(d, d) += (reg * ada_reg);
 
             _leastsquare(P, u, m, Fxy);
-            if (compute_loss_on_training and axis == 1) {  // for only on item side
-                for (int64_t it=beg; it < end; ++it) {
-                    const int& c = keys[it - shifted];
-                    const float& v = vals[it - shifted];
-                    float p = P.row(u) * Q.row(c).transpose();
-                    double error = v - p;
-                    errs[worker_id] += error * error;
-                }
-            }
         }
     }
-
-    double err = accumulate(errs.begin(), errs.end(), 0.0);
-    return err;
+    return make_pair(accumulate(loss_nume.begin(), loss_nume.end(), 0.0),
+            accumulate(loss_deno.begin(), loss_deno.end(), 0.0));
 }
 
-}
+} // namespace als
