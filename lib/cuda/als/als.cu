@@ -24,11 +24,6 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
     float* Ap = &shared_memory[0];
     float* r = &shared_memory[vdim];
     float* p = &shared_memory[2*vdim];
-    float* l = &shared_memory[3*vdim];
-    // initialize shared memory as zero 
-    for (int idx=threadIdx.x; idx<4*vdim; idx+=blockDim.x){
-        shared_memory[idx] = 0.0;
-    }
 
     for (int row=blockIdx.x; row<next_x-start_x; row+=gridDim.x){
         float* _P = &P[(row+start_x)*vdim];
@@ -46,11 +41,11 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
         // not necessary to compute vdim times
         for (int d=0; d<dim; ++d)
             tmp -= _P[d] * FF[d * vdim + threadIdx.x];
-        l[threadIdx.x] = -tmp;
+        Ap[threadIdx.x] = -tmp;
 
         // compute loss on negative samples (only item side)
         if (compute_loss and axis){
-            float _dot = dot(_P, l);
+            float _dot = dot(_P, Ap);
             if (threadIdx.x == 0){
                 loss_nume[blockIdx.x] += _dot;
                 loss_deno[blockIdx.x] += op_rows;
@@ -236,7 +231,7 @@ std::pair<double, double> CuALS::partial_update(int start_x,
     CHECK_CUDA(cudaDeviceGetAttribute(&mp_cnt, cudaDevAttrMultiProcessorCount, devId));
     int block_cnt = 128 * mp_cnt;
     int thread_cnt = vdim_;
-    size_t shared_memory_size = sizeof(float) * (4 * vdim_);
+    size_t shared_memory_size = sizeof(float) * (3 * vdim_);
     int rows = axis == 0? P_rows_: Q_rows_;
     int op_rows = axis == 0? Q_rows_: P_rows_;
     float* P = axis == 0? devP_: devQ_;
