@@ -3,8 +3,8 @@
 #include <cuda_runtime.h>
 #include "cublas_v2.h"
 
-#include "buffalo/cuda/als/als.h"
 #include "buffalo/cuda/utils.cuh"
+#include "buffalo/cuda/als/als.hpp"
 
 
 namespace cuda_als{
@@ -110,6 +110,50 @@ void CuALS::set_options(bool compute_loss, int dim, int num_cg_max_iters,
     if (dim_ % WARP_SIZE > 0) vdim_ += WARP_SIZE;
     CHECK_CUDA(cudaMalloc(&devFF_, sizeof(float)*vdim_*vdim_));
     CHECK_CUBLAS(cublasCreate(&blas_handle_));
+}
+
+bool CuALS::parse_option(std::string opt_path, Json& j){
+    std::ifstream in(opt_path.c_str());
+    if (not in.is_open()) {
+        INFO("File not exists: {}", opt_path);
+        return false;
+    }
+
+    std::string str((std::istreambuf_iterator<char>(in)),
+               std::istreambuf_iterator<char>());
+    std::string err_cmt;
+    auto _j = Json::parse(str, err_cmt);
+    if (not err_cmt.empty()) {
+        INFO("Failed to parse: {}", err_cmt);
+        return false;
+    }
+    j = _j;
+    return true;
+}
+
+bool CuALS::init(std::string opt_path){
+    // parse options
+    bool ok = parse_option(opt_path, opt_);
+    if (ok){
+        // set options
+        compute_loss_ = opt_["compute_loss"].bool_value();
+        
+        dim_ = opt_["d"].int_value();
+        num_cg_max_iters_ = opt_["num_cg_max_iters"].int_value();
+         
+        alpha_ = opt_["alpha"].number_value();
+        reg_u_ = opt_["reg_u"].number_value();
+        reg_i_ = opt_["reg_i"].number_value();
+        cg_tolerance_ = opt_["cg_tolerance"].number_value();
+        eps_ = opt_["eps"].number_value();
+        
+        // virtual dimension
+        vdim_ = (dim_ / WARP_SIZE) * WARP_SIZE;
+        if (dim_ % WARP_SIZE > 0) vdim_ += WARP_SIZE;
+        CHECK_CUDA(cudaMalloc(&devFF_, sizeof(float)*vdim_*vdim_));
+        CHECK_CUBLAS(cublasCreate(&blas_handle_));
+    }
+    return ok;
 }
 
 void CuALS::initialize_model(

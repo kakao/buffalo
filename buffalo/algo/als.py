@@ -19,9 +19,7 @@ from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 try:
     from buffalo.algo.cuda._als import CyALS as CuALS
 except Exception as e:
-    import sys
-    print(f"Error message: {e}", file=sys.stderr)
-    print("No cuda library", file=sys.stderr)
+    aux.get_logger("system").error(f"ImportError CuALS, no cuda library exists. error message: {e}")
 
 
 class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
@@ -41,18 +39,10 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
         self.logger = log.get_logger('ALS')
         self.opt, self.opt_path = self.get_option(opt_path)
-        self.vdim = self.opt.d
-        if self.opt.accelerator:
-            self.obj = CuALS()
-            self.obj.set_options(self.opt.compute_loss_on_training,
-                                 self.opt.d, self.opt.num_cg_max_iters,
-                                 self.opt.alpha, self.opt.reg_u, self.opt.reg_i,
-                                 self.opt.cg_tolerance, self.opt.eps)
-            self.vdim = self.obj.get_vdim()
-        else:
-            self.obj = CyALS()
-            assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
-                'cannot parse option file: %s' % opt_path
+        self.obj = CuALS() if self.opt.accelerator else CyALS()
+        assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
+            'cannot parse option file: %s' % opt_path
+        self.vdim = self.obj.get_vdim() if self.opt.accelerator else self.opt.d
         self.data = None
         data = kwargs.get('data')
         data_opt = self.opt.get('data_opt')
