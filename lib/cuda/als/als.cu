@@ -24,7 +24,7 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
     float* Ap = &shared_memory[0];
     float* r = &shared_memory[vdim];
     float* p = &shared_memory[2*vdim];
-    float* l = &shared_memory[3*vdim];;
+    float* l = &shared_memory[3*vdim];
     // initialize shared memory as zero 
     for (int idx=threadIdx.x; idx<4*vdim; idx+=blockDim.x){
         shared_memory[idx] = 0.0;
@@ -58,7 +58,6 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
         }
 
         tmp -= _P[threadIdx.x] * ada_reg;
-        
 
         for (int idx=indptr[row]; idx<indptr[row+1]; ++idx){
             const float* _Q = &Q[keys[idx] * vdim];
@@ -138,7 +137,6 @@ CuALS::~CuALS(){
 bool CuALS::parse_option(std::string opt_path, Json& j){
     std::ifstream in(opt_path.c_str());
     if (not in.is_open()) {
-        INFO("File not exists: {}", opt_path);
         return false;
     }
 
@@ -147,7 +145,6 @@ bool CuALS::parse_option(std::string opt_path, Json& j){
     std::string err_cmt;
     auto _j = Json::parse(str, err_cmt);
     if (not err_cmt.empty()) {
-        INFO("Failed to parse: {}", err_cmt);
         return false;
     }
     j = _j;

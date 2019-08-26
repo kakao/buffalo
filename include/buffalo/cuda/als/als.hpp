@@ -3,7 +3,6 @@
 #include <utility>
 
 #include "json11.hpp"
-#include "buffalo/misc/log.hpp"
 
 struct cublasContext;
 
@@ -38,7 +37,6 @@ public:
     int dim_, vdim_, num_cg_max_iters_, P_rows_, Q_rows_;
     float alpha_, reg_u_, reg_i_, cg_tolerance_, eps_;
     bool compute_loss_, adaptive_reg_;
-    std::shared_ptr<spdlog::logger> logger_;
 };
 
 } // namespace cuda_als

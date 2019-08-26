@@ -132,8 +132,7 @@ if CUDA:
                                 library_dirs=[CUDA['lib64']],
                                 libraries=['cudart', 'cublas', 'curand'],
                                 include_dirs=["./include", numpy_include_dirs,
-                                              CUDA['include'], "./3rd/json11",
-                                              "./3rd/spdlog/include"]))
+                                              CUDA['include'], "./3rd/json11"]))
 else:
     print("Failed to find CUDA toolkit. Building without GPU acceleration.")
 
