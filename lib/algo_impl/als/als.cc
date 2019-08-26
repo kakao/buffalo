@@ -162,7 +162,7 @@ pair<double, double> CALS::partial_update(
                     loss_nume[worker_id] += (dot - 1) * (dot - 1) * (1.0 + v * alpha);
                     loss_deno[worker_id] += v * alpha;
                 }
-
+            }
             FiF = Fs.transpose() * Fs2 * alpha;
             m = FF_ + FiF;
             float ada_reg = adaptive_reg ? (float)data_size : 1.0;
@@ -176,10 +176,8 @@ pair<double, double> CALS::partial_update(
             _leastsquare(P, u, m, Fxy);
         }
     }
-
     return make_pair(accumulate(loss_nume.begin(), loss_nume.end(), 0.0),
             accumulate(loss_deno.begin(), loss_deno.end(), 0.0));
 }
 
-
-}
+} // namespace als
