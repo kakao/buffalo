@@ -117,7 +117,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         st = time.time()
         self.obj.precompute(int_group)
         el, st = time.time() - st, time.time()
-        err = 0.0
+        loss_nume, loss_deno = 0.0, 0.0
         update_t, feed_t, updated = el, 0, 0
         buf.set_group(group)
         with log.pbar(log.DEBUG, desc='%s' % group,
@@ -132,7 +132,10 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
                     indptr = (_indptr - _indptr[0]).astype(np.int32)
                 _feed_t, st = time.time() - st, time.time()
 
-                err += self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)
+                _loss_nume, _loss_deno = self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)
+                loss_nume += _loss_nume
+                loss_deno += _loss_deno
+                self.logger.info(f"loss nume: {_loss_nume}, loss_deno: {_loss_deno}")
                 self.synchronize_with_obj(int_group)
 
                 _update_t, st = time.time() - st, time.time()
@@ -140,7 +143,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
                 feed_t += _feed_t
                 update_t += _update_t
         self.logger.debug(f'{group} updated: processed({updated}) elapsed(data feed: {feed_t:0.3f}s update: {update_t:0.03}s)')
-        return err
+        return loss_nume, loss_deno
 
     def train(self):
         buf = self._get_buffer()
@@ -150,10 +153,12 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         full_st = time.time()
         for i in range(self.opt.num_iters):
             start_t = time.time()
-            self._iterate(buf, group='rowwise')
-            err = self._iterate(buf, group='colwise')
+            _loss_nume1, _loss_deno1 = self._iterate(buf, group='rowwise')
+            _loss_nume2, _loss_deno2 = self._iterate(buf, group='colwise')
+            loss_nume = _loss_nume1 + _loss_nume2
+            loss_deno = _loss_deno1 + _loss_deno2
             train_t = time.time() - start_t
-            rmse = (err / self.data.get_header()['num_nnz']) ** 0.5
+            rmse = (loss_nume / (loss_deno + self.opt.eps)) ** 0.5
             metrics = {'train_loss': rmse}
             if self.opt.validation and self.opt.evaluation_on_learning and self.periodical(self.opt.evaluation_period, i):
                 start_t = time.time()

@@ -3,6 +3,7 @@
 # -*- coding: utf-8 -*-
 import cython
 from libcpp cimport bool
+from libcpp.pair cimport pair
 from libcpp.string cimport string
 from libc.stdint cimport int64_t, int32_t
 
@@ -17,12 +18,12 @@ cdef extern from "buffalo/algo_impl/als/als.hpp" namespace "als":
         void initialize_model(float*, int,
                               float*, int) nogil except +
         void precompute(int) nogil except +
-        double partial_update(int,
-                              int,
-                              int64_t*,
-                              int32_t*,
-                              float*,
-                              int) nogil except +
+        pair[double, double] partial_update(int,
+                                            int,
+                                            int64_t*,
+                                            int32_t*,
+                                            float*,
+                                            int) nogil except +
 
 
 

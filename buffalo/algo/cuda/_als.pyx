@@ -3,24 +3,23 @@
 # -*- coding: utf-8 -*-
 import cython
 from libcpp cimport bool
+from libcpp.pair cimport pair
 from libcpp.string cimport string
-from libcpp cimport bool as bool_t;
 from libc.stdint cimport int32_t
 
 import numpy as np
 cimport numpy as np
 
 
-cdef extern from "buffalo/cuda/als/als.h" namespace "cuda_als":
+cdef extern from "buffalo/cuda/als/als.hpp" namespace "cuda_als":
     cdef cppclass CuALS:
         CuALS() nogil except +
-        void set_options(bool, int, int,
-                         float, float, float, float, float) nogil except +
+        bool init(string) nogil except +
         void initialize_model(float*, int,
                               float*, int) nogil except +
         void precompute(int) nogil except +
-        void synchronize(int, bool_t) nogil except +
-        float partial_update(int, int,
+        void synchronize(int, bool) nogil except +
+        pair[double, double] partial_update(int, int,
                              int32_t*, int32_t*,
                              float*, int) nogil except +
         int get_vdim() nogil except +
@@ -36,10 +35,8 @@ cdef class CyALS:
     def __dealloc__(self):
         del self.obj
 
-    def set_options(self, compute_loss, dim, num_cg_max_iters,
-                    alpha, reg_u, reg_i, cg_tolerance, eps):
-        self.obj.set_options(compute_loss, dim, num_cg_max_iters,
-                             alpha, reg_u, reg_i, cg_tolerance, eps)
+    def init(self, opt_path):
+        return self.obj.init(opt_path)
 
     def initialize_model(self,
                          np.ndarray[np.float32_t, ndim=2] P,

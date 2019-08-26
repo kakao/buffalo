@@ -1,5 +1,7 @@
 #pragma once
 #include <fstream>
+#include <utility>
+
 #include "json11.hpp"
 #include "buffalo/misc/log.hpp"
 
@@ -14,9 +16,6 @@ public:
     CuALS();
     ~CuALS();
 
-    void set_options(bool compute_loss, int dim, int num_cg_max_iters, 
-            float alpha, float reg_u, 
-            float reg_i, float cg_tolerance, float eps);
     bool init(std::string opt_path); 
     bool parse_option(std::string opt_path, Json& j);
 
@@ -26,7 +25,7 @@ public:
     void precompute(int axis);
     void synchronize(int axis, bool device_to_host);
     int get_vdim();
-    float partial_update(int start_x, 
+    std::pair<double, double> partial_update(int start_x, 
             int next_x,
             int* indptr,
             int* keys,
@@ -38,7 +37,7 @@ public:
     cublasContext* blas_handle_;
     int dim_, vdim_, num_cg_max_iters_, P_rows_, Q_rows_;
     float alpha_, reg_u_, reg_i_, cg_tolerance_, eps_;
-    bool compute_loss_;
+    bool compute_loss_, adaptive_reg_;
     std::shared_ptr<spdlog::logger> logger_;
 };
 

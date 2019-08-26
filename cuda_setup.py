@@ -174,5 +174,4 @@ class cuda_build_ext(setuptools_build_ext):
 
 
 CUDA = locate_cuda()
-print(CUDA)
 build_ext = cuda_build_ext if CUDA else setuptools_build_ext
