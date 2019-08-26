@@ -47,6 +47,7 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
         for (int d=0; d<dim; ++d)
             tmp -= _P[d] * FF[d * vdim + threadIdx.x];
         l[threadIdx.x] = -tmp;
+
         // compute loss on negative samples (only item side)
         if (compute_loss and axis){
             float _dot = dot(_P, l);

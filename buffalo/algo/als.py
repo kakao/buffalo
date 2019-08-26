@@ -135,7 +135,6 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
                 _loss_nume, _loss_deno = self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)
                 loss_nume += _loss_nume
                 loss_deno += _loss_deno
-                self.logger.info(f"loss nume: {_loss_nume}, loss_deno: {_loss_deno}")
                 self.synchronize_with_obj(int_group)
 
                 _update_t, st = time.time() - st, time.time()
@@ -153,10 +152,12 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         full_st = time.time()
         for i in range(self.opt.num_iters):
             start_t = time.time()
+
             _loss_nume1, _loss_deno1 = self._iterate(buf, group='rowwise')
             _loss_nume2, _loss_deno2 = self._iterate(buf, group='colwise')
             loss_nume = _loss_nume1 + _loss_nume2
             loss_deno = _loss_deno1 + _loss_deno2
+
             train_t = time.time() - start_t
             rmse = (loss_nume / (loss_deno + self.opt.eps)) ** 0.5
             metrics = {'train_loss': rmse}
