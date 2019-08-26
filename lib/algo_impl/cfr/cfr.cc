@@ -31,7 +31,7 @@ bool CCFR::init(string opt_path){
     if (ok){
 
         // int parameters
-        dim_ = opt_["dim"].int_value();
+        dim_ = opt_["d"].int_value();
         num_threads_ = opt_["num_workers"].int_value();
         num_cg_max_iters_ = opt_["num_cg_max_iters"].int_value();
         alpha_ = opt_["alpha"].number_value();
