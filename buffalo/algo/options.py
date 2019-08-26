@@ -50,6 +50,7 @@ class ALSOption(AlgoOption):
         opt.update({
             'adaptive_reg': False,
             'save_factors': False,
+            'accelerator': False,
 
             'd': 20,
             'num_iters': 10,
