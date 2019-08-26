@@ -87,7 +87,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         super().initialize()
         assert self.data, 'Data is not setted'
         header = self.data.get_header()
-        num_users, num_items, d = \
+        num_users, num_items, dim = \
             header["num_users"], header["num_items"], self.opt.d
         for attr, shape, name in [('U', (num_users, dim), "user"),
                                   ('I', (num_items, dim), "item"),
