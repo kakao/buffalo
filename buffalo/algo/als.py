@@ -145,6 +145,16 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         return loss_nume, loss_deno
 
     def train(self):
+        if self.opt.accelerator:
+            for attr in ["P", "Q"]:
+                F = getattr(self, attr)
+                if F.shape[1] < self.vdim:
+                    _F = np.empty(shape=(F.shape[0], self.vdim), dtype=np.float32)
+                    _F[:, :self.P.shape[1]] = F
+                    _F[:, self.opt.d: ] = 0.0
+                    setattr(self, attr, _F)
+            self.initialize(self.P, self.Q)
+
         buf = self._get_buffer()
         best_loss, rmse, self.validation_result = 987654321.0, None, {}
         self.prepare_evaluation()
