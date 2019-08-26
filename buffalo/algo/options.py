@@ -69,6 +69,7 @@ class ALSOption(AlgoOption):
 
         :ivar bool adaptive_reg: Set True, for adaptive regularization. (default: False)
         :ivar bool save_factors: Set True, to save models. (default: False)
+        :ivar bool accelerator: Set True, to accelerate training using GPU. (default: False)
         :ivar int d: The number of latent feature dimension. (default: 20)
         :ivar int num_iters: The number of iterations for training. (default: 10)
         :ivar int num_workers: The number of threads. (default: 1)
