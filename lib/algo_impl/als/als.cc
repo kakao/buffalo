@@ -113,7 +113,6 @@ pair<double, double> CALS::partial_update(
     bool compute_loss_on_training = opt_["compute_loss_on_training"].bool_value();
     float alpha = opt_["alpha"].number_value();
 
-    ConjugateGradient<FactorTypeRowMajor, Lower|Upper> cg[num_workers];
     omp_set_num_threads(num_workers);
 
     vector<double> loss_nume(num_workers, 0.0);
@@ -143,6 +142,7 @@ pair<double, double> CALS::partial_update(
 
             VectorType Fxy(D);
             Fxy.setZero();
+            
             // compute loss on negative samples (only item side)
             if (compute_loss_on_training and axis == 1){
                 loss_nume[worker_id] += P.row(u).dot(P.row(u) * FF_);
@@ -162,7 +162,6 @@ pair<double, double> CALS::partial_update(
                     loss_nume[worker_id] += (dot - 1) * (dot - 1) * (1.0 + v * alpha);
                     loss_deno[worker_id] += v * alpha;
                 }
-            }
 
             FiF = Fs.transpose() * Fs2 * alpha;
             m = FF_ + FiF;

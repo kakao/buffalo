@@ -13,8 +13,8 @@ from configparser import ConfigParser
 from cuda_setup import CUDA, build_ext
 from distutils.extension import Extension
 
+import n2
 import numpy
-import eigency
 
 # TODO: Python3 Support
 if sys.version_info[:3] < (3, 6):
@@ -22,6 +22,7 @@ if sys.version_info[:3] < (3, 6):
 
 assert platform.system() == 'Linux'  # TODO: MacOS
 numpy_include_dirs = os.path.split(numpy.__file__)[0] + '/core/include'
+n2_shared_object = n2.__file__
 
 MAJOR = 0
 MINOR = 3
@@ -60,7 +61,7 @@ extensions = [
                             numpy_include_dirs,
                             '3rd/json11',
                             '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
+                            site_cfg.get('eigen', 'include_dirs')],
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
@@ -70,7 +71,7 @@ extensions = [
                             numpy_include_dirs,
                             '3rd/json11',
                             '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
+                            site_cfg.get('eigen', 'include_dirs')],
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
@@ -80,7 +81,7 @@ extensions = [
                             numpy_include_dirs,
                             '3rd/json11',
                             '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
+                            site_cfg.get('eigen', 'include_dirs')],
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
@@ -90,7 +91,7 @@ extensions = [
                             numpy_include_dirs,
                             '3rd/json11',
                             '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
+                            site_cfg.get('eigen', 'include_dirs')],
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
@@ -100,7 +101,7 @@ extensions = [
                             numpy_include_dirs,
                             '3rd/json11',
                             '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')] + eigency.get_includes(),
+                            site_cfg.get('eigen', 'include_dirs')],
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
@@ -112,7 +113,11 @@ extensions = [
               sources=['buffalo/parallel/_core.cpp'],
               libraries=['gomp'],
               include_dirs=[numpy_include_dirs,
+                            '3rd/n2/include',
+                            '3rd/spdlog/include',
                             site_cfg.get("eigen", "include_dirs")],
+              library_dirs=['/usr/local/lib64'],
+              extra_objects=[n2_shared_object],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
 ]
 

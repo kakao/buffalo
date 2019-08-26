@@ -10,15 +10,20 @@ import threading
 import h5py
 import psutil
 import numpy as np
-from implicit.datasets.movielens import get_movielens
+
+
+DB = {'kakao_reco_730m': './kakao_reco_730m.h5py',
+      'ml20m': 'ml20m.h5py',
+      'ml100k': 'ml100k.h5py',
+      'kakao_brunch_12m': 'kakao_brunch_12m.h5py'}
 
 
 def collect_memory_usage(stop_event, result_queue):
     p = psutil.Process(os.getpid())
     data = []
     while not stop_event.is_set():
-        time.sleep(5)
         data.append(p.memory_info().rss)
+        time.sleep(5)
     result_queue.put(data)
 
 
@@ -46,8 +51,7 @@ def db_to_coo(db):
 def db_to_dataframe(db, spark, context):
     from pyspark.sql import Row
     coo = db_to_coo(db)
-    data = context.parallelize(np.array([coo.row, coo.col, coo.data]).T,
-                               numSlices=len(coo.row) / 1024)
+    data = context.parallelize(np.array([coo.row, coo.col, coo.data]).T)
     coo = None
     return spark.createDataFrame(data.map(lambda p: Row(row=int(p[0]),
                                                         col=int(p[1]),
@@ -61,8 +65,9 @@ class Benchmark(object):
                 from buffalo.algo.options import ALSOption
                 opt = ALSOption().get_default_option()
                 opt.update({'d': kwargs.get('d', 100),
-                            'use_conjugate_gradient': kwargs.get('use_cg', True),
+                            'optimizer': {True: 'manual_cg', False: 'ldlt'}.get(kwargs.get('use_cg', True)),
                             'num_iters': kwargs.get('num_iters', 10),
+                            'num_cg_max_iters': 3,
                             'num_workers': kwargs.get('num_workers', 10),
                             'compute_loss_on_training': kwargs.get('compute_loss_on_training', False)})
                 return opt
@@ -102,8 +107,8 @@ class Benchmark(object):
                         'implicitPrefs': True,
                         'userCol': 'row',
                         'itemCol': 'col',
-                        # 'intermediateStorageLevel': 'MEMORY_ONLY',
-                        # 'finalStorageLevel': 'MEMORY_ONLY',
+                        'intermediateStorageLevel': 'MEMORY_ONLY',
+                        'finalStorageLevel': 'MEMORY_ONLY',
                         'ratingCol': 'data'}
 
     def run(self, func, *args, **kwargs):
@@ -111,13 +116,19 @@ class Benchmark(object):
         result_queue = queue.Queue()
         t = threading.Thread(target=collect_memory_usage, args=(stop_event, result_queue))
         t.start()
+        time.sleep(0.1)  # context switching
         start_t = time.time()
-        func(*args, **kwargs)
+        if kwargs.get('iterable'):
+            iterable = kwargs.get('iterable')
+            kwargs.pop('iterable')
+            for data in iterable:
+                func(data, **kwargs)
+        else:
+            func(*args, **kwargs)
         elapsed = time.time() - start_t
         stop_event.set()
         t.join()
-        memory_usage = result_queue.get()
-        model = None
+        memory_usage = result_queue.get(block=True, timeout=10)
         return elapsed, {'min': min(memory_usage) / 1024 / 1024.0,
                          'avg': sum(memory_usage) / len(memory_usage) / 1024 / 1024.0,
                          'max': max(memory_usage) / 1024 / 1024.0}
@@ -128,13 +139,8 @@ class ImplicitLib(Benchmark):
         super().__init__()
 
     def get_database(self, name, **kwargs):
-        if name in ['ml20m', 'ml100k']:
-            _, ratings = get_movielens({'ml20m': '20m', 'ml100k': '100k'}.get(name))
-            ratings.data = np.ones(len(ratings.data))
-            ratings = ratings.tocsr()
-            return ratings
-        elif name == 'kakao_reco_medium':
-            db = h5py.File('kakao_reco_medium.h5py')
+        if name in ['ml20m', 'ml100k', 'kakao_reco_730m', 'kakao_brunch_12m']:
+            db = h5py.File(DB[name])
             ratings = db_to_coo(db)
             db.close()
             return ratings
@@ -146,6 +152,8 @@ class ImplicitLib(Benchmark):
             **opts
         )
         ratings = self.get_database(database, **kwargs)
+        if kwargs.get('return_instance_before_train'):
+            return (model, ratings)
 
         elapsed, mem_info = self.run(model.fit, ratings)
         model = None
@@ -158,9 +166,17 @@ class ImplicitLib(Benchmark):
             **opts
         )
         ratings = self.get_database(database, **kwargs)
+        if kwargs.get('return_instance_before_train'):
+            return (model, ratings)
 
         elapsed, mem_info = self.run(model.fit, ratings)
         model = None
+        return elapsed, mem_info
+
+    def most_similar(self, keys, **kwargs):
+        model = kwargs['model']
+        kwargs.pop('model')
+        elapsed, mem_info = self.run(model.similar_items, keys, **kwargs)
         return elapsed, mem_info
 
 
@@ -175,15 +191,19 @@ class BuffaloLib(Benchmark):
         data_opt.data.use_cache = True
         data_opt.data.batch_mb = kwargs.get('batch_mb', 1024)
         if name == 'ml20m':
-            data_opt.data.path = 'ml20m.h5py'
+            data_opt.data.path = DB[name]
             data_opt.input.main = '../tests/ml-20m/main'
         elif name =='ml100k':
-            data_opt.data.path = 'ml100k.h5py'
+            data_opt.data.path = DB[name]
             data_opt.input.main = '../tests/ml-100k/main'
-        elif name == 'kakao_reco_medium':
-            data_opt.data.path = 'kakao_reco_medium.h5py'
+        elif name == 'kakao_reco_730m':
+            data_opt.data.path = DB[name]
             data_opt.data.tmp_dir = './tmp/'
-            data_opt.input.main = '../tests/kakao_reco_medium/main'
+            data_opt.input.main = '../tests/ext/kakao-reco-730m/main'
+        elif name == 'kakao_brunch_12m':
+            data_opt.data.path = DB[name]
+            data_opt.data.tmp_dir = './tmp/'
+            data_opt.input.main = '../tests/ext/kakao-brunch-12m/main'
         return data_opt
 
     def als(self, database, **kwargs):
@@ -192,6 +212,8 @@ class BuffaloLib(Benchmark):
         data_opt = self.get_database(database, **kwargs)
         als = ALS(opts, data_opt=data_opt)
         als.initialize()
+        if kwargs.get('return_instance_before_train'):
+            return als
         elapsed, mem_info = self.run(als.train)
         als = None
         return elapsed, mem_info
@@ -202,8 +224,16 @@ class BuffaloLib(Benchmark):
         data_opt = self.get_database(database, **kwargs)
         bpr = BPRMF(opts, data_opt=data_opt)
         bpr.initialize()
+        if kwargs.get('return_instance_before_train'):
+            return bpr
         elapsed, mem_info = self.run(bpr.train)
         bpr = None
+        return elapsed, mem_info
+
+    def most_similar(self, keys, **kwargs):
+        model = kwargs['model']
+        kwargs.pop('model')
+        elapsed, mem_info = self.run(model.most_similar, keys, **kwargs)
         return elapsed, mem_info
 
 
@@ -212,30 +242,21 @@ class LightfmLib(Benchmark):
         super().__init__()
 
     def get_database(self, name, **kwargs):
-        if name == 'ml20m':
-            db = h5py.File('ml20m.h5py')
-            ratings = db_to_coo(db)
-            db.close()
-            return ratings
-        if name == 'ml100k':
-            db = h5py.File('ml100k.h5py')
-            ratings = db_to_coo(db)
-            db.close()
-            return ratings
-        elif name == 'kakao_reco_medium':
-            db = h5py.File('kakao_reco_medium.h5py')
+        if name in ['ml20m', 'ml100k', 'kakao_reco_730m', 'kakao_brunch_12m']:
+            db = h5py.File(DB[name])
             ratings = db_to_coo(db)
             db.close()
             return ratings
 
     def als(self, database, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError
 
     def bpr(self, database, **kwargs):
         from lightfm import LightFM
         opts = self.get_option('lightfm', 'bpr', **kwargs)
         data = self.get_database(database, **kwargs)
-        bpr = LightFM(no_components=kwargs.get('num_workers'),
+        bpr = LightFM(loss='bpr',
+                      no_components=kwargs.get('num_workers'),
                       max_sampled=1)
         elapsed, mem_info = self.run(bpr.fit, data, data, **opts)
         bpr = None
@@ -259,8 +280,28 @@ class QmfLib(Benchmark):
                         for line in fin:
                             fout.write(line)
             return os.path.abspath(db_path)
-        elif name == 'kakao_reco_medium':
-            return NotImplemented
+        if name in ['kakao_brunch_12m']:
+            db_path = f'./qmf.{name}.dataset'
+            num_header_lines = 4
+            if not os.path.isfile(db_path):
+                with open('../tests/ext/kakao-brunch-12m/main') as fin:
+                    for i in range(num_header_lines):
+                        _ = fin.readline()
+                    with open(db_path, 'w') as fout:
+                        for line in fin:
+                            fout.write(line)
+            return os.path.abspath(db_path)
+        elif name == 'kakao_reco_730m':
+            db_path = f'./qmf.{name}.dataset'
+            num_header_lines = 4
+            if not os.path.isfile(db_path):
+                with open('../tests/ext/kakao-reco-730m/main') as fin:
+                    for i in range(num_header_lines):
+                        _ = fin.readline()
+                    with open(db_path, 'w') as fout:
+                        for line in fin:
+                            fout.write(line)
+            return os.path.abspath(db_path)
 
     def als(self, database, **kwargs):
         import subprocess
@@ -340,14 +381,8 @@ class PysparkLib(Benchmark):
         super().__init__()
 
     def get_database(self, name, **kwargs):
-        if name in ['ml20m', 'ml100k']:
-            db = h5py.File({'ml20m': 'ml20m.h5py',
-                            'ml100k': 'ml100k.h5py'}.get(name))
-            ratings = db_to_dataframe(db, kwargs.get('spark'), kwargs.get('context'))
-            db.close()
-            return ratings
-        elif name == 'kakao_reco_medium':
-            db = h5py.File('kakao_reco_medium.h5py')
+        if name in ['ml20m', 'ml100k', 'kakao_reco_730m', 'kakao_brunch_12m']:
+            db = h5py.File(DB[name])
             ratings = db_to_dataframe(db, kwargs.get('spark'), kwargs.get('context'))
             db.close()
             return ratings
@@ -360,11 +395,11 @@ class PysparkLib(Benchmark):
         conf = SparkConf()\
                .setAppName("pyspark")\
                .setMaster('local[%s]' % kwargs.get('num_workers'))\
-               .set('spark.cores.max', 1)\
                .set('spark.local.dir', './tmp/')\
+               .set('spark.worker.cleanup.enabled', 'true')\
                .set('spark.driver.memory', '32G')
         context = SparkContext(conf=conf)
-        context.setLogLevel('INFO')
+        context.setLogLevel('WARN')
         spark = SparkSession(context)
         data = self.get_database(database, spark=spark, context=context)
         print(opts)
@@ -374,4 +409,4 @@ class PysparkLib(Benchmark):
         return elapsed, memory_usage
 
     def bpr(self, database, **kwargs):
-        raise NotImplemented
+        raise NotImplementedError

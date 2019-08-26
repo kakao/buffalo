@@ -1,50 +1,59 @@
 # Benchmark
-We ran the benchmark with the Implicit library. The Implicit library provides ALS, BPRMF as like ours and was written in Python that easy to compare.
+We ran benchmark buffalo with the well known open source libraries so far.
 
-This benchmark can be reproduce with main.py.
+- [Apache Spark](https://spark.apache.org)
+- [Quora QMF](https://github.com/quora/qmf)
+- [lyst LightFM](https://github.com/lyst/lightfm)
+- [Implicit](https://github.com/benfred/implicit)
 
-- Machine
-  - CPU: Intel(R) Xeon(R) CPU E5-2620 v3 @ 2.40GHz (6 cores)
-  - Ram: 64GB
+We tested two algorithms, ALS, BPRMF and measured training speed and memory usage for vairous datasets. Some of libraries not support either ALS or BPRMF, in that case excluded.
+
+- Test Environments
+  - CPU Machine
+    - CPU: Intel(R) Xeon(R) CPU E5-2620 v3 @ 2.40GHz (6 cores)
+    - RAM: 64GB
+    - SSD
+  - GPU Machine
+    - CPU: Intel(R) Xeon(R) Gold 5120 CPU @ 2.20GHz
+    - GPU: NVIDIA Tesla V100 (Cuda 10, we use only 1 card)
+    - RAM: 64GB
+    - SSD
+  - gcc/g++-7.2.1
+  - Python 3.6
+
+To download the databases, please see the README.md on ./tests/.
+- Databases
+  - KakaoBrunch12M
+    - Sampled user reading history from Kakao Brunch service, which kind of blog server, during 6 months.
+  - KakaoReco730
+    - Sampled user reading history from Kakao annoymous service during 8 days.
+  - Movielens20M
+  - Movielens100K
 
 
 ## Alternating Least Square
 
-![](benchmark1.png)
+- Fixed options (otherwise we let them as default except controlled options)
+  - Buffalo
+    - `optimizer=manual_cg num_cg_max_iters=3 compute_loss_on_training=False`
+  - Implicit
+    - `dtype=np.float32 use_cg=True use_native=True calculate_training_loss=False`
+  - Spark
+    - `implicitPrefs=True intermediateStroageLevel=MEMORY_ONLY finalStorageLevel=MEMORY_ONLY`
+  - QMF
+    - `asis`
 
-- The number of latent feature vector dimension
-
-| method   |     D=10 |     D=20 |    D=30 |    D=40 |    D=50 |    D=60 |    D=70 |    D=80 |     D=90 |   D=100 |    D=150 |   D=200 |
-|----------|----------|----------|---------|---------|---------|---------|---------|---------|----------|---------|----------|---------|
-| buffalo  |  4.52909 |  6.35531 | 10.7146 | 11.5622 | 16.2517 | 21.6558 | 27.6353 | 29.1399 |  35.1215 | 39.8375 |  78.1201 | 117.606 |
-| implicit | 38.947   | 53.3205  | 70.2035 | 56.5195 | 76.7012 | 90.9826 | 74.1561 | 92.2424 | 105.24   | 85.6067 | 138.357  | 130.04  |
-
-Buffalo is faster up to 8 times.
-
-- The number of threads
-
-| method   |     T=1 |     T=2 |     T=4 |     T=6 |     T=12 |
-|----------|---------|---------|---------|---------|----------|
-| buffalo  | 54.975  | 27.8395 | 15.8394 | 11.0378 |  7.34631 |
-| implicit | 71.4901 | 53.8176 | 50.2625 | 47.4736 | 44.6368  |
-
-This showed that Buffalo library can better utilize the CPU. 
+Note that there is no Python version of QMF. Since we ran benchmark by Python script, we have to capture printed datetime information from standard output of QMF.
 
 
 ## Bayesian Personalized Ranking Matrix Factorization
 
-![](benchmark2.png)
-
-- The number of latent feature vector dimension
-
-| method   |    D=10 |    D=20 |    D=30 |    D=40 |    D=50 |    D=60 |    D=70 |    D=80 |    D=90 |   D=100 |   D=150 |   D=200 |
-|----------|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|---------|
-| buffalo  | 15.363  | 15.8758 | 16.1761 | 15.5208 | 17.5907 | 16.9534 | 18.1864 | 18.3509 | 18.5654 | 18.4117 | 23.7365 | 26.6038 |
-| implicit | 21.8934 | 25.2693 | 26.0045 | 26.0272 | 27.2161 | 29.8781 | 32.3524 | 32.9447 | 34.4455 | 35.5406 | 44.9297 | 52.3293 |
-
-- The number of threads
-
-| method   |      T=1 |     T=2 |     T=4 |     T=6 |    T=12 |
-|----------|----------|---------|---------|---------|---------|
-| buffalo  |  68.2997 | 39.2615 | 22.9208 | 18.2706 | 12.9425 |
-| implicit | 130.779  | 66.9705 | 35.1379 | 27.9193 | 19.894  |
+- Fixed options (otherwise we let them as default except controlled options)
+  - Buffalo
+    - `compute_loss_on_training=False`
+  - Implicit
+    - `dtype=np.float32 verify_negative_samples=True calculate_training_loss=False`
+  - LightFM
+    - `loss=bpr max_sampled=1`
+  - QMF
+    - `num_negative_samples=1 eval_num_neg=0`

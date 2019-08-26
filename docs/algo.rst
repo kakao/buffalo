@@ -41,7 +41,6 @@ Evaluable
    :exclude-members:
    :show-inheritance:
    :undoc-members:
-   :source:
 
 Alternating Least Squares
 -------------------------
