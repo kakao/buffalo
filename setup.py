@@ -10,8 +10,8 @@ import platform
 import subprocess
 from setuptools import setup
 from configparser import ConfigParser
-from distutils.extension import Extension
 from cuda_setup import CUDA, build_ext
+from distutils.extension import Extension
 
 import numpy
 import eigency
@@ -120,13 +120,15 @@ if CUDA:
     extra_compile_args = ['-std=c++14', '-ggdb', '-O3'] + extend_compile_flags
     extensions.append(Extension("buffalo.algo.cuda._als",
                                 sources=["buffalo/algo/cuda/_als.cpp",
-                                         "lib/cuda/als/als.cu"],
+                                         "lib/cuda/als/als.cu",
+                                         "./3rd/json11/json11.cpp"],
                                 language="c++",
                                 extra_compile_args=extra_compile_args,
                                 library_dirs=[CUDA['lib64']],
                                 libraries=['cudart', 'cublas', 'curand'],
                                 include_dirs=["./include", numpy_include_dirs,
-                                              CUDA['include']]))
+                                              CUDA['include'], "./3rd/json11",
+                                              "./3rd/spdlog/include"]))
 else:
     print("Failed to find CUDA toolkit. Building without GPU acceleration.")
 
