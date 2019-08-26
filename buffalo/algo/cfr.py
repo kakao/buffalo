@@ -89,13 +89,13 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         header = self.data.get_header()
         num_users, num_items, d = \
             header["num_users"], header["num_items"], self.opt.d
-        for attr, shape, name in [('U', (num_users, dim), "user"),
-                                  ('I', (num_items, dim), "item"),
-                                  ('C', (num_items, dim), "context"),
+        for attr, shape, name in [('U', (num_users, d), "user"),
+                                  ('I', (num_items, d), "item"),
+                                  ('C', (num_items, d), "context"),
                                   ('Ib', (num_items, 1), "item_bias"),
                                   ('Cb', (num_items, 1), "context_bias")]:
             setattr(self, attr, None)
-            F = np.random.normal(scale=1.0/(dim ** 2), size=shape).astype(np.float32)
+            F = np.random.normal(scale=1.0/(d ** 2), size=shape).astype(np.float32)
             setattr(self, attr, F)
             self.obj.set_embedding(getattr(self, attr), name.encode("utf8"))
         self.P = self.U
