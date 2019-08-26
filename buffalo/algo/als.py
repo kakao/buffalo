@@ -186,7 +186,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
                 break
         full_el = time.time() - full_st
         self.logger.info(f"elapsed for full epochs: {full_el:.2f} sec")
-        if self.opt.accelerator:
+        if self.opt.accelerator and self.opt.d < self.vdim:
             self.P = self.P[:, :self.opt.d]
             self.Q = self.Q[:, :self.opt.d]
         ret = {'train_loss': rmse}
