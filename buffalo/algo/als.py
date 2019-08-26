@@ -153,7 +153,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
                     _F[:, :self.P.shape[1]] = F
                     _F[:, self.opt.d: ] = 0.0
                     setattr(self, attr, _F)
-            self.initialize(self.P, self.Q)
+            self.obj.initialize_model(self.P, self.Q)
 
         buf = self._get_buffer()
         best_loss, rmse, self.validation_result = 987654321.0, None, {}
