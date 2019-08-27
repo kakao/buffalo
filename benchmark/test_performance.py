@@ -14,8 +14,10 @@ def _performance(algo_name, database, lib, gpu):
     repeat = 3
     options = {'als': {'num_workers': 8,
                        'compute_loss_on_training': False,
+                       'batch_mb': 4098,
                        'd': 40},
                'bpr': {'num_workers': 8,
+                       'batch_mb': 4098,
                        'compute_loss_on_training': False,
                        'd': 40}
               }
@@ -33,7 +35,7 @@ def _performance(algo_name, database, lib, gpu):
         print(f'M={d} {elapsed} {memory_usage}')
         print(f'D={d} {elapsed}')
 
-    opt['d'] = 20
+    opt['d'] = 32
     for num_workers in [1, 2, 4, 8, 16]:
         opt['num_workers'] = num_workers
         if gpu:
@@ -53,11 +55,11 @@ def _memory(algo_name, database, lib, gpu=False):
     repeat = 3
     options = {'als': {'num_workers': 16,
                        'compute_loss_on_training': False,
-                       'd': 10,
+                       'd': 32,
                        'num_iters': 2},
                'bpr': {'num_workers': 16,
                        'compute_loss_on_training': False,
-                       'd': 10,
+                       'd': 32,
                        'num_iters': 2},
               }
     opt = options[algo_name]
