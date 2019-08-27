@@ -24,16 +24,18 @@ assert platform.system() == 'Linux'  # TODO: MacOS
 numpy_include_dirs = os.path.split(numpy.__file__)[0] + '/core/include'
 n2_shared_object = n2.__file__
 
-MAJOR = 0
-MINOR = 3
+MAJOR = 1
+MINOR = 0
 MICRO = 0
-VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+Release = False
+STAGE = {True: '', False: 'b'}.get(Release)
+VERSION = f'{MAJOR}.{MINOR}.{MICRO}{STAGE}'
 
-CLASSIFIERS = """Development Status :: {version} - Dev
+CLASSIFIERS = """Development Status :: {version}
 Programming Language :: C/C++
 Programming Language :: Cython
 Programming Language :: Python :: 3.6+
-Operating System :: Unix
+Operating System :: Linux/Unix
 Operating System :: MacOS""".format(version=VERSION)
 site_cfg = ConfigParser()
 site_cfg.read('site.cfg')
