@@ -29,7 +29,7 @@ Besides, buffalo provides a variety of convenient features for research and prod
    :maxdepth: 2
    :caption: Contents:
 
-    Quickstart <quickstart>
+    Introduction <intro>
     Algorithms <algo>
     Parallels <parallels>
     Examples <example>
