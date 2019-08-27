@@ -1,4 +1,4 @@
-<center><img src="https://github.daumkakao.com/storage/user/993/files/61384d80-a48b-11e9-8d12-0149a6a0fa37" width="320px"></center>
+<center><img src="./docs/buffalo.gif" width="320px"></center>
 
 
 # Buffalo
