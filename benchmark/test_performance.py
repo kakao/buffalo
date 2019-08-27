@@ -48,16 +48,16 @@ def _performance(algo_name, database, lib, gpu):
     return results
 
 
-def _memory(algo_name, database, lib):
+def _memory(algo_name, database, lib, gpu=False):
     results = {}
     repeat = 3
-    options = {'als': {'num_workers': 12,
+    options = {'als': {'num_workers': 16,
                        'compute_loss_on_training': False,
-                       'd': 32,
+                       'd': 10,
                        'num_iters': 2},
-               'bpr': {'num_workers': 12,
+               'bpr': {'num_workers': 16,
                        'compute_loss_on_training': False,
-                       'd': 32,
+                       'd': 10,
                        'num_iters': 2},
               }
     opt = options[algo_name]
@@ -65,6 +65,8 @@ def _memory(algo_name, database, lib):
     for batch_mb in [128, 256, 512, 1024, 2048, 4096]:
         if isinstance(lib, ImplicitLib):  # batch_mb effect to Buffalo only.
             break
+        if gpu:
+            opt['gpu'] = True
         opt['batch_mb'] = batch_mb
         elapsed, memory_usage = _get_elapsed_time(algo_name, database, lib, repeat, **opt)
         results[f'E={batch_mb}'] = elapsed
@@ -96,14 +98,14 @@ def performance(algo_name, database, libs=['buffalo', 'implicit', 'lightfm', 'qm
     _print_table(results)
 
 
-def memory(algo_name, database, libs=['buffalo', 'implicit']):
+def memory(algo_name, database, libs=['buffalo', 'implicit'], gpu=False):
     assert database in ['ml100k', 'ml20m', 'kakao_reco_730m', 'kakao_brunch_12m']
     assert algo_name in ['als', 'bpr']
     if isinstance(libs, str):
         libs = [libs]
     R = {'buffalo': BuffaloLib,
          'implicit': ImplicitLib}
-    results = {l: _memory(algo_name, database, R[l]()) for l in libs}
+    results = {l: _memory(algo_name, database, R[l](), gpu) for l in libs}
     _print_table(results)
 
 

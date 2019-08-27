@@ -23,7 +23,7 @@ public:
             float* P, int P_rows,
             float* Q, int Q_rows);
     void precompute(int axis);
-    void synchronize(int axis, bool device_to_host);
+    void synchronize(int start_x, int next_x, int axis, bool device_to_host);
     int get_vdim();
     std::pair<double, double> partial_update(int start_x, 
             int next_x,

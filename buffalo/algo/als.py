@@ -88,10 +88,10 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.Q[:, self.opt.d:] = 0.0
         self.obj.initialize_model(self.P, self.Q)
 
-    def synchronize_with_obj(self, int_group):
+    def synchronize_with_obj(self, start_x, next_x, int_group):
         if not self.opt.accelerator:
             return
-        self.obj.synchronize(int_group, device_to_host=True)
+        self.obj.synchronize(start_x, next_x, int_group, device_to_host=True)
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
@@ -130,7 +130,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
                 _loss_nume, _loss_deno = self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)
                 loss_nume += _loss_nume
                 loss_deno += _loss_deno
-                self.synchronize_with_obj(int_group)
+                self.synchronize_with_obj(start_x, next_x, int_group)
 
                 _update_t, st = time.time() - st, time.time()
                 pbar.update(sz)

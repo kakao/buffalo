@@ -27,7 +27,7 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
     
     int64_t shift = start_x == 0? 0: indptr[start_x - 1];
     for (int row=blockIdx.x + start_x; row<next_x; row+=gridDim.x){
-        float* _P = &P[(row+start_x)*vdim];
+        float* _P = &P[row*vdim];
         
         int beg = row == 0? 0: indptr[row - 1] - shift;
         int end = indptr[row] - shift;
@@ -210,19 +210,21 @@ bool CuALS::init(std::string opt_path){
     return ok;
 }
 
-void CuALS::set_placeholder(int64_t* lindptr, int64_t* rindptr, int batch_size){
-     
-    CHECK_CUDA(cudaMalloc(&lindptr_, sizeof(int64_t)*(P_rows_)));
-    CHECK_CUDA(cudaMalloc(&rindptr_, sizeof(int64_t)*(Q_rows_)));
-    CHECK_CUDA(cudaMemcpy(lindptr_, lindptr, sizeof(int64_t)*(P_rows_), 
-               cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(rindptr_, rindptr, sizeof(int64_t)*(Q_rows_), 
-               cudaMemcpyHostToDevice));
+void CuALS::set_placeholder(int64_t* lindptr, int64_t* rindptr, int batch_size)
+{
+    if(!ph_setted_) {
+        CHECK_CUDA(cudaMalloc(&lindptr_, sizeof(int64_t)*(P_rows_)));
+        CHECK_CUDA(cudaMalloc(&rindptr_, sizeof(int64_t)*(Q_rows_)));
+        CHECK_CUDA(cudaMemcpy(lindptr_, lindptr, sizeof(int64_t)*(P_rows_), 
+                cudaMemcpyHostToDevice));
+        CHECK_CUDA(cudaMemcpy(rindptr_, rindptr, sizeof(int64_t)*(Q_rows_), 
+                cudaMemcpyHostToDevice));
 
-    CHECK_CUDA(cudaMalloc(&keys_, sizeof(int)*batch_size));
-    CHECK_CUDA(cudaMalloc(&vals_, sizeof(float)*batch_size));
-    batch_size_ = batch_size;
-    ph_setted_ = true;
+        CHECK_CUDA(cudaMalloc(&keys_, sizeof(int)*batch_size));
+        CHECK_CUDA(cudaMalloc(&vals_, sizeof(float)*batch_size));
+        batch_size_ = batch_size;
+        ph_setted_ = true;
+    }
 }
 
 void CuALS::initialize_model(
@@ -254,16 +256,19 @@ void CuALS::precompute(int axis){
     CHECK_CUDA(cudaDeviceSynchronize());
 }
 
-void CuALS::synchronize(int axis, bool device_to_host){
+void CuALS::synchronize(int start_x, int next_x, int axis, bool device_to_host){
     // synchronize parameters between cpu memory and gpu memory
     float* devF = axis == 0? devP_: devQ_;
     float* hostF = axis == 0? hostP_: hostQ_;
-    int rows = axis == 0? P_rows_: Q_rows_;
+    // int rows = axis == 0? P_rows_: Q_rows_;
+    int size = next_x - start_x;
     if (device_to_host){
-        CHECK_CUDA(cudaMemcpy(hostF, devF, sizeof(float)*rows*vdim_, 
+        CHECK_CUDA(cudaMemcpy(hostF + (start_x * vdim_), devF + (start_x * vdim_),
+                    sizeof(float)*size*vdim_, 
                    cudaMemcpyDeviceToHost));
     } else{
-        CHECK_CUDA(cudaMemcpy(devF, hostF, sizeof(float)*rows*vdim_, 
+        CHECK_CUDA(cudaMemcpy(devF + (start_x * vdim_), hostF + (start_x * vdim_),
+                    sizeof(float)*size*vdim_, 
                    cudaMemcpyHostToDevice));
     }
     CHECK_CUDA(cudaDeviceSynchronize());

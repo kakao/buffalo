@@ -1,6 +1,6 @@
 ## Requirements
 - sphinx
-- shpinx-theme
+- sphinx-rtd-theme
 
 ## Compilelation
 Type `make html`

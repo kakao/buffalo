@@ -12,7 +12,7 @@ import psutil
 import numpy as np
 
 
-DB = {'kakao_reco_730m': './kakao_reco_730m.h5py',
+DB = {'kakao_reco_730m': './tmp/kakao_reco_730m.h5py',
       'ml20m': 'ml20m.h5py',
       'ml100k': 'ml100k.h5py',
       'kakao_brunch_12m': 'kakao_brunch_12m.h5py'}
