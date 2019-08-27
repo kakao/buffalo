@@ -5,7 +5,7 @@ import cython
 from libcpp cimport bool
 from libcpp.pair cimport pair
 from libcpp.string cimport string
-from libc.stdint cimport int32_t
+from libc.stdint cimport int32_t, int64_t
 
 import numpy as np
 cimport numpy as np
@@ -15,13 +15,13 @@ cdef extern from "buffalo/cuda/als/als.hpp" namespace "cuda_als":
     cdef cppclass CuALS:
         CuALS() nogil except +
         bool init(string) nogil except +
+        void set_placeholder(int64_t* lindptr, int64_t* rindptr, int batch_size);
         void initialize_model(float*, int,
                               float*, int) nogil except +
         void precompute(int) nogil except +
         void synchronize(int, bool) nogil except +
         pair[double, double] partial_update(int, int,
-                             int32_t*, int32_t*,
-                             float*, int) nogil except +
+                             int64_t*, int32_t*, float*, int) nogil except +
         int get_vdim() nogil except +
 
 
@@ -44,6 +44,11 @@ cdef class CyALS:
         self.obj.initialize_model(&P[0, 0], P.shape[0],
                                   &Q[0, 0], Q.shape[0])
 
+    def set_placeholder(self, np.ndarray[np.int64_t, ndim=1] lindptr,
+                        np.ndarray[np.int64_t, ndim=1] rindptr,
+                        int batch_size):
+        self.obj.set_placeholder(&lindptr[0], &rindptr[0], batch_size)
+
     def precompute(self, axis):
         self.obj.precompute(axis)
 
@@ -58,7 +63,7 @@ cdef class CyALS:
     def partial_update(self,
                        int start_x,
                        int next_x,
-                       np.ndarray[np.int32_t, ndim=1] indptr,
+                       np.ndarray[np.int64_t, ndim=1] indptr,
                        np.ndarray[np.int32_t, ndim=1] keys,
                        np.ndarray[np.float32_t, ndim=1] vals,
                        int axis):

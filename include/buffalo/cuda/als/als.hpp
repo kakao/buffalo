@@ -27,6 +27,7 @@ public:
     int get_vdim();
     std::pair<double, double> partial_update(int start_x, 
             int next_x,
+            int64_t* indptr,
             int* keys,
             float* vals,
             int axis);

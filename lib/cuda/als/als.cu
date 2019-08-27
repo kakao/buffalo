@@ -28,15 +28,16 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
     int64_t shift = start_x == 0? 0: indptr[start_x - 1];
     for (int row=blockIdx.x + start_x; row<next_x; row+=gridDim.x){
         float* _P = &P[(row+start_x)*vdim];
+        
+        int beg = row == 0? 0: indptr[row - 1] - shift;
+        int end = indptr[row] - shift;
 
-        if (indptr[row] == indptr[row + 1]) {
+        if (beg == end) {
             _P[threadIdx.x] = 0;
             continue;
         }
-        int beg = indptr[row] - shift;
-        int end = indptr[row + 1] - shift;
         // set adaptive regularization coefficient
-        float ada_reg = adaptive_reg? indptr[row + 1] - indptr[row]: 1.0;
+        float ada_reg = adaptive_reg? (end - beg): 1.0;
         ada_reg *= reg;
 
         float tmp = 0.0;
@@ -213,9 +214,9 @@ void CuALS::set_placeholder(int64_t* lindptr, int64_t* rindptr, int batch_size){
      
     CHECK_CUDA(cudaMalloc(&lindptr_, sizeof(int64_t)*(P_rows_)));
     CHECK_CUDA(cudaMalloc(&rindptr_, sizeof(int64_t)*(Q_rows_)));
-    CHECK_CUDA(cudaMemcpy(lindptr_, lindptr, sizeof(int)*(P_rows_), 
+    CHECK_CUDA(cudaMemcpy(lindptr_, lindptr, sizeof(int64_t)*(P_rows_), 
                cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(rindptr_, rindptr, sizeof(int)*(Q_rows_), 
+    CHECK_CUDA(cudaMemcpy(rindptr_, rindptr, sizeof(int64_t)*(Q_rows_), 
                cudaMemcpyHostToDevice));
 
     CHECK_CUDA(cudaMalloc(&keys_, sizeof(int)*batch_size));
@@ -255,8 +256,6 @@ void CuALS::precompute(int axis){
 
 void CuALS::synchronize(int axis, bool device_to_host){
     // synchronize parameters between cpu memory and gpu memory
-    time_p beg_t, end_t;
-    beg_t = get_now();
     float* devF = axis == 0? devP_: devQ_;
     float* hostF = axis == 0? hostP_: hostQ_;
     int rows = axis == 0? P_rows_: Q_rows_;
@@ -268,10 +267,6 @@ void CuALS::synchronize(int axis, bool device_to_host){
                    cudaMemcpyHostToDevice));
     }
     CHECK_CUDA(cudaDeviceSynchronize());
-    end_t = get_now();
-    double el = GetTimeDiff(beg_t, end_t);
-
-    printf("elapsed: %.3f sec\n", el);
 }
 
 int CuALS::get_vdim(){
@@ -280,6 +275,7 @@ int CuALS::get_vdim(){
 
 std::pair<double, double> CuALS::partial_update(int start_x, 
         int next_x,
+        int64_t* indptr,
         int* keys,
         float* vals,
         int axis){
@@ -290,15 +286,15 @@ std::pair<double, double> CuALS::partial_update(int start_x,
     float* P = axis == 0? devP_: devQ_;
     float* Q = axis == 0? devQ_: devP_;
     float reg = axis == 0? reg_u_: reg_i_;
-    int64_t* indptr = axis == 0?  lindptr_: rindptr_; 
-    time_p beg_t, end_t;
-    beg_t = get_now();
+    int64_t* _indptr = axis == 0?  lindptr_: rindptr_; 
 
     
     // copy data to gpu memory
-    CHECK_CUDA(cudaMemcpy(keys_, keys, sizeof(int)*batch_size_, 
+    int64_t beg = start_x == 0? 0: indptr[start_x - 1];
+    int64_t end = indptr[next_x - 1];
+    CHECK_CUDA(cudaMemcpy(keys_, keys, sizeof(int)*(end-beg), 
                cudaMemcpyHostToDevice));
-    CHECK_CUDA(cudaMemcpy(vals_, vals, sizeof(float)*batch_size_, 
+    CHECK_CUDA(cudaMemcpy(vals_, vals, sizeof(float)*(end-beg), 
                cudaMemcpyHostToDevice));
 
     // set zeros for measuring losses
@@ -315,22 +311,14 @@ std::pair<double, double> CuALS::partial_update(int start_x,
     } 
     CHECK_CUDA(cudaDeviceSynchronize());
     
-    end_t = get_now();
-    double el = GetTimeDiff(beg_t, end_t);
-    beg_t = end_t;
-    printf("elapsed for copy: %f sec\n", el);
 
     // compute least square
     least_squares_cg_kernel<<<block_cnt_, thread_cnt, shared_memory_size>>>(
             dim_, vdim_, rows, op_rows, P, Q, devFF_, devLossNume_, devLossDeno_, 
-            start_x, next_x, indptr, keys_, vals_, alpha_, reg, adaptive_reg_,
+            start_x, next_x, _indptr, keys_, vals_, alpha_, reg, adaptive_reg_,
             cg_tolerance_, num_cg_max_iters_, compute_loss_, eps_, axis);
     CHECK_CUDA(cudaDeviceSynchronize());
     
-    end_t = get_now();
-    el = GetTimeDiff(beg_t, end_t);
-    beg_t = end_t;
-    printf("elapsed for least square: %f sec\n", el);
    
     // accumulate losses
     double loss_nume = 0, loss_deno = 0;
@@ -345,16 +333,6 @@ std::pair<double, double> CuALS::partial_update(int start_x,
             loss_deno += hostLossDeno_[i];
         }
     }
-    end_t = get_now();
-    el = GetTimeDiff(beg_t, end_t);
-    beg_t = end_t;
-    printf("elapsed for accumulating loss: %f sec\n", el);
-
-    
-    end_t = get_now();
-    el = GetTimeDiff(beg_t, end_t);
-    beg_t = end_t;
-    printf("elapsed for free memory: %f sec\n", el);
     
     return std::make_pair(loss_nume, loss_deno);
 }
