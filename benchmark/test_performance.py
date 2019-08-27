@@ -35,6 +35,8 @@ def _performance(algo_name, database, lib, gpu):
         print(f'M={d} {elapsed} {memory_usage}')
         print(f'D={d} {elapsed}')
 
+    if gpu:
+        return results
     opt['d'] = 32
     for num_workers in [1, 2, 4, 8, 16]:
         opt['num_workers'] = num_workers
