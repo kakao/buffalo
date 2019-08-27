@@ -13,9 +13,9 @@ import numpy as np
 
 
 DB = {'kakao_reco_730m': './tmp/kakao_reco_730m.h5py',
-      'ml20m': 'ml20m.h5py',
-      'ml100k': 'ml100k.h5py',
-      'kakao_brunch_12m': 'kakao_brunch_12m.h5py'}
+      'ml20m': './tmp/ml20m.h5py',
+      'ml100k': './tmp/ml100k.h5py',
+      'kakao_brunch_12m': './tmp/kakao_brunch_12m.h5py'}
 
 
 def collect_memory_usage(stop_event, result_queue):
