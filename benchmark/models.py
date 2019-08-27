@@ -68,6 +68,7 @@ class Benchmark(object):
                             'optimizer': {True: 'manual_cg', False: 'ldlt'}.get(kwargs.get('use_cg', True)),
                             'num_iters': kwargs.get('num_iters', 10),
                             'num_cg_max_iters': 3,
+                            'accelerator': kwargs.get('gpu', False),
                             'num_workers': kwargs.get('num_workers', 10),
                             'compute_loss_on_training': kwargs.get('compute_loss_on_training', False)})
                 return opt
@@ -84,6 +85,7 @@ class Benchmark(object):
                 return {'factors': kwargs.get('d', 100),
                         'dtype': np.float32,
                         'use_native': True,
+                        'use_gpu': kwargs.get('gpu', False),
                         'use_cg': kwargs.get('use_cg', True),
                         'iterations': kwargs.get('num_iters', 10),
                         'num_threads': kwargs.get('num_workers', 10),
@@ -192,10 +194,10 @@ class BuffaloLib(Benchmark):
         data_opt.data.batch_mb = kwargs.get('batch_mb', 1024)
         if name == 'ml20m':
             data_opt.data.path = DB[name]
-            data_opt.input.main = '../tests/ml-20m/main'
+            data_opt.input.main = '../tests/ext/ml-20m/main'
         elif name =='ml100k':
             data_opt.data.path = DB[name]
-            data_opt.input.main = '../tests/ml-100k/main'
+            data_opt.input.main = '../tests/ext/ml-100k/main'
         elif name == 'kakao_reco_730m':
             data_opt.data.path = DB[name]
             data_opt.data.tmp_dir = './tmp/'

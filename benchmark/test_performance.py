@@ -9,7 +9,7 @@ from models import ImplicitLib, BuffaloLib, LightfmLib, QmfLib, PysparkLib
 from base import _get_elapsed_time, _print_table
 
 
-def _performance(algo_name, database, lib):
+def _performance(algo_name, database, lib, gpu):
     results = {}
     repeat = 3
     options = {'als': {'num_workers': 8,
@@ -23,6 +23,8 @@ def _performance(algo_name, database, lib):
 
     for d in [10, 20, 40, 80, 160]:
         opt['d'] = d
+        if gpu:
+            opt['gpu'] = True
         elapsed, memory_usage = _get_elapsed_time(algo_name, database, lib, repeat, **opt)
         results[f'D={d}'] = elapsed
         results[f'MD={d}'] = memory_usage['max']
@@ -34,6 +36,8 @@ def _performance(algo_name, database, lib):
     opt['d'] = 20
     for num_workers in [1, 2, 4, 8, 16]:
         opt['num_workers'] = num_workers
+        if gpu:
+            opt['gpu'] = True
         elapsed, memory_usage = _get_elapsed_time(algo_name, database, lib, repeat, **opt)
         results[f'T={num_workers}'] = elapsed
         results[f'MT={num_workers}'] = memory_usage['max']
@@ -71,11 +75,14 @@ def _memory(algo_name, database, lib):
     return results
 
 
-def performance(algo_name, database, libs=['buffalo', 'implicit', 'lightfm', 'qmf', 'pyspark']):
+def performance(algo_name, database, libs=['buffalo', 'implicit', 'lightfm', 'qmf', 'pyspark'], gpu=False):
     assert database in ['ml100k', 'ml20m', 'kakao_reco_730m', 'kakao_brunch_12m']
     assert algo_name in ['als', 'bpr']
     if isinstance(libs, str):
         libs = [libs]
+    if gpu:
+        assert algo_name == 'als'
+        libs = [l for l in libs if l in ['buffalo', 'implicit']]
     if algo_name == 'als':
         libs = [l for l in libs if l not in ['lightfm']]
     elif algo_name == 'bpr':
@@ -85,7 +92,7 @@ def performance(algo_name, database, libs=['buffalo', 'implicit', 'lightfm', 'qm
          'lightfm': LightfmLib,
          'qmf': QmfLib,
          'pyspark': PysparkLib}
-    results = {l: _performance(algo_name, database, R[l]()) for l in libs}
+    results = {l: _performance(algo_name, database, R[l](), gpu) for l in libs}
     _print_table(results)
 
 
