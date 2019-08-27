@@ -25,9 +25,9 @@ def _performance(algo_name, database, lib):
         opt['d'] = d
         elapsed, memory_usage = _get_elapsed_time(algo_name, database, lib, repeat, **opt)
         results[f'D={d}'] = elapsed
-        results[f'DM={d}'] = memory_usage['max']
-        results[f'DA={d}'] = memory_usage['avg']
-        results[f'DB={d}'] = memory_usage['min']
+        results[f'MD={d}'] = memory_usage['max']
+        results[f'AD={d}'] = memory_usage['avg']
+        results[f'BD={d}'] = memory_usage['min']
         print(f'M={d} {elapsed} {memory_usage}')
         print(f'D={d} {elapsed}')
 
@@ -36,9 +36,9 @@ def _performance(algo_name, database, lib):
         opt['num_workers'] = num_workers
         elapsed, memory_usage = _get_elapsed_time(algo_name, database, lib, repeat, **opt)
         results[f'T={num_workers}'] = elapsed
-        results[f'TM={num_workers}'] = memory_usage['max']
-        results[f'TA={num_workers}'] = memory_usage['avg']
-        results[f'TB={num_workers}'] = memory_usage['min']
+        results[f'MT={num_workers}'] = memory_usage['max']
+        results[f'AT={num_workers}'] = memory_usage['avg']
+        results[f'BT={num_workers}'] = memory_usage['min']
         print(f'M={num_workers} {elapsed} {memory_usage}')
         print(f'T={num_workers} {elapsed}')
     return results
