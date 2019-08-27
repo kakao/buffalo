@@ -2,13 +2,24 @@
 
 #include <stdexcept>
 #include <sstream>
-
+#include <chrono>
+#include <ctime>
 
 namespace cuda_buffalo{
 using std::invalid_argument;
 
 // Error Checking utilities, checks status codes from cuda calls
 // and throws exceptions on failure (which cython can proxy back to python)
+
+typedef std::chrono::steady_clock::time_point time_p;
+
+time_p get_now(){
+    return std::chrono::steady_clock::now();    
+}
+
+double GetTimeDiff(const time_p& begin_t, const time_p& end_t){
+    return ((double)std::chrono::duration_cast<std::chrono::microseconds>(end_t - begin_t).count()) / 1000.0 / 1000.0;
+}
 
 #define CHECK_CUDA(code) { checkCuda((code), __FILE__, __LINE__); }
 inline void checkCuda(cudaError_t code, const char *file, int line) {

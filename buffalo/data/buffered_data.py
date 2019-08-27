@@ -38,6 +38,11 @@ class BufferedDataMatrix(BufferedData):
         buf['keys'] = None
         buf['vals'] = None
 
+    def get_indptrs(self):
+        return (self.major["rowwise"]["indptr"],
+                self.major["colwise"]["indptr"],
+                self.major["rowwise"]["limit"])
+
     def initialize(self, data, with_sppmi=False):
         self.data = data
         # 16 bytes(indptr8, keys4, vals4)

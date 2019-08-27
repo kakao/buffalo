@@ -125,11 +125,6 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
             for sz in buf.fetch_batch():
                 updated += sz
                 start_x, next_x, indptr, keys, vals = buf.get()
-                if self.opt.accelerator:
-                    _indptr = np.empty(next_x - start_x + 1, dtype=np.int64)
-                    _indptr[0] = 0 if start_x == 0 else indptr[start_x - 1]
-                    _indptr[1:] = indptr[start_x: next_x]
-                    indptr = (_indptr - _indptr[0]).astype(np.int32)
                 _feed_t, st = time.time() - st, time.time()
 
                 _loss_nume, _loss_deno = self.obj.partial_update(start_x, next_x, indptr, keys, vals, int_group)
@@ -156,6 +151,10 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
             self.obj.initialize_model(self.P, self.Q)
 
         buf = self._get_buffer()
+        if self.opt.accelerator:
+            lindptr, rindptr, batch_size = buf.get_indptrs()
+            self.obj.set_placeholder(lindptr, rindptr, batch_size)
+
         best_loss, rmse, self.validation_result = 987654321.0, None, {}
         self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
