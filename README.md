@@ -1,8 +1,9 @@
-<center><img src="./docs/buffalo.gif" width="320px"></center>
+<center><img src="./docs/buffalo.png" width="320px"></center>
 
 
 # Buffalo
-A Matrix Factorization Library
+Buffalo is a production-ready open source which fast and scalable. Buffalo maximizes performance by effectively using system resources even on low-spec machines. The implementation is optimized for CPU and SSD, but it also shows good performance with GPU accelerator. Buffalo is one of the recommender system libraries developed by Kakao and has been reliably used for various Kakao services.
+
 
 ```python
 $> cd tests && python36
@@ -11,9 +12,9 @@ $> cd tests && python36
 >>> from buffalo.algo.options import AlsOption
 >>> from buffalo.data.mm import MatrixMarketOptions
 >>> option = AlsOption().get_default_option()
->>> option.validation = aux.Option({'topk': 10})  # set topk param for validation scores
+>>> option.validation = aux.Option({'topk': 10})  # set topk param for validation
 >>> data_opt = MatrixMarketOptions().get_default_option()
->>> data_opt.input.main = './ml-100k/main'
+>>> data_opt.input.main = './buffalo.git/tests/ml-100k/main'
 >>> als = ALS(option, data_opt=data_opt)
 >>> als.initialize()
 >>> als.train()
@@ -22,12 +23,7 @@ $> cd tests && python36
 {'val_ndcg': 0.03247253115122813, 'val_map': 0.021315653632726805, 'val_accuracy': 0.06377032520325204, 'val_rmse': 2.9231147330905136, 'val_error': 2.7129669839143755}
 ```
 
-# Installation
-## Building from the source
-To install buffalo, run:
-```
-$> python setup.py install
-```
+Documentation: link here
 
 ## Requirements
 - Python 3.6+
