@@ -1,0 +1,6 @@
+*.pyc
+*.h5py
+download_internal.sh
+ml-20m
+ml-100k
+text8
