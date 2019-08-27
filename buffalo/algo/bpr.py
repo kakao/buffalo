@@ -115,29 +115,32 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
         return rets
 
     def sampling_loss_samples(self):
-        header = self.data.get_header()
-        num_loss_samples = int(header['num_users'] ** 0.5)
-        _users = np.random.choice(range(self.P.shape[0]), size=num_loss_samples, replace=False)
-        users = []
-        positives, negatives = [], []
-        for u in _users:
-            keys, *_ = self.data.get(u)
-            if len(keys) == 0:
-                continue
-            seen = set(keys)
-            negs = np.random.choice(range(self.Q.shape[0]),
-                                    size=len(seen) + 1,
-                                    replace=False)
-            negs = [n for n in negs if n not in seen]
-            users.append(u)
-            positives.append(keys[0])
-            negatives.append(negs[0])
+        users, positives, negatives = [], [], []
+        if self.opt.compute_loss_on_training:
+            self.logger.info('Sampling loss samples...')
+            header = self.data.get_header()
+            num_loss_samples = int(header['num_users'] ** 0.5)
+            _users = np.random.choice(range(self.P.shape[0]), size=num_loss_samples, replace=False)
+            users = []
+            positives, negatives = [], []
+            for u in _users:
+                keys, *_ = self.data.get(u)
+                if len(keys) == 0:
+                    continue
+                seen = set(keys)
+                negs = np.random.choice(range(self.Q.shape[0]),
+                                        size=len(seen) + 1,
+                                        replace=False)
+                negs = [n for n in negs if n not in seen]
+                users.append(u)
+                positives.append(keys[0])
+                negatives.append(negs[0])
+            self.logger.info('Generated %s loss samples.' % len(users))
         self._sub_samples = [
             np.array(users, dtype=np.int32, order='F'),
             np.array(positives, dtype=np.int32, order='F'),
             np.array(negatives, dtype=np.int32, order='F')
         ]
-        self.logger.info('Generated %s loss samples.' % len(users))
 
     def _get_feature(self, index, group='item'):
         if group == 'item':

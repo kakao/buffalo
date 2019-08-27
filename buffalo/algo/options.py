@@ -16,6 +16,7 @@ class AlgoOption(InputOptions):
         :ivar int evaluation_period: How often will do evaluation in epochs. (default: 1)
         :ivar int save_period: How often will do save_best routine in epochs. (default: 10)
         :ivar int random_seed: Random Seed
+        :ivar dict validation: The validation options.
         """
         opt = {
             'evaluation_on_learning': True,
@@ -25,6 +26,7 @@ class AlgoOption(InputOptions):
             'evaluation_period': 1,
             'save_period': 10,
             'random_seed': 0,
+            'validation': {}
         }
         return opt
 
