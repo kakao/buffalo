@@ -16,7 +16,7 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
         const int rows, const int op_rows, 
         float* P, const float* Q, const float* FF, float* loss_nume, float* loss_deno,
         const int start_x, const int next_x,
-        const int* indptr, const int* keys, const float* vals, 
+        const int64_t* indptr, const int* keys, const float* vals, 
         const float alpha, const float reg, const bool adaptive_reg, const float cg_tolerance,
         const int num_cg_max_iters, const bool compute_loss,
         const float eps, const bool axis){
@@ -120,7 +120,7 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
 }
 
 CuALS::CuALS(){
-    opt_setted_ = false, initialzied_ = false, ph_setted = false;
+    opt_setted_ = false, initialized_ = false, ph_setted_ = false;
     CHECK_CUDA(cudaGetDevice(&devId_));
     CHECK_CUDA(cudaDeviceGetAttribute(&mp_cnt_, cudaDevAttrMultiProcessorCount, devId_));
     block_cnt_ = 128 * mp_cnt_;
@@ -134,10 +134,10 @@ CuALS::~CuALS(){
     if (opt_setted_){
         CHECK_CUDA(cudaFree(devFF_)); devFF_ = nullptr;
         if (compute_loss_){
-            free(hostLossNume);
-            free(hostLossDeno);
-            CHECK_CUDA(cudaFree(devLossNume));
-            CHECK_CUDA(cudaFree(devLossDeno));
+            free(hostLossNume_);
+            free(hostLossDeno_);
+            CHECK_CUDA(cudaFree(devLossNume_));
+            CHECK_CUDA(cudaFree(devLossDeno_));
         }
     }
 
@@ -199,10 +199,10 @@ bool CuALS::init(std::string opt_path){
         CHECK_CUBLAS(cublasCreate(&blas_handle_));
         
         if (compute_loss_){
-            hostLossNume_ = (float*) malloc(sizeof(float)*block_cnt);
-            hostLossDeno_ = (float*) malloc(sizeof(float)*block_cnt);
-            CHECK_CUDA(cudaMalloc(&devLossNume_, sizeof(float)*block_cnt));
-            CHECK_CUDA(cudaMalloc(&devLossDeno_, sizeof(float)*block_cnt));
+            hostLossNume_ = (float*) malloc(sizeof(float)*block_cnt_);
+            hostLossDeno_ = (float*) malloc(sizeof(float)*block_cnt_);
+            CHECK_CUDA(cudaMalloc(&devLossNume_, sizeof(float)*block_cnt_));
+            CHECK_CUDA(cudaMalloc(&devLossDeno_, sizeof(float)*block_cnt_));
         }
         opt_setted_ = true;
     }
@@ -321,8 +321,8 @@ std::pair<double, double> CuALS::partial_update(int start_x,
     printf("elapsed for copy: %f sec\n", el);
 
     // compute least square
-    least_squares_cg_kernel<<<block_cnt, thread_cnt, shared_memory_size>>>(
-            dim_, vdim_, rows, op_rows, P, Q, devFF_, devLossNume, devLossDeno, 
+    least_squares_cg_kernel<<<block_cnt_, thread_cnt, shared_memory_size>>>(
+            dim_, vdim_, rows, op_rows, P, Q, devFF_, devLossNume_, devLossDeno_, 
             start_x, next_x, indptr, keys_, vals_, alpha_, reg, adaptive_reg_,
             cg_tolerance_, num_cg_max_iters_, compute_loss_, eps_, axis);
     CHECK_CUDA(cudaDeviceSynchronize());
@@ -335,14 +335,14 @@ std::pair<double, double> CuALS::partial_update(int start_x,
     // accumulate losses
     double loss_nume = 0, loss_deno = 0;
     if (compute_loss_){
-        CHECK_CUDA(cudaMemcpy(hostLossNume, devLossNume, sizeof(float)*block_cnt, 
+        CHECK_CUDA(cudaMemcpy(hostLossNume_, devLossNume_, sizeof(float)*block_cnt_, 
                    cudaMemcpyDeviceToHost));
-        CHECK_CUDA(cudaMemcpy(hostLossDeno, devLossDeno, sizeof(float)*block_cnt, 
+        CHECK_CUDA(cudaMemcpy(hostLossDeno_, devLossDeno_, sizeof(float)*block_cnt_, 
                    cudaMemcpyDeviceToHost));
         CHECK_CUDA(cudaDeviceSynchronize());
-        for (size_t i=0; i<block_cnt; ++i){
-            loss_nume += hostLossNume[i];
-            loss_deno += hostLossDeno[i];
+        for (size_t i=0; i<block_cnt_; ++i){
+            loss_nume += hostLossNume_[i];
+            loss_deno += hostLossDeno_[i];
         }
     }
     end_t = get_now();
