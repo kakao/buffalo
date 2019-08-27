@@ -32,7 +32,6 @@ class StreamOptions(DataOption):
                 stream: Data file treated as is(i.e. streaming data)
                 matrix: Translate data file into sparse matrix format(it lose sequential information, but more compact for data size).
             sppmi:
-                enabled: whether generate sppmi matrix or not
                 windows: window size to set relation between word and context
                 k: sppmi shift k (serves as negative sampling size in w2v model)
     """
@@ -52,7 +51,6 @@ class StreamOptions(DataOption):
                     'max_samples': 500
                 },
                 'sppmi': {
-                    'enabled': False,
                     'windows': 5,
                     'k': 1
                 },
@@ -299,7 +297,8 @@ class Stream(Data):
                                         'uid_path': stream_uid_path,
                                         'iid_path': stream_iid_path})
             _opt = self.opt.data.sppmi
-            with_sppmi, windows, k = _opt.enabled, _opt.windows, _opt.k
+            if _opt:
+                with_sppmi, windows, k = True, _opt.windows, _opt.k
             try:
                 self.logger.info('Creating working data...')
                 tmp_main, validation_data, tmp_sppmi = \

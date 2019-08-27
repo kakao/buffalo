@@ -82,6 +82,7 @@ class BufferedDataMatrix(BufferedData):
         while True:
             if m['start_x'] == 0 and m['next_x'] + 1 >= m['max_x']:
                 if not flushed:
+                    m["sz"] = m["indptr"][-1]
                     yield m['indptr'][-1]
                 raise StopIteration
 
@@ -107,6 +108,7 @@ class BufferedDataMatrix(BufferedData):
             m['vals'][:size] = group['val'][beg:end]
             if m['next_x'] + 1 >= m['max_x']:
                 flushed = True
+            m["sz"] = size
             yield size
 
     def get_specific_chunk(self, group, start_x, next_x):
@@ -161,11 +163,7 @@ class BufferedDataMatrix(BufferedData):
 
     def get(self):
         m = self.major[self.group]
-        return (m['start_x'],
-                m['next_x'],
-                m['indptr'],
-                m['keys'],
-                m['vals'])
+        return [m[k] for k in ["start_x", "next_x", "indptr", "keys", "vals"]]
 
 
 class BufferedDataStream(BufferedData):

@@ -10,8 +10,8 @@ import platform
 import subprocess
 from setuptools import setup
 from configparser import ConfigParser
+from cuda_setup import CUDA, build_ext
 from distutils.extension import Extension
-from setuptools.command.build_ext import build_ext
 
 import n2
 import numpy
@@ -121,6 +121,21 @@ extensions = [
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
 ]
 
+if CUDA:
+    extra_compile_args = ['-std=c++14', '-ggdb', '-O3'] + extend_compile_flags
+    extensions.append(Extension("buffalo.algo.cuda._als",
+                                sources=["buffalo/algo/cuda/_als.cpp",
+                                         "lib/cuda/als/als.cu",
+                                         "./3rd/json11/json11.cpp"],
+                                language="c++",
+                                extra_compile_args=extra_compile_args,
+                                library_dirs=[CUDA['lib64']],
+                                libraries=['cudart', 'cublas', 'curand'],
+                                include_dirs=["./include", numpy_include_dirs,
+                                              CUDA['include'], "./3rd/json11"]))
+else:
+    print("Failed to find CUDA toolkit. Building without GPU acceleration.")
+
 
 # Return the git revision as a string
 def git_version():
@@ -154,16 +169,17 @@ git_revision = '%(git_revision)s'
                           'git_revision': GIT_REVISION})
 
 
-class BuildExtention(build_ext, object):
+class BuildExtension(build_ext, object):
     def run(self):
         for ext in self.extensions:
             if hasattr(ext, 'extension_type') and ext.extension_type == 'cmake':
                 self.cmake(ext)
         self.cythonize()
-        super(BuildExtention, self).run()
+        super(BuildExtension, self).run()
 
     def cythonize(self):
         ext_files = ['buffalo/algo/_als.pyx',
+                     'buffalo/algo/cuda/_als.pyx',
                      'buffalo/algo/_bpr.pyx',
                      'buffalo/algo/_w2v.pyx',
                      'buffalo/misc/log.pyx',
@@ -205,7 +221,7 @@ class BuildExtention(build_ext, object):
 
 def setup_package():
     write_version_py()
-    cmdclass = {'build_ext': BuildExtention}
+    cmdclass = {'build_ext': BuildExtension}
 
     build_requires = [l.strip() for l in open('requirements.txt')]
 
@@ -220,6 +236,8 @@ def setup_package():
         include_package_data=False,
         license='Apache2',
         packages=['buffalo/algo/',
+                  'buffalo/algo/cuda',
+                  'buffalo/algo/tensorflow',
                   'buffalo/data/',
                   'buffalo/evaluate/',
                   'buffalo/parallel/',
