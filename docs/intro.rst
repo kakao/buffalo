@@ -33,7 +33,7 @@ We highly recommend starting with the unit-test codes. Checkout ./tests director
 
 Database
 --------
-First, `database`. we call `database` in term of the data file format used by the buffalo internally. Buffalo take data that the Matrix Market or Stream format as input and converts it into a database class which store rawdata using h5py(http://www.h5py.org). The main reason to make custom database is to use the least amount of memory without compromising data size and learning speed.
+We call `database` in term of the data file format used by the buffalo internally. Buffalo take data that the Matrix Market or Stream format as input and converts it into a database class which store rawdata using h5py(http://www.h5py.org). The main reason to make custom database is to use the least amount of memory without compromising data size and learning speed.
 
 The Stream data format consists of two files:
 
