@@ -151,3 +151,17 @@ lightfm | 4170.78732784589 | 3468.09006055196 | 3411.35963026683 | 4552.11646389
 
 ## Movielens20M
 
+# Benchmark-Parallel
+This experiment is done with KakaoBrunch12M dataset to see the performance of Parallel feature.
+
+<center><img src="./fig/20190828.buffalo.bpr.kakaobrunch12m.t.png" width="1024px"></center>
+
+We train the dataset with ALS and execute `most_similar` function for 10K queries. ParALS is a Parallels feature for ALS. As we can see above graph, ParALS well utilize multi-threading and ParALS N2 works blazingly fast even with a single thread. 
+
+method | T=1 | T=2 | T=4
+-- | -- | -- | --
+ParALS - N2 | 0.222992 | 0.147501 | 0.0984209
+ParALS | 63.9272 | 34.0839 | 21.7597
+ALS | 83.6309 | 76.1695 | 74.9105
+
+

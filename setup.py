@@ -36,7 +36,8 @@ Programming Language :: C/C++
 Programming Language :: Cython
 Programming Language :: Python :: 3.6+
 Operating System :: Linux/Unix
-Operating System :: MacOS""".format(version=VERSION)
+Operating System :: MacOS
+License :: OSI Approved :: Apache2 License""".format(version=VERSION)
 site_cfg = ConfigParser()
 site_cfg.read('site.cfg')
 
