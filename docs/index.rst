@@ -20,7 +20,7 @@ Buffalo provides the following algorithms:
 
 All algorithms are optimized for multi-threading and some support GPU accelerators.
  
-One of the best things about this library is a very low memory usage compared to other competing libraries. With chunked data management and batch learning with HDF5, handling a large-scale data, even bigger than memory size on laptop machine, is made possible. Check out the benchmarks page for more details on Buffalo performance.
+One of the best things about this library is a very low memory usage compared to other competing libraries. With chunked data management and batch learning with HDF5, handling a large-scale data, even bigger than memory size on laptop machine, is made possible. Check out the benchmarks page(https://github.com/kakao/buffalo/tree/master/benchmark) for more details on Buffalo performance.
 
 Plus, Buffalo provides a variety of convenient features for research and production purposes, such as tensorboard integration, hyper-parameter optimization and so on.
 
@@ -32,7 +32,7 @@ Plus, Buffalo provides a variety of convenient features for research and product
     Introduction <intro>
     Algorithms <algo>
     Parallels <parallels>
-    Benchmarks <https://github.daumkakao.com/toros/buffalo/tree/dev/benchmark>
+    Benchmarks <https://github.com/kakao/buffalo/tree/master/benchmark>
 
 
 Indices and tables
