@@ -19,7 +19,13 @@ Plus, Buffalo provides a variety of convenient features for research and product
 
 Installation
 ------------
-Type `pip install buffalo`.
+
+.. code-block:: bash
+
+    $> git clone -b master https://github.com/kakao/buffalo
+    $> cd buffalo
+    $> python -r requirements.txt
+    $> python setup.py install
 
 
 Basic Usage
