@@ -20,6 +20,7 @@ try:
     from buffalo.algo.cuda._als import CyALS as CuALS
 except Exception as e:
     log.get_logger("system").error(f"ImportError CuALS, no cuda library exists. error message: {e}")
+    CuALS = lambda x: ()
 
 
 class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
