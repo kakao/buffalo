@@ -63,7 +63,7 @@ Note that there is no Python version of QMF. Since we ran benchmark by Python sc
 There is a restriction such that the number of the latent dimensions must be multiple of 32 when using GPU in implicit. For example, 80 demensions has been upscaled to 96 but not for 160. Therefore, it is not an accurate comparison between implicit-gpu and buffalo-gpu.
 
 ### KakaoReco730M
-KakaoReco730M, the biggest dataset among our datasets, is handled by only buffalo and implicit with the system resource in tolerable time. Owing to lack of memory of GPU card, even implicit did not run on GPU accelerator mode. For buffalo-gpu, the memory management option `batch_mb` also worked consistently in GPU accelerator mode, allowing it to work with KakaoReco730M that data size cannot fit in memory.
+KakaoReco730M, the biggest dataset among our datasets, is handled by only buffalo and implicit with the system resource in tolerable time. Owing to lack of GPU device memory, even implicit does not run on GPU accelerator mode. For buffalo-gpu, the memory management option `batch_mb` works consistently in GPU accelerator mode, allowing it to work with KakaoReco730M that data size does not fit in memory.
 
 - In this experiment, we set number of iteration to 2. 
 
@@ -122,13 +122,13 @@ qmf | 168.467 | 87.7365 | 46.8157 | 31.0115 | 33.9857
   - Buffalo
     - `compute_loss_on_training=False`
   - Implicit
-    - `dtype=np.float32 verify_negative_samples=True calculate_training_loss=False`
+    - `dtype=np.float32, verify_negative_samples=True, calculate_training_loss=False`
   - LightFM
-    - `loss=bpr max_sampled=1`
+    - `loss=bpr, max_sampled=1`
   - QMF
-    - `num_negative_samples=1 eval_num_neg=0`
+    - `num_negative_samples=1, eval_num_neg=0`
 
-Implicit also provides GPU accelerator mode for BPRMF, but buffalo didn't. Implicit-gpu run much faster than buffalo. We plan to add GPU accelerator feature on BPRMF in the near future, so we will update the benchmarks afterwards.
+Implicit also provides GPU accelerator mode for BPRMF, but buffalo does not. Implicit-gpu run much faster than buffalo. We plan to add GPU accelerator feature on BPRMF in the near future, so we will update the benchmarks afterwards.
 
 ## KakaoBrunch12M
 
