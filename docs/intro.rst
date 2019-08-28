@@ -69,7 +69,7 @@ Hyper paremter Optimization
 ---------------------------
 The Algo classes inherited Optimizable class which is helper class to provide hyper parameter optimization. Basically it depends on hyperopt(http://hyperopt.github.io/hyperopt/), well known library, include all of the capabilities.
 
-The option of the optimization should be stored in optimize field in Algo option. The following is the description of the option. You can check practical example on the unittests.
+The option of the optimization should be stored in optimize field in Algo option. The following is the description of the option. You can find the practical example from the unittests.
 
 - loss(str): Target loss to optimize.
 - max_trials(int, option): Maximum experiments for optimization. If not given, run forever.
