@@ -29,8 +29,8 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
     for (int row=blockIdx.x + start_x; row<next_x; row+=gridDim.x){
         float* _P = &P[row*vdim];
         
-        int beg = row == 0? 0: indptr[row - 1] - shift;
-        int end = indptr[row] - shift;
+        size_t beg = row == 0? 0: indptr[row - 1] - shift;
+        size_t end = indptr[row] - shift;
 
         if (beg == end) {
             _P[threadIdx.x] = 0;
@@ -57,7 +57,7 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
 
         tmp -= _P[threadIdx.x] * ada_reg;
 
-        for (int idx=beg; idx<end; ++idx){
+        for (size_t idx=beg; idx<end; ++idx){
             const float* _Q = &Q[keys[idx] * vdim];
             const float v = vals[idx];
             float _dot = dot(_P, _Q);
@@ -89,7 +89,7 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
             for (int d=0; d<dim; ++d){
                 Ap[threadIdx.x] += p[d] * FF[d * vdim + threadIdx.x];
             }
-            for (int idx=beg; idx<end; ++idx){
+            for (size_t idx=beg; idx<end; ++idx){
                 const float* _Q = &Q[keys[idx] * vdim];
                 const float v = vals[idx];
                 float _dot = dot(p, _Q);
@@ -355,8 +355,8 @@ std::pair<double, double> CuALS::partial_update(int start_x,
 
     
     // copy data to gpu memory
-    int64_t beg = start_x == 0? 0: indptr[start_x - 1];
-    int64_t end = indptr[next_x - 1];
+    size_t beg = start_x == 0? 0: indptr[start_x - 1];
+    size_t end = indptr[next_x - 1];
     CHECK_CUDA(cudaMemcpy(keys_, keys, sizeof(int)*(end-beg), 
                cudaMemcpyHostToDevice));
     CHECK_CUDA(cudaMemcpy(vals_, vals, sizeof(float)*(end-beg), 
