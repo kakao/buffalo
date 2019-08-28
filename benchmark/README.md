@@ -70,6 +70,8 @@ fig. KakaoReco730M
 
 ### KakaoBrunch12M
 
+<center><img src="./20190828.buffalo.kakaobrunch12m.d.png" width="1024px"></center>
+
 method | D=10 | D=20 | D=40 | D=80 | D=160
 -- | -- | -- | -- | -- | --
 buffalo | 7.42076 | 9.37377 | 14.5747 | 37.2637 | 122.594
