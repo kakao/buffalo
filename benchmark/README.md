@@ -26,7 +26,7 @@ To download the databases, please see the README.md on ./tests/.
   - KakaoReco730
     - Sampled user reading history from Kakao annoymous service during 8 days.
   - KakaoBrunch12M
-    - Sampled user reading history from [Kakao Brunch](https://brunch.co.kr) service, which kind of blog service, during 6 months.
+    - Sampled user reading history from [Kakao Brunch](https://brunch.co.kr) service, which is a kind of blog service, during 6 months.
   - Movielens20M
     - https://grouplens.org/datasets/movielens/
 
@@ -44,7 +44,7 @@ KakaoReco730M | 21,940,315 | 1,467,298 | 730M
 
 ## Alternating Least Square
 
-- Fixed options (otherwise we let them as default except controlled options)
+- Fixed options (otherwise we let them be default except controlled options)
   - Buffalo
     - `optimizer=manual_cg num_cg_max_iters=3 compute_loss_on_training=False`
   - Buffalo-gpu
