@@ -18,7 +18,7 @@ $> cd tests && python36
 >>> als.initialize()
 >>> als.train()
 >>> results = als.get_validation_results()
->>> print(resulsts)
+>>> print(results)
 {'val_ndcg': 0.03247253115122813, 'val_map': 0.021315653632726805, 'val_accuracy': 0.06377032520325204, 'val_rmse': 2.9231147330905136, 'val_error': 2.7129669839143755}
 ```
 
