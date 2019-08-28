@@ -37,7 +37,12 @@ bool CALS::init(string opt_path) {
         omp_set_num_threads(num_workers);
         int d = opt_["d"].int_value();
         FF_.resize(d, d);
-
+        
+        // get coefficient for optimizer
+        eps_ = opt_["eps"].number_value();
+        cg_tolerance_ = opt_["cg_tolerance"].number_value();
+        num_cg_max_iters_ = opt_["num_cg_max_iters"].int_value();
+        
         // get optimizer
         string optimizer = opt_["optimizer"].string_value();
         if (optimizer == "llt") optimizer_code_ = 0;

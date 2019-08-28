@@ -39,6 +39,7 @@ bool CCFR::init(string opt_path){
     
         // floating number parameters
         cg_tolerance_ = opt_["cg_tolerance_"].number_value();
+        eps_ = opt_["eps"].number_value();
         reg_u_ = opt_["reg_u"].number_value();
         reg_i_ = opt_["reg_i"].number_value();
         reg_c_ = opt_["reg_c"].number_value();
