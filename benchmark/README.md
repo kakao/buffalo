@@ -70,8 +70,8 @@ The biggest one and only buffalo and implicit can handle this with the system re
 
 ### KakaoBrunch12M
 
-<center><img src="./20190828.buffalo.kakaobrunch12m.d.png" width="1024px"></center>
-<center><img src="./20190828.buffalo.kakaobrunch12m.t.png" width="480px"></center>
+<center><img src="./fig/20190828.buffalo.kakaobrunch12m.d.png" width="1024px"></center>
+<center><img src="./fig/20190828.buffalo.kakaobrunch12m.t.png" width="480px"></center>
 
 method | D=10 | D=20 | D=40 | D=80 | D=160
 -- | -- | -- | -- | -- | --
@@ -94,8 +94,8 @@ pyspark | 370.907 | 193.428 | 116.088 | 77.8977 | 55.7786
 
 ### Movielens20M
 
-<center><img src="./20190828.buffalo.ml20m.d.png" width="1024px"></center>
-<center><img src="./20190828.buffalo.ml20m.t.png" width="480px"></center>
+<center><img src="./fig/20190828.buffalo.ml20m.d.png" width="1024px"></center>
+<center><img src="./fig/20190828.buffalo.ml20m.t.png" width="480px"></center>
 
 method | D=10 | D=20 | D=40 | D=80 | D=160
 -- | -- | -- | -- | -- | --
@@ -132,8 +132,8 @@ Implicit also provides GPU accelerator mode for BPRMF, but buffalo didn't. Impli
 
 ## KakaoBrunch12M
 
-<center><img src="./20190828.buffalo.bpr.kakaobrunch12m.d.png" width="1024px"></center>
-<center><img src="./20190828.buffalo.bpr.kakaobrunch12m.t.png" width="480px"></center>
+<center><img src="./fig/20190828.buffalo.bpr.kakaobrunch12m.d.png" width="1024px"></center>
+<center><img src="./fig/20190828.buffalo.bpr.kakaobrunch12m.t.png" width="480px"></center>
 
 method | D=10 | D=20 | D=40 | D=80 | D=160
 -- | -- | -- | -- | -- | --
