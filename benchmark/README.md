@@ -15,7 +15,6 @@ We tested two algorithms, ALS, BPRMF and measured training speed and memory usag
     - SSD
   - GPU Machine
     - CPU: Intel(R) Xeon(R) Gold 5120 CPU @ 2.20GHz
-    - GPU: NVIDIA Tesla V100 (Cuda 10, we use only 1 card)
     - RAM: 64GB
     - SSD
   - gcc/g++-7.2.1
