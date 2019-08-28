@@ -24,7 +24,10 @@ Type `pip install buffalo`.
 
 Basic Usage
 -----------
-We highly recommend starting with the unittests. Checkout ./tests directory, `./tests/algo/test_algo.py` will be a good starting point.
+We highly recommend starting with the unit-test codes. Checkout ./tests directory, `./tests/algo/test_algo.py` will be a good starting point.
+
+.. code-block:: bash
+    $ tests> nosetests ./tests/algo/test_algo.py -v
 
 
 Database
@@ -59,3 +62,41 @@ For Matrix Market format, please refer to https://math.nist.gov/MatrixMarket/for
     - Each line is the actual itemkey corresponding to the colum id in the MM file.
 
 uid and iid are the data needed to provide human readable results only, not required.
+
+
+Hyper paremter Optimization
+---------------------------
+The Algo classes inherited Optimizable class which is helper class to provide hyper parameter optimization. Basically it depends on hyperopt(http://hyperopt.github.io/hyperopt/), well known library, include all of the capabilities.
+
+The option of the optimization should be stored in optimize field in Algo option. The following is the description of the option. You can check practical example on the unittests.
+
+- loss(str): Target loss to optimize.
+- max_trials(int, option): Maximum experiments for optimization. If not given, run forever.
+- min_trials(int, option): Minimum experiments before deploying model. (Since the best parameter may not be found after min_trials, the first best parameter is always deployed)
+- deployment(bool): Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
+- start_with_default_parameters(bool): If set to True, the loss value of the default parameter is used as the starting loss to beat.
+- space(dict): Parameter space definition. For more information, pleases reference hyperopt's express.
+
+  - Note) Due to hyperopt's randint does not provide lower value, we had to implement it a bait tricky. Pleases see optimize.py to check how we deal with randint.
+
+
+Logging
+-------
+It is recommend to use the log library of buffalo for consistent log format.
+
+.. code-block:: python
+    >>> from aurochs.misc import log
+    >>> print(log.NOTSET, log.WARN, log.INFO, log.DEBUG, log.TRACE)
+    (0, 1, 2, 3, 4, 5)
+    >>> log.set_log_level(log.WARN)  # this set log-level on Python, C++ both sides.
+    >>> log.get_log_level()
+    1
+    >>> 
+
+    >>> from aurochs.misc import log, aux
+    >>> logger = aux.get_logger()
+    >>> with log.pbar(logger.debug, desc='Test', mininterval=1):
+        for(i in range(100)):
+            time.sleep(0.1)
+
+`log.pbar` is a wrapper class of tqdm(https://tqdm.github.io), except it use Python Logger for logging instead sys.stdout(see first argument).

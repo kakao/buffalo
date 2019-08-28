@@ -1,4 +1,10 @@
 # Testing
+Unit-test was created using python standard unittest library.
+
+```bash
+tests $> nosetests ./algo/test_algo.py -v
+```
+
 ## External Resources
 Some tests rely on external databases. Before run the tests, please download below database and place it properly.
   - MovieLens 100k: https://grouplens.org/datasets/movielens/100k/
