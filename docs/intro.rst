@@ -73,18 +73,18 @@ uid and iid are the data needed to provide human readable results only, not requ
 
 Hyper paremter Optimization
 ---------------------------
-The Algo classes inherited Optimizable class which is helper class to provide hyper parameter optimization. Basically it depends on hyperopt(http://hyperopt.github.io/hyperopt/), well known library, include all of the capabilities.
+The Algo classes inherited Optimizable class, a helper class for hyper parameter optimization. It inherits all features from hyperopt(http://hyperopt.github.io/hyperopt/), a well-known library.
 
-The option of the optimization should be stored in optimize field in Algo option. The following is the description of the option. You can find the practical example from the unittests.
+The options for optimization should be stored in optimize field in Algo option. The following is a list of possible options. You can find the practical example from the unittests.
 
 - loss(str): Target loss to optimize.
 - max_trials(int, option): Maximum experiments for optimization. If not given, run forever.
 - min_trials(int, option): Minimum experiments before deploying model. (Since the best parameter may not be found after min_trials, the first best parameter is always deployed)
-- deployment(bool): Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
+- deployment(bool): Set True to train model with the best parameter. During the optimization, it dumps the model which beats the previous best loss.
 - start_with_default_parameters(bool): If set to True, the loss value of the default parameter is used as the starting loss to beat.
-- space(dict): Parameter space definition. For more information, pleases reference hyperopt's express.
+- space(dict): Parameter space definition. For more information, please reference hyperopt documentation.
 
-  - Note) Due to hyperopt's randint does not provide lower value, we had to implement it a bait tricky. Pleases see optimize.py to check how we deal with randint.
+  - Note) Since hyperopt's randint does not support lower value, we changed the implementation. Please check optimize.py.
 
 
 Logging
