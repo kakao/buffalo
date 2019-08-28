@@ -63,14 +63,15 @@ Note that there is no Python version of QMF. Since we ran benchmark by Python sc
 There is a restriction where the number of the latent dimensions must be 32 times when using GPU for implicit. For example, 80 demensions has been upscaled to 96 but not for 160. Therefore, it is not an accurate comparison between implicit-gpu and buffalo-gpu.
 
 ### KakaoReco730M
-The biggest one and only buffalo and implicit can handle this with the system resource in tolerable time. Even implicit did not run with GPU accelerator mode due to lack of memory of GPU card. For buffalo-gpu, the memory management option `batch_mb` also worked consistently in GPU accelerator mode, allowing it to work with KakaoReco730M that data size cannot fit in memory.
-fig. KakaoReco730M
+The biggest one and only buffalo and implicit can handle this with the system resource in tolerable time. Even implicit did not run on GPU accelerator mode due to lack of memory of GPU card. For buffalo-gpu, the memory management option `batch_mb` also worked consistently in GPU accelerator mode, allowing it to work with KakaoReco730M that data size cannot fit in memory.
 
 - In this experiment, we set number of iteration to 2. 
+
 
 ### KakaoBrunch12M
 
 <center><img src="./20190828.buffalo.kakaobrunch12m.d.png" width="1024px"></center>
+<center><img src="./20190828.buffalo.kakaobrunch12m.t.png" width="480px"></center>
 
 method | D=10 | D=20 | D=40 | D=80 | D=160
 -- | -- | -- | -- | -- | --
@@ -88,8 +89,31 @@ implicit | 212.646 | 156.561 | 128.528 | 122.587 | 125.323
 qmf | 201.709 | 113.166 | 73.3526 | 124.546 | 144.251
 pyspark | 370.907 | 193.428 | 116.088 | 77.8977 | 55.7786
 
+- D setted as 20.
+
 
 ### Movielens20M
+
+<center><img src="./20190828.buffalo.ml20m.d.png" width="1024px"></center>
+<center><img src="./20190828.buffalo.ml20m.t.png" width="480px"></center>
+
+method | D=10 | D=20 | D=40 | D=80 | D=160
+-- | -- | -- | -- | -- | --
+buffalo | 4.28723 | 6.42029 | 11.3222 | 30.0026 | 76.1758
+implicit | 40.308 | 55.8376 | 55.1801 | 83.4897 | 98.3676
+pyspark | 62.2544 | 78.5405 | 143.538 | 398.6 | 1478.17
+qmf | 14.8247 | 30.5616 | 73.8377 | 242.314 | 851.216
+buffalo-gpu | 4.30483 | 4.24799 | 5.68857 | 7.1573 | 10.10027
+implicit-gpu | 7.31865 | 4.27037 | 5.5366 | 8.34888 | 9.98346
+
+method | T=1 | T=2 | T=4 | T=8 | T=16
+-- | -- | -- | -- | -- | --
+buffalo | 38.8911 | 19.7001 | 11.6207 | 6.15176 | 5.02124
+implicit | 126.473 | 94.0671 | 72.4117 | 54.702 | 39.5668
+pyspark | 422.733 | 218.339 | 123.377 | 77.7848 | 54.8635
+qmf | 168.467 | 87.7365 | 46.8157 | 31.0115 | 33.9857
+
+- D setted as 20.
 
 
 ## Bayesian Personalized Ranking Matrix Factorization
@@ -108,4 +132,22 @@ Implicit also provides GPU accelerator mode for BPRMF, but buffalo didn't. Impli
 
 ## KakaoBrunch12M
 
+<center><img src="./20190828.buffalo.bpr.kakaobrunch12m.d.png" width="1024px"></center>
+<center><img src="./20190828.buffalo.bpr.kakaobrunch12m.t.png" width="480px"></center>
+
+method | D=10 | D=20 | D=40 | D=80 | D=160
+-- | -- | -- | -- | -- | --
+buffalo | 17.1951 | 14.6433 | 15.6937 | 16.6561 | 23.426
+implicit | 15.0314 | 16.1355 | 19.3006 | 25.9833 | 39.4239
+qmf | 67.006193 | 76.501249 | 99.842923 | 139.275130666667 | 193.918801
+lightfm | 4480.07857577006 | 4499.68288469315 | 4465.49154909452 | 4491.95924011866 | 4585.76058634122
+
+method | T=1 | T=2 | T=4 | T=8 | T=16
+-- | -- | -- | -- | -- | --
+buffalo | 59.4573 | 36.8466 | 22.5258 | 16.9438 | 26.7515
+implicit | 90.2548 | 42.4105 | 24.4276 | 15.6033 | 13.4407
+qmf | 85.493298 | 75.46227 | 75.4510053333333 | 79.250403 | 76.7110853333333
+lightfm | 4170.78732784589 | 3468.09006055196 | 3411.35963026683 | 4552.11646389961 | 5788.33071891467
+
 ## Movielens20M
+
