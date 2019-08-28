@@ -10,9 +10,16 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
+sys.path.insert(0, os.path.abspath('..'))
+import mock
+MOCK_MODULES = ['buffalo.data.fileio', 'buffalo.misc.log',
+                'buffalo.parallel._core',
+                'buffalo.algo._als', 'buffalo.algo._bpr',
+                'buffalo.algo._cfr', 'buffalo.algo._w2v']
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = mock.Mock()
 
 
 # -- Project information -----------------------------------------------------
