@@ -45,7 +45,7 @@ class TestStream(unittest.TestCase):
         self.temp_files.append(opt.data.path)
         self.assertTrue(True)
         db = mm.handle
-        if opt.data.sppmi:
+        if opt.data.sppmi.enabled:
             self.assertEqual(sorted(db.keys()), sorted(['idmap', 'rowwise', 'colwise', 'vali', 'sppmi']))
         else:
             self.assertEqual(sorted(db.keys()), sorted(['idmap', 'rowwise', 'colwise', 'vali']))
@@ -67,7 +67,7 @@ class TestStream(unittest.TestCase):
         mm.create()
         self.assertTrue(True)
         db = mm.handle
-        if opt.data.sppmi:
+        if opt.data.sppmi.enabled:
             self.assertEqual(sorted(db.keys()), sorted(['idmap', 'rowwise', 'colwise', 'vali', 'sppmi']))
         else:
             self.assertEqual(sorted(db.keys()), sorted(['idmap', 'rowwise', 'colwise', 'vali']))

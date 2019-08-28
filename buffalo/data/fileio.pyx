@@ -8,8 +8,7 @@ from libcpp.string cimport string
 
 cdef extern from "fileio.hpp" namespace "fileio":
     vector[string] _chunking_into_bins(string, string, int64_t, int, int, int)
-    int64_t _parallel_build_sppmi(string, string, int64_t, int, int, int)
-    vector[string] _sort_and_compressed_binarization(string, string, int64_t, int, int, int)
+    string _sort_and_compressed_binarization(string, string, int64_t, int, int, int)
 
 
 def chunking_into_bins(path, to_dir, total_lines, num_chunks, sep_idx, num_workers):
@@ -21,13 +20,6 @@ def chunking_into_bins(path, to_dir, total_lines, num_chunks, sep_idx, num_worke
                                sep_idx,
                                num_workers)
 
-def parallel_build_sppmi(from_path, to_path, total_lines, num_items, k, num_workers):
-    return _parallel_build_sppmi(bytes(from_path, 'utf-8'),
-                                 bytes(to_path, 'utf-8'),
-                                 total_lines,
-                                 num_items,
-                                 k,
-                                 num_workers)
 
 def sort_and_compressed_binarization(path, to_dir, total_lines, max_key, sort_key, num_workers):
     return _sort_and_compressed_binarization(
