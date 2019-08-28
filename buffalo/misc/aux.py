@@ -58,18 +58,6 @@ class Option(dict):
         vars(self).update(state)
 
 
-def mkdirs(path):
-    if not path:
-        return True
-    if os.path.isdir(path):
-        return True
-    if path.endswith('/'):
-        path = path[:-1]
-    parent = path.split('/')[:-1]
-    mkdirs('/'.join(parent))
-    os.mkdir(path)
-
-
 class InputOptions(abc.ABC):
     def __init__(self, *args, **kwargs):
         pass
