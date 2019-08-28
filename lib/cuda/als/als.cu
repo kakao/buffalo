@@ -29,6 +29,7 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
     for (int row=blockIdx.x + start_x; row<next_x; row+=gridDim.x){
         float* _P = &P[row*vdim];
         
+        // assume that shifted index can be represented by size_t
         size_t beg = row == 0? 0: indptr[row - 1] - shift;
         size_t end = indptr[row] - shift;
 
