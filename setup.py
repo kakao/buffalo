@@ -128,13 +128,15 @@ if CUDA:
     extensions.append(Extension("buffalo.algo.cuda._als",
                                 sources=["buffalo/algo/cuda/_als.cpp",
                                          "lib/cuda/als/als.cu",
-                                         "./3rd/json11/json11.cpp"],
+                                         "./3rd/json11/json11.cpp",
+                                         "lib/misc/log.cc"],
                                 language="c++",
                                 extra_compile_args=extra_compile_args,
                                 library_dirs=[CUDA['lib64']],
                                 libraries=['cudart', 'cublas', 'curand'],
                                 include_dirs=["./include", numpy_include_dirs,
-                                              CUDA['include'], "./3rd/json11"]))
+                                              CUDA['include'], "./3rd/json11",
+                                              "./3rd/spdlog/include"]))
 else:
     print("Failed to find CUDA toolkit. Building without GPU acceleration.")
 

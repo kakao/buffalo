@@ -19,7 +19,6 @@ cdef extern from "buffalo/cuda/als/als.hpp" namespace "cuda_als":
         void initialize_model(float*, int,
                               float*, int) nogil except +
         void precompute(int) nogil except +
-        void synchronize(int, int, int, bool) nogil except +
         pair[double, double] partial_update(int, int,
                              int64_t*, int32_t*, float*, int) nogil except +
         int get_vdim() nogil except +
@@ -51,9 +50,6 @@ cdef class CyALS:
 
     def precompute(self, axis):
         self.obj.precompute(axis)
-
-    def synchronize(self, start_x, next_x, axis, device_to_host):
-        self.obj.synchronize(start_x, next_x, axis, device_to_host)
 
     def get_vdim(self):
         return self.obj.get_vdim()
