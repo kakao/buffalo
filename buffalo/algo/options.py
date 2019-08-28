@@ -75,7 +75,7 @@ class ALSOption(AlgoOption):
         :ivar int d: The number of latent feature dimension. (default: 20)
         :ivar int num_iters: The number of iterations for training. (default: 10)
         :ivar int num_workers: The number of threads. (default: 1)
-        :ivar int hyper_threads: The number of hyper threads when using cuda cores. (default: 100)
+        :ivar int hyper_threads: The number of hyper threads when using cuda cores. (default: 256)
         :ivar float reg_u: The L2 regularization coefficient for user embedding matrix. (default: 0.1)
         :ivar float reg_i: The L2 regularization coefficient for item embedding matrix. (default: 0.1)
         :ivar float alpha: The coefficient of giving more weights to losses on positive samples. (default: 8)
@@ -94,7 +94,7 @@ class ALSOption(AlgoOption):
             'd': 20,
             'num_iters': 10,
             'num_workers': 1,
-            'hyper_threads': 100,
+            'hyper_threads': 256,
             'reg_u': 0.1,
             'reg_i': 0.1,
             'alpha': 8,
