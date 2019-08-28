@@ -2,7 +2,7 @@
 
 
 # Buffalo
-Buffalo is a production-ready open source which fast and scalable. Buffalo maximizes performance by effectively using system resources even on low-spec machines. The implementation is optimized for CPU and SSD, but it also shows good performance with GPU accelerator. Buffalo is one of the recommender system libraries developed by Kakao and has been reliably used for various Kakao services.
+Buffalo is a fast and scalable production-ready open source project for recommender systems. Buffalo effectively utilizes system resources, enabling high performance even on low-spec machines. The implementation is optimized for CPU and SSD. Even so, it shows good performance with GPU accelerator, too. Buffalo, developed by Kakao, has been reliably used in production for various Kakao services.
 
 Documentation: link here
 
