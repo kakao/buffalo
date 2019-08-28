@@ -15,8 +15,10 @@ Some tests rely on external databases. Before run the tests, please download bel
     - Unarchving it to ./ext/text8
   - Question-words: https://raw.githubusercontent.com/nicholas-leonard/word2vec/master/questions-words.txt
     - Place it to ./ext/text8
-  - KakaoBrunch12M
-  - KakaoReco730M
+  - KakaoBrunch12M: https://arena.kakao.com/datasets
+    - Place it to ./ext/kakao-brunch-12m
+  - KakaoReco730M: https://arena.kakao.com/datasets
+    - Place it to ./ext/kakao-reco-730m
 
 ## Preprcessing
 Before run the tests, pre-processing has to be done. Type `python preprocessing.py`.

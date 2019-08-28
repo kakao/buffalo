@@ -32,7 +32,6 @@ Besides, buffalo provides a variety of convenient features for research and prod
     Introduction <intro>
     Algorithms <algo>
     Parallels <parallels>
-    Examples <example>
     Benchmarks <https://github.daumkakao.com/toros/buffalo/tree/dev/benchmark>
 
 

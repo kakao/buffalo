@@ -1,5 +1,13 @@
 Algorithms
-===============
+==========
+Buffalo provides four algorithm implementations:
+
+  - Alternating Least Squares
+  - Bayesian Personalized Ranking Matrix Factorization
+  - Word2Vec
+  - CoFactors
+
+These algorithms are hard to say up-to-date, but they're efficient and have good performance, and they're also highly utilized. All algorithms inherit common parent classes such as Algo, Serializable, TensorboardExtention, Optimizable, Evaluable. 
 
 
 Algo
