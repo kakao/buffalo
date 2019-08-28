@@ -118,7 +118,6 @@ buffalo[T=16] | 132.026 | 132.998
 buffalo-gpu | 107.455 | 87.9746
 
 - In this experiment, we set number of iteration to 2.
-- We found that the smaller the batch size relative to the data size, the lower the GPU mode performance.
 
 ## Bayesian Personalized Ranking Matrix Factorization
 
