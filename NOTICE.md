@@ -6,6 +6,34 @@ The following sets forth attribution notices for third party software that may b
 
 If you have any questions or concerns, please contact us at [opensource@kakaocorp.com][opensource_kakaocorp.com]
 
+ **configparser**
+
+https://github.com/jaraco/configparser/
+
+Copyright Jason R. Coombs
+
+
+MIT License 
+
+
+ **CUDA Toolkit**
+
+https://developer.nvidia.com/cuda-downloads
+
+Copyright 2019, NVIDIA CORPORATION
+
+
+ **CuPy**
+
+https://github.com/cupy/cupy
+
+Copyright 2015 Preferred Infrastructure, Inc.
+Copyright 2015 Preferred Networks, Inc.
+
+
+MIT License 
+
+
  **Cython**
 
 https://github.com/cython/cython
@@ -54,6 +82,26 @@ Copyright 2013 Dropbox, Inc.
 
 
 MIT License 
+
+
+ **Kakao N2**
+
+https://github.com/kakao/n2
+
+Copyright 2017 Kakao Corp. http://www.kakaocorp.com
+
+
+Apache License 2.0 
+
+
+ **npcuda-example**
+
+https://github.com/rmcgibbo/npcuda-example
+
+Copyright 2014, Robert T. McGibbon and the Authors
+
+
+BSD 2-Clause "Simplified" License 
 
 
  **NumPy**

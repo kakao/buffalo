@@ -1,1 +1,2 @@
+include cuda_setup.py
 include tests/res/*.json
