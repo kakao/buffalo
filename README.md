@@ -1,4 +1,4 @@
-<center><img src="./docs/buffalo.gif" width="320px"></center>
+<center><img src="./docs/buffalo.png" width="320px"></center>
 
 
 # Buffalo
