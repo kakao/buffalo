@@ -109,10 +109,10 @@ double CCFR::partial_update_user(int start_x, int next_x,
         for (int i=0; i<end_loop; ++i)
         {
             const int x = start_x + i;
-            // assume that shifted index is not so big
-            const int beg = x == 0? 0: indptr[x - 1] - shifted;
-            const int end = indptr[x] - shifted;
-            const int data_size = end - beg;
+            // assume that shifted index can be represented by size_t
+            const size_t beg = x == 0? 0: indptr[x - 1] - shifted;
+            const size_t end = indptr[x] - shifted;
+            const size_t data_size = end - beg;
             if (data_size == 0) {
                 TRACE("No data exists for {}", x);
                 continue;
@@ -124,7 +124,7 @@ double CCFR::partial_update_user(int start_x, int next_x,
             VectorType y(dim_);
             
             A = FF_;
-            for (int idx=0, it = beg; it < end; ++it, ++idx) {
+            for (size_t idx=0, it = beg; it < end; ++it, ++idx) {
                 const int& c = keys[it];
                 const float& v = vals[it];
                 Fs.row(idx) = I_.row(c);
@@ -174,13 +174,13 @@ double CCFR::partial_update_item(int start_x, int next_x,
             MatrixType A(dim_, dim_);
             VectorType y(dim_); 
             
-            const int beg_u = x == 0? 0: indptr_u[x - 1] - shifted_u;
-            const int end_u = indptr_u[x] - shifted_u;
-            const int data_size_u = end_u - beg_u;
+            const size_t beg_u = x == 0? 0: indptr_u[x - 1] - shifted_u;
+            const size_t end_u = indptr_u[x] - shifted_u;
+            const size_t data_size_u = end_u - beg_u;
             
-            const int beg_c = x == 0? 0: indptr_c[x - 1] - shifted_c;
-            const int end_c = indptr_c[x] - shifted_c;
-            const int data_size_c = end_c - beg_c;
+            const size_t beg_c = x == 0? 0: indptr_c[x - 1] - shifted_c;
+            const size_t end_c = indptr_c[x] - shifted_c;
+            const size_t data_size_c = end_c - beg_c;
             if (data_size_u == 0 and data_size_c == 0) {
                 TRACE("No data exists for {}", x);
                 continue;
@@ -191,7 +191,7 @@ double CCFR::partial_update_item(int start_x, int next_x,
             MatrixType Fs(data_size_u, dim_);
             VectorType coeff(data_size_u);
             float loss = compute_loss_? (I_.row(x) * FF_).dot(I_.row(x)): 0;
-            for (int idx=0, it = beg_u; it < end_u; ++it, ++idx) {
+            for (size_t idx=0, it = beg_u; it < end_u; ++it, ++idx) {
                 const int& c = keys_u[it];
                 const float& v = vals_u[it];
                 Fs.row(idx) = U_.row(c);
@@ -217,7 +217,7 @@ double CCFR::partial_update_item(int start_x, int next_x,
             coeff.resize(data_size_c);
             
             loss = 0.0;
-            for (int idx=0, it=beg_c; it < end_c; ++it, ++idx) {
+            for (size_t idx=0, it=beg_c; it < end_c; ++it, ++idx) {
                 const int& c = keys_c[it];
                 const float& v = vals_c[it];
                 Fs.row(idx) = C_.row(c);
@@ -241,7 +241,7 @@ double CCFR::partial_update_item(int start_x, int next_x,
             
             // update bias
             float b = 0;
-            for (int idx=0, it = beg_c; it < end_c; ++it, ++idx) {
+            for (size_t idx=0, it = beg_c; it < end_c; ++it, ++idx) {
                 const int& c = keys_c[it];
                 const float& v = vals_c[it];
                 b += (v - I_.row(x).dot(C_.row(c)) - Cb_(c));
@@ -274,9 +274,9 @@ double CCFR::partial_update_context(int start_x, int next_x,
             MatrixType A(dim_, dim_);
             VectorType y(dim_); 
             
-            const int beg = x == 0? 0: indptr[x - 1] - shifted;
-            const int end = indptr[x] - shifted;
-            const int data_size = end - beg;
+            const size_t beg = x == 0? 0: indptr[x - 1] - shifted;
+            const size_t end = indptr[x] - shifted;
+            const size_t data_size = end - beg;
             
             if (data_size == 0) {
                 TRACE("No data exists for {}", x);
@@ -286,7 +286,7 @@ double CCFR::partial_update_context(int start_x, int next_x,
             MatrixType Fs(data_size, dim_);
             VectorType coeff(data_size);
             
-            for (int idx=0, it = beg; it < end; ++it, ++idx) {
+            for (size_t idx=0, it = beg; it < end; ++it, ++idx) {
                 const int& c = keys[it];
                 const float& v = vals[it];
                 Fs.row(idx) = I_.row(c);
@@ -302,7 +302,7 @@ double CCFR::partial_update_context(int start_x, int next_x,
             _leastsquare(C_, x, A, y);
             // update bias
             float b = 0;
-            for (int idx=0, it = beg; it < end; ++it, ++idx) {
+            for (size_t idx=0, it = beg; it < end; ++it, ++idx) {
                 const int& c = keys[it];
                 const float& v = vals[it];
                 b += (v - C_.row(x).dot(I_.row(c)) - Ib_(c));

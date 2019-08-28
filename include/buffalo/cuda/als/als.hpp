@@ -23,7 +23,7 @@ public:
     void initialize_model(
             float* P, int P_rows,
             float* Q, int Q_rows);
-    void set_placeholder(int64_t* lindptr, int64_t* rindptr, int batch_size);
+    void set_placeholder(int64_t* lindptr, int64_t* rindptr, size_t batch_size);
     
     void precompute(int axis);
     int get_vdim();
@@ -41,7 +41,7 @@ public:
     int64_t *lindptr_, *rindptr_;
     int* keys_; 
     float* vals_;
-    int batch_size_;
+    size_t batch_size_;
 
     float *hostP_, *hostQ_, *devP_, *devQ_, *devFF_;
     float *hostLossNume_, *hostLossDeno_, *devLossNume_, *devLossDeno_;

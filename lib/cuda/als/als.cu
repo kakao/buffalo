@@ -287,7 +287,7 @@ void CuALS::initialize_model(
     initialized_ = true;
 }
 
-void CuALS::set_placeholder(int64_t* lindptr, int64_t* rindptr, int batch_size)
+void CuALS::set_placeholder(int64_t* lindptr, int64_t* rindptr, size_t batch_size)
 {
     // if already setted, free memory
     _release_placeholder();

@@ -15,7 +15,7 @@ cdef extern from "buffalo/cuda/als/als.hpp" namespace "cuda_als":
     cdef cppclass CuALS:
         CuALS() nogil except +
         bool init(string) nogil except +
-        void set_placeholder(int64_t* lindptr, int64_t* rindptr, int batch_size);
+        void set_placeholder(int64_t* lindptr, int64_t* rindptr, size_t batch_size);
         void initialize_model(float*, int,
                               float*, int) nogil except +
         void precompute(int) nogil except +
@@ -45,7 +45,7 @@ cdef class CyALS:
 
     def set_placeholder(self, np.ndarray[np.int64_t, ndim=1] lindptr,
                         np.ndarray[np.int64_t, ndim=1] rindptr,
-                        int batch_size):
+                        batch_size):
         self.obj.set_placeholder(&lindptr[0], &rindptr[0], batch_size)
 
     def precompute(self, axis):
