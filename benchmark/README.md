@@ -62,12 +62,6 @@ Note that there is no Python version of QMF. Since we ran benchmark by Python sc
 
 There is a restriction such that the number of the latent dimensions must be multiple of 32 when using GPU in implicit. For example, 80 demensions has been upscaled to 96 but not for 160. Therefore, it is not an accurate comparison between implicit-gpu and buffalo-gpu.
 
-### KakaoReco730M
-KakaoReco730M, the biggest dataset among our datasets. Within given system resource, only Buffalo and Implicit could manage to train data in reasonable amount of time. Owing to lack of GPU device memory, even implicit does not run on GPU accelerator mode. For buffalo-gpu, the memory management option `batch_mb` works consistently in GPU accelerator mode, allowing it to work with KakaoReco730M that data size does not fit in memory.
-
-- In this experiment, we set number of iteration to 2. 
-
-
 ### KakaoBrunch12M
 
 <center><img src="./fig/20190828.buffalo.kakaobrunch12m.d.png" width="1024px"></center>
@@ -115,6 +109,16 @@ qmf | 168.467 | 87.7365 | 46.8157 | 31.0115 | 33.9857
 
 - D setted as 20.
 
+### KakaoReco730M
+KakaoReco730M, the biggest dataset among our datasets. Within given system resource, only Buffalo and Implicit could manage to train data in reasonable amount of time. Owing to lack of GPU device memory, even implicit does not run on GPU accelerator mode. For buffalo-gpu, the memory management option `batch_mb` works consistently in GPU accelerator mode, allowing it to work with KakaoReco730M that data size does not fit in memory.
+
+  | M=4096 | M=8192
+-- | -- | --
+buffalo[T=16] | 132.026 | 132.998
+buffalo-gpu | 107.455 | 87.9746
+
+- In this experiment, we set number of iteration to 2.
+- We found that the smaller the batch size relative to the data size, the lower the GPU mode performance.
 
 ## Bayesian Personalized Ranking Matrix Factorization
 
