@@ -106,7 +106,7 @@ class TFALS(object):
         ends = indptr[start_x: next_x]
         begs = np.empty(next_x - start_x, dtype=np.int64)
         begs[0] = 0 if start_x == 0 else indptr[start_x - 1]
-        begs[1:] = ends[: -1]
+        begs[1:] = ends[:-1]
         ret = np.arange(next_x - start_x, dtype=np.int32)
         ret = np.repeat(ret, ends - begs)
         return ret, len(ret)
