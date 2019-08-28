@@ -7,7 +7,7 @@ Buffalo provides four algorithm implementations:
   - Word2Vec
   - CoFactors
 
-These algorithms are hard to say up-to-date, but they're efficient and have good performance, and they're also highly utilized. All algorithms inherit common parent classes such as Algo, Serializable, TensorboardExtention, Optimizable, Evaluable. 
+These algorithms are hard to say up-to-date, but they're efficient and good at performance, and they're also highly utilized. All algorithms inherit common parent classes such as Algo, Serializable, TensorboardExtention, Optimizable, Evaluable. 
 
 
 Algo

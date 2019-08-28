@@ -28,7 +28,18 @@ To download the databases, please see the README.md on ./tests/.
   - KakaoBrunch12M
     - Sampled user reading history from [Kakao Brunch](https://brunch.co.kr) service, which kind of blog service, during 6 months.
   - Movielens20M
-  - Movielens100K
+    - https://grouplens.org/datasets/movielens/
+
+
+## Database Statistics
+  | # USERS | # ITEMS | # NNZ
+-- | -- | -- | --
+MovieLens20M | 138,000 | 27,000 | 20M
+KakaoBrunch12M | 306,291 | 505,926 | 12M
+KakaoReco730M | 21,940,315 | 1,467,298 | 730M
+
+* M stands for Million.
+* NNZ stands for Number of Non-Zero entries.
 
 
 ## Alternating Least Square
