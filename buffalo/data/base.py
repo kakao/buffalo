@@ -347,7 +347,7 @@ class Data(object):
             self.logger.info('Preprocessing...')
             self.prepro.pre(db)
             if approximated_data_mb * 1.2 < available_mb:
-                self.logger.info('In-memory Compreesing ...')
+                self.logger.info('In-memory Compressing ...')
                 merged_bin = self._sort_and_compressed_binarization(
                     working_data_path,
                     db.attrs['num_nnz'],

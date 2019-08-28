@@ -75,9 +75,12 @@ class ALSOption(AlgoOption):
         :ivar int d: The number of latent feature dimension. (default: 20)
         :ivar int num_iters: The number of iterations for training. (default: 10)
         :ivar int num_workers: The number of threads. (default: 1)
+        :ivar int hyper_threads: The number of hyper threads when using cuda cores. (default: 256)
         :ivar float reg_u: The L2 regularization coefficient for user embedding matrix. (default: 0.1)
         :ivar float reg_i: The L2 regularization coefficient for item embedding matrix. (default: 0.1)
         :ivar float alpha: The coefficient of giving more weights to losses on positive samples. (default: 8)
+        :ivar float eps: epsilon for numerical stability (default: 1e-10)
+        :ivar float cg_tolerance: tolerance of conjugate gradient for early stopping iterations (default: 1e-10)
         :ivar str optimizer: The name of optimizer, should be in [llt, ldlt, manual_cg, eigen_cg, eigen_bicg, eigen_gmres, eigen_dgmres, eigen_minres]. (default: manual_cg)
         :ivar int num_cg_max_iters: The number of maximum iterations for conjuaget gradient optimizer. (default: 3)
         :ivar str model_path: Where to save model.
@@ -93,11 +96,12 @@ class ALSOption(AlgoOption):
             'd': 20,
             'num_iters': 10,
             'num_workers': 1,
+            'hyper_threads': 256,
+            'num_cg_max_iters': 3,
             'reg_u': 0.1,
             'reg_i': 0.1,
             'alpha': 8,
             'optimizer': 'manual_cg',
-            'num_cg_max_iters': 3,
             'cg_tolerance': 1e-10,
             'eps': 1e-10,
 
@@ -141,18 +145,19 @@ class CFROption(AlgoOption):
         """ Basic Options for CoFactor.
 
         :ivar int d: The number of latent feature dimension. (default: 20)
-        :ivar int num_iters: The number of iterations for training.
-        :ivar int num_workers: The number of threads.
-        :ivar float reg_u: The L2 regularization coefficient for user embedding matrix.
-        :ivar float reg_i: The L2 regularization coefficient for item embedding matrix.
-        :ivar float reg_c: The L2 regularization coefficient for context embedding matrix.
-        :ivar float cg_tolerance: The tolerance for early stopping conjugate gradient optimizer.
-        :ivar float alpha: The coefficient of giving more weights to losses on positive samples.
-        :ivar float l: The relative weight of loss on user-item relation over item-context relation.
+        :ivar int num_iters: The number of iterations for training. (default: 10)
+        :ivar int num_workers: The number of threads. (default: 1)
+        :ivar float reg_u: The L2 regularization coefficient for user embedding matrix. (default: 0.1)
+        :ivar float reg_i: The L2 regularization coefficient for item embedding matrix. (default: 0.1)
+        :ivar float reg_c: The L2 regularization coefficient for context embedding matrix. (default: 0.1)
+        :ivar float eps: epsilon for numerical stability (default: 1e-10)
+        :ivar float cg_tolerance: The tolerance for early stopping conjugate gradient optimizer. (default: 1e-10)
+        :ivar float alpha: The coefficient of giving more weights to losses on positive samples. (default: 8.0)
+        :ivar float l: The relative weight of loss on user-item relation over item-context relation. (default: 1.0)
         :ivar str optimizer: The name of optimizer, should be in [llt, ldlt, manual_cg, eigen_cg, eigen_bicg, eigen_gmres, eigen_dgmres, eigen_minres]. (default: manual_cg)
         :ivar int num_cg_max_iters: The number of maximum iterations for conjuaget gradient optimizer. (default: 3)
-        :ivar str model_path: Where to save model.
-        :ivar dict data_opt: This options will be used to load data if given.
+        :ivar str model_path: Where to save model. (default: '')
+        :ivar dict data_opt: This options will be used to load data if given. (default: {})
         """
         opt = super().get_default_option()
         opt.update({
@@ -160,6 +165,8 @@ class CFROption(AlgoOption):
             'd': 20,
             'num_iters': 10,
             'num_workers': 1,
+            'num_cg_max_iters': 3,
+
             'cg_tolerance': 1e-10,
             'eps': 1e-10,
             'reg_u': 0.1,
@@ -167,8 +174,8 @@ class CFROption(AlgoOption):
             'reg_c': 0.1,
             'alpha': 8.0,
             'l': 1.0,
+
             'optimizer': 'manual_cg',
-            'num_cg_max_iters': 3,
             'model_path': '',
             'data_opt': {}
         })

@@ -29,8 +29,9 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
     for (int row=blockIdx.x + start_x; row<next_x; row+=gridDim.x){
         float* _P = &P[row*vdim];
         
-        int beg = row == 0? 0: indptr[row - 1] - shift;
-        int end = indptr[row] - shift;
+        // assume that shifted index can be represented by size_t
+        size_t beg = row == 0? 0: indptr[row - 1] - shift;
+        size_t end = indptr[row] - shift;
 
         if (beg == end) {
             _P[threadIdx.x] = 0;
@@ -57,7 +58,7 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
 
         tmp -= _P[threadIdx.x] * ada_reg;
 
-        for (int idx=beg; idx<end; ++idx){
+        for (size_t idx=beg; idx<end; ++idx){
             const float* _Q = &Q[keys[idx] * vdim];
             const float v = vals[idx];
             float _dot = dot(_P, _Q);
@@ -89,7 +90,7 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
             for (int d=0; d<dim; ++d){
                 Ap[threadIdx.x] += p[d] * FF[d * vdim + threadIdx.x];
             }
-            for (int idx=beg; idx<end; ++idx){
+            for (size_t idx=beg; idx<end; ++idx){
                 const float* _Q = &Q[keys[idx] * vdim];
                 const float v = vals[idx];
                 float _dot = dot(p, _Q);
@@ -121,16 +122,58 @@ __global__ void least_squares_cg_kernel(const int dim, const int vdim,
 }
 
 CuALS::CuALS(){
+    logger_ = BuffaloLogger().get_logger();
     opt_setted_ = false, initialized_ = false, ph_setted_ = false;
+    
     CHECK_CUDA(cudaGetDevice(&devId_));
-    CHECK_CUDA(cudaDeviceGetAttribute(&mp_cnt_, cudaDevAttrMultiProcessorCount, devId_));
-    block_cnt_ = 128 * mp_cnt_;
+    cudaDeviceProp prop;
+    CHECK_CUDA(cudaGetDeviceProperties(&prop, devId_));
+    mp_cnt_ = prop.multiProcessorCount;
+    int major = prop.major;
+    int minor = prop.minor;
+    cores_ = -1;
+
+    switch (major){
+        case 2: // Fermi
+            if (minor == 1) cores_ = mp_cnt_ * 48;
+            else cores_ = mp_cnt_ * 32;
+            break;
+        case 3: // Kepler
+            cores_ = mp_cnt_ * 192;
+            break;
+        case 5: // Maxwell
+            cores_ = mp_cnt_ * 128;
+            break;
+        case 6: // Pascal
+            if (minor == 1) cores_ = mp_cnt_ * 128;
+            else if (minor == 0) cores_ = mp_cnt_ * 64;
+            else INFO0("Unknown device type");
+            break;
+        case 7: // Volta
+            if (minor == 0) cores_ = mp_cnt_ * 64;
+            else INFO0("Unknown device type");
+            break;
+        default:
+            INFO0("Unknown device type"); 
+            break;
+    }
+
+    if (cores_ == -1) cores_ = mp_cnt_ * 128;
+    INFO("cuda device info, major: {}, minor: {}, multi processors: {}, cores: {}",
+         major, minor, mp_cnt_, cores_);
 }
 
 CuALS::~CuALS(){
     // destructor
     CHECK_CUBLAS(cublasDestroy(blas_handle_));
 
+    _release_utility();
+    _release_embedding();
+    _release_placeholder();
+
+}
+
+void CuALS::_release_utility(){
     // free memory of utility variables
     if (opt_setted_){
         CHECK_CUDA(cudaFree(devFF_)); devFF_ = nullptr;
@@ -142,6 +185,10 @@ CuALS::~CuALS(){
         }
     }
 
+    opt_setted_ = false;
+}
+
+void CuALS::_release_embedding(){
     // free memory of embedding matrix
     if (initialized_){
         CHECK_CUDA(cudaFree(devP_));
@@ -149,7 +196,10 @@ CuALS::~CuALS(){
         devP_ = nullptr, devQ_ = nullptr;
         hostP_ = nullptr, hostQ_ = nullptr;
     }
+    initialized_ = false;
+}
 
+void CuALS::_release_placeholder(){
     // free memory of placeholders
     if (ph_setted_){
         CHECK_CUDA(cudaFree(lindptr_));
@@ -157,6 +207,7 @@ CuALS::~CuALS(){
         CHECK_CUDA(cudaFree(keys_));
         CHECK_CUDA(cudaFree(vals_));
     }
+    ph_setted_ = false;
 }
 
 bool CuALS::parse_option(std::string opt_path, Json& j){
@@ -180,6 +231,9 @@ bool CuALS::init(std::string opt_path){
     // parse options
     bool ok = parse_option(opt_path, opt_);
     if (ok){
+        // if already setted, free memory
+        _release_utility();
+
         // set options
         compute_loss_ = opt_["compute_loss_on_training"].bool_value();
         adaptive_reg_ = opt_["adaptive_reg"].bool_value();
@@ -192,13 +246,15 @@ bool CuALS::init(std::string opt_path){
         reg_i_ = opt_["reg_i"].number_value();
         cg_tolerance_ = opt_["cg_tolerance"].number_value();
         eps_ = opt_["eps"].number_value();
-        
+       
         // virtual dimension
         vdim_ = (dim_ / WARP_SIZE) * WARP_SIZE;
         if (dim_ % WARP_SIZE > 0) vdim_ += WARP_SIZE;
         CHECK_CUDA(cudaMalloc(&devFF_, sizeof(float)*vdim_*vdim_));
         CHECK_CUBLAS(cublasCreate(&blas_handle_));
-        
+       
+        block_cnt_ = opt_["hyper_threads"].int_value() * (cores_ / vdim_);
+
         if (compute_loss_){
             hostLossNume_ = (float*) malloc(sizeof(float)*block_cnt_);
             hostLossDeno_ = (float*) malloc(sizeof(float)*block_cnt_);
@@ -210,26 +266,13 @@ bool CuALS::init(std::string opt_path){
     return ok;
 }
 
-void CuALS::set_placeholder(int64_t* lindptr, int64_t* rindptr, int batch_size)
-{
-    if(!ph_setted_) {
-        CHECK_CUDA(cudaMalloc(&lindptr_, sizeof(int64_t)*(P_rows_)));
-        CHECK_CUDA(cudaMalloc(&rindptr_, sizeof(int64_t)*(Q_rows_)));
-        CHECK_CUDA(cudaMemcpy(lindptr_, lindptr, sizeof(int64_t)*(P_rows_), 
-                cudaMemcpyHostToDevice));
-        CHECK_CUDA(cudaMemcpy(rindptr_, rindptr, sizeof(int64_t)*(Q_rows_), 
-                cudaMemcpyHostToDevice));
-
-        CHECK_CUDA(cudaMalloc(&keys_, sizeof(int)*batch_size));
-        CHECK_CUDA(cudaMalloc(&vals_, sizeof(float)*batch_size));
-        batch_size_ = batch_size;
-        ph_setted_ = true;
-    }
-}
-
 void CuALS::initialize_model(
         float* P, int P_rows,
-        float* Q, int Q_rows){
+        float* Q, int Q_rows)
+{    
+    // if already setted, free memory
+    _release_embedding();
+    
     // initialize parameters and send to gpu memory
     hostP_ = P;
     hostQ_ = Q;
@@ -245,6 +288,25 @@ void CuALS::initialize_model(
     initialized_ = true;
 }
 
+void CuALS::set_placeholder(int64_t* lindptr, int64_t* rindptr, size_t batch_size)
+{
+    // if already setted, free memory
+    _release_placeholder();
+    
+    CHECK_CUDA(cudaMalloc(&lindptr_, sizeof(int64_t)*(P_rows_)));
+    CHECK_CUDA(cudaMalloc(&rindptr_, sizeof(int64_t)*(Q_rows_)));
+    CHECK_CUDA(cudaMemcpy(lindptr_, lindptr, sizeof(int64_t)*(P_rows_), 
+            cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemcpy(rindptr_, rindptr, sizeof(int64_t)*(Q_rows_), 
+            cudaMemcpyHostToDevice));
+
+    CHECK_CUDA(cudaMalloc(&keys_, sizeof(int)*batch_size));
+    CHECK_CUDA(cudaMalloc(&vals_, sizeof(float)*batch_size));
+    batch_size_ = batch_size;
+    ph_setted_ = true;
+}
+
+
 void CuALS::precompute(int axis){
     // precompute FF using cublas
     int op_rows = axis == 0? Q_rows_: P_rows_;
@@ -256,11 +318,10 @@ void CuALS::precompute(int axis){
     CHECK_CUDA(cudaDeviceSynchronize());
 }
 
-void CuALS::synchronize(int start_x, int next_x, int axis, bool device_to_host){
+void CuALS::_synchronize(int start_x, int next_x, int axis, bool device_to_host){
     // synchronize parameters between cpu memory and gpu memory
     float* devF = axis == 0? devP_: devQ_;
     float* hostF = axis == 0? hostP_: hostQ_;
-    // int rows = axis == 0? P_rows_: Q_rows_;
     int size = next_x - start_x;
     if (device_to_host){
         CHECK_CUDA(cudaMemcpy(hostF + (start_x * vdim_), devF + (start_x * vdim_),
@@ -295,8 +356,8 @@ std::pair<double, double> CuALS::partial_update(int start_x,
 
     
     // copy data to gpu memory
-    int64_t beg = start_x == 0? 0: indptr[start_x - 1];
-    int64_t end = indptr[next_x - 1];
+    size_t beg = start_x == 0? 0: indptr[start_x - 1];
+    size_t end = indptr[next_x - 1];
     CHECK_CUDA(cudaMemcpy(keys_, keys, sizeof(int)*(end-beg), 
                cudaMemcpyHostToDevice));
     CHECK_CUDA(cudaMemcpy(vals_, vals, sizeof(float)*(end-beg), 
@@ -338,7 +399,9 @@ std::pair<double, double> CuALS::partial_update(int start_x,
             loss_deno += hostLossDeno_[i];
         }
     }
-    
+
+    _synchronize(start_x, next_x, axis, true);
+
     return std::make_pair(loss_nume, loss_deno);
 }
 

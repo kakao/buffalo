@@ -39,6 +39,7 @@ public:
     char optimizer_code_ = 0;
     int num_cg_max_iters_ = 3;
     float cg_tolerance_ = 1e-10;
+    float eps_ = 1e-10;
     std::shared_ptr<spdlog::logger> logger_;
 };
 

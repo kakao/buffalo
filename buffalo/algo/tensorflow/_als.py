@@ -15,9 +15,9 @@ class TFALS(object):
 
     def initialize_model(self, P, Q):
         with tf.variable_scope(self.name):
-            self.P = tf.get_variable(f"P", initializer=P)
-            self.Q = tf.get_variable(f"Q", initializer=Q)
-            self.FF = tf.get_variable(f"FF", shape=(self.opt.d, self.opt.d),
+            self.P = tf.get_variable("P", initializer=P)
+            self.Q = tf.get_variable("Q", initializer=Q)
+            self.FF = tf.get_variable("FF", shape=(self.opt.d, self.opt.d),
                                       initializer=tf.keras.initializers.Zeros,
                                       dtype=tf.float32)
             self.build_graph()

@@ -3,6 +3,8 @@
 #include <utility>
 
 #include "json11.hpp"
+#include "buffalo/misc/log.hpp"
+
 
 struct cublasContext;
 
@@ -18,12 +20,12 @@ public:
     bool init(std::string opt_path); 
     bool parse_option(std::string opt_path, Json& j);
     
-    void set_placeholder(int64_t* lindptr, int64_t* rindptr, int batch_size);
     void initialize_model(
             float* P, int P_rows,
             float* Q, int Q_rows);
+    void set_placeholder(int64_t* lindptr, int64_t* rindptr, size_t batch_size);
+    
     void precompute(int axis);
-    void synchronize(int start_x, int next_x, int axis, bool device_to_host);
     int get_vdim();
     std::pair<double, double> partial_update(int start_x, 
             int next_x,
@@ -31,6 +33,7 @@ public:
             int* keys,
             float* vals,
             int axis);
+
 public:
     Json opt_;
     
@@ -38,7 +41,7 @@ public:
     int64_t *lindptr_, *rindptr_;
     int* keys_; 
     float* vals_;
-    int batch_size_;
+    size_t batch_size_;
 
     float *hostP_, *hostQ_, *devP_, *devQ_, *devFF_;
     float *hostLossNume_, *hostLossDeno_, *devLossNume_, *devLossDeno_;
@@ -46,8 +49,17 @@ public:
     int dim_, vdim_, num_cg_max_iters_, P_rows_, Q_rows_;
     float alpha_, reg_u_, reg_i_, cg_tolerance_, eps_;
     bool compute_loss_, adaptive_reg_;
-    int devId_, mp_cnt_, block_cnt_;
+    int devId_, mp_cnt_, block_cnt_, cores_;
     bool opt_setted_, initialized_, ph_setted_;
+
+    std::shared_ptr<spdlog::logger> logger_;
+
+private:
+    void _release_utility();
+    void _release_embedding();
+    void _release_placeholder();
+    void _synchronize(int start_x, int next_x, int axis, bool device_to_host);
+
 };
 
 } // namespace cuda_als

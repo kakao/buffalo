@@ -35,7 +35,7 @@ class TestCFR(TestBase):
         opt = CFROption().get_default_option()
         opt.d = 20
         data_opt = StreamOptions().get_default_option()
-        data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
+        data_opt.data.sppmi = {"windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
         data_opt.input.main = self.ml_100k + 'stream'
         data_opt.input.uid = self.ml_100k + 'uid'
@@ -52,7 +52,7 @@ class TestCFR(TestBase):
         set_log_level(3)
         opt = CFROption().get_default_option()
         data_opt = StreamOptions().get_default_option()
-        data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
+        data_opt.data.sppmi = {"windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
         data_opt.input.main = self.ml_100k + 'stream'
         data_opt.input.uid = self.ml_100k + 'uid'
@@ -72,7 +72,7 @@ class TestCFR(TestBase):
                                       'name': 'cfr'})
         data_opt = StreamOptions().get_default_option()
         data_opt.data.validation.name = "sample"
-        data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
+        data_opt.data.sppmi = {"windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
         data_opt.input.main = self.ml_100k + 'stream'
         data_opt.input.uid = self.ml_100k + 'uid'
@@ -92,7 +92,7 @@ class TestCFR(TestBase):
         opt.validation = aux.Option({'topk': 10})
         data_opt = StreamOptions().get_default_option()
         data_opt.data.validation.name = "sample"
-        data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
+        data_opt.data.sppmi = {"windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
         data_opt.input.main = self.ml_100k + 'stream'
         data_opt.input.uid = self.ml_100k + 'uid'
@@ -114,7 +114,7 @@ class TestCFR(TestBase):
         set_log_level(3)
         opt = CFROption().get_default_option()
         data_opt = StreamOptions().get_default_option()
-        data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
+        data_opt.data.sppmi = {"windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
         data_opt.data.tmp_dir = './tmp/'
         data_opt.input.main = self.ml_20m + 'stream'
@@ -132,7 +132,7 @@ class TestCFR(TestBase):
 
         opt = CFROption().get_default_option()
         data_opt = StreamOptions().get_default_option()
-        data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
+        data_opt.data.sppmi = {"windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
         data_opt.input.main = self.ml_100k + 'stream'
         data_opt.input.uid = self.ml_100k + 'uid'
@@ -155,7 +155,7 @@ class TestCFR(TestBase):
 
         opt = CFROption().get_default_option()
         data_opt = StreamOptions().get_default_option()
-        data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
+        data_opt.data.sppmi = {"windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
         data_opt.input.main = self.ml_100k + 'stream'
         data_opt.input.uid = self.ml_100k + 'uid'
@@ -182,7 +182,7 @@ class TestCFR(TestBase):
 
         opt = CFROption().get_default_option()
         data_opt = StreamOptions().get_default_option()
-        data_opt.data.sppmi = {"enabled": True, "windows": 5, "k": 10}
+        data_opt.data.sppmi = {"windows": 5, "k": 10}
         data_opt.data.internal_data_type = "matrix"
         data_opt.input.main = self.ml_100k + 'stream'
         data_opt.input.uid = self.ml_100k + 'uid'
