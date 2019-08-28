@@ -60,7 +60,7 @@ class TFALS(object):
                            shape=(next_x - start_x, self.opt.d))
 
         # prepare cg
-        _P = P[start_x: next_x]
+        _P = P[start_x:next_x]
         Axs = tf.matmul(_P, self.FF) + reg * _P
         dots = self._dot(tf.gather(_P, rows), Fgtr)
         Axs = tf.tensor_scatter_add(Axs, tf.expand_dims(rows, axis=1),
@@ -91,7 +91,7 @@ class TFALS(object):
                 self.err = tf.constant(0.0, dtype=tf.float32)
 
         name = "updateP" if int_group == 0 else "updateQ"
-        _update = P[start_x: next_x].assign(_P)
+        _update = P[start_x:next_x].assign(_P)
         with self.graph.control_dependencies([_update]):
             update = tf.constant(True)
         setattr(self, name, update)
@@ -103,7 +103,7 @@ class TFALS(object):
         setattr(self, name, FF)
 
     def _generate_rows(self, start_x, next_x, indptr):
-        ends = indptr[start_x: next_x]
+        ends = indptr[start_x:next_x]
         begs = np.empty(next_x - start_x, dtype=np.int64)
         begs[0] = 0 if start_x == 0 else indptr[start_x - 1]
         begs[1:] = ends[:-1]
@@ -114,7 +114,7 @@ class TFALS(object):
     def partial_update(self, start_x, next_x, indptr, keys, vals, int_group):
         rows, sz = self._generate_rows(start_x, next_x, indptr)
         feed_dict = {self.start_x: start_x, self.next_x: next_x,
-                     self.rows: rows, self.keys: keys[: sz], self.vals: vals[: sz]}
+                     self.rows: rows, self.keys: keys[:sz], self.vals: vals[:sz]}
         err = 0.0
         if int_group == 0:
             _ = self.sess.run(self.updateP, feed_dict=feed_dict)
