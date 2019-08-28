@@ -122,13 +122,13 @@ qmf | 168.467 | 87.7365 | 46.8157 | 31.0115 | 33.9857
   - Buffalo
     - `compute_loss_on_training=False`
   - Implicit
-    - `dtype=np.float32 verify_negative_samples=True calculate_training_loss=False`
+    - `dtype=np.float32, verify_negative_samples=True, calculate_training_loss=False`
   - LightFM
-    - `loss=bpr max_sampled=1`
+    - `loss=bpr, max_sampled=1`
   - QMF
-    - `num_negative_samples=1 eval_num_neg=0`
+    - `num_negative_samples=1, eval_num_neg=0`
 
-Implicit also provides GPU accelerator mode for BPRMF, but buffalo didn't. Implicit-gpu run much faster than buffalo. We plan to add GPU accelerator feature on BPRMF in the near future, so we will update the benchmarks afterwards.
+Implicit also provides GPU accelerator mode for BPRMF, but buffalo does not. Implicit-gpu run much faster than buffalo. We plan to add GPU accelerator feature on BPRMF in the near future, so we will update the benchmarks afterwards.
 
 ## KakaoBrunch12M
 
