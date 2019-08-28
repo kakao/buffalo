@@ -1,12 +1,12 @@
 # Benchmark
-We ran benchmark buffalo with the well known open source libraries so far.
+We ran benchmark tests on some well known open source libraries.
 
 - [Apache Spark](https://spark.apache.org)
 - [Quora QMF](https://github.com/quora/qmf)
 - [lyst LightFM](https://github.com/lyst/lightfm)
 - [Implicit](https://github.com/benfred/implicit)
 
-We tested two algorithms, ALS and BPRMF, measuring training speed and memory usage for vairous datasets. Some of libraries not support either ALS or BPRMF, in that case excluded.
+We tested two algorithms, ALS and BPRMF, measuring training speed and memory usage for various datasets. Some libraries do not support either ALS or BPRMF, hence excluded.
 
 - Test Environments
   - CPU Machine
@@ -24,9 +24,9 @@ We tested two algorithms, ALS and BPRMF, measuring training speed and memory usa
 To download the databases, please see the README.md on ./tests/.
 - Databases
   - KakaoReco730
-    - Sampled user reading history from Kakao annoymous service during 8 days.
+    - Sampled user reading history from Kakao anonymous service for 8 days.
   - KakaoBrunch12M
-    - Sampled user reading history from [Kakao Brunch](https://brunch.co.kr) service, which is a kind of blog service, during 6 months.
+    - Sampled user reading history from [Kakao Brunch](https://brunch.co.kr) service, a blog service, for 6 months.
   - Movielens20M
     - https://grouplens.org/datasets/movielens/
 
@@ -44,7 +44,7 @@ KakaoReco730M | 21,940,315 | 1,467,298 | 730M
 
 ## Alternating Least Square
 
-- Fixed options (otherwise we let them be default except controlled options)
+- Fixed options (used default options except for controlled options)
   - Buffalo
     - `optimizer=manual_cg num_cg_max_iters=3 compute_loss_on_training=False`
   - Buffalo-gpu
@@ -63,7 +63,7 @@ Note that there is no Python version of QMF. Since we ran benchmark by Python sc
 There is a restriction such that the number of the latent dimensions must be multiple of 32 when using GPU in implicit. For example, 80 demensions has been upscaled to 96 but not for 160. Therefore, it is not an accurate comparison between implicit-gpu and buffalo-gpu.
 
 ### KakaoReco730M
-KakaoReco730M, the biggest dataset among our datasets, is handled by only buffalo and implicit with the system resource in tolerable time. Owing to lack of GPU device memory, even implicit does not run on GPU accelerator mode. For buffalo-gpu, the memory management option `batch_mb` works consistently in GPU accelerator mode, allowing it to work with KakaoReco730M that data size does not fit in memory.
+KakaoReco730M, the biggest dataset among our datasets. Within given system resource, only Buffalo and Implicit could manage to train data in reasonable amount of time. Owing to lack of GPU device memory, even implicit does not run on GPU accelerator mode. For buffalo-gpu, the memory management option `batch_mb` works consistently in GPU accelerator mode, allowing it to work with KakaoReco730M that data size does not fit in memory.
 
 - In this experiment, we set number of iteration to 2. 
 
@@ -118,7 +118,7 @@ qmf | 168.467 | 87.7365 | 46.8157 | 31.0115 | 33.9857
 
 ## Bayesian Personalized Ranking Matrix Factorization
 
-- Fixed options (otherwise we let them as default except controlled options)
+- Fixed options (used default options except for controlled options)
   - Buffalo
     - `compute_loss_on_training=False`
   - Implicit
@@ -128,7 +128,7 @@ qmf | 168.467 | 87.7365 | 46.8157 | 31.0115 | 33.9857
   - QMF
     - `num_negative_samples=1, eval_num_neg=0`
 
-Implicit also provides GPU accelerator mode for BPRMF, but buffalo does not. Implicit-gpu run much faster than buffalo. We plan to add GPU accelerator feature on BPRMF in the near future, so we will update the benchmarks afterwards.
+Implicit also provides a GPU accelerator mode for BPRMF, but buffalo doesn't. Implicit-gpu run much faster than buffalo. We plan to add GPU accelerator feature on BPRMF in the near future. The benchmarks will be updated afterwards.
 
 ## KakaoBrunch12M
 
