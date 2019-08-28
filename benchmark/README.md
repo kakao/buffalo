@@ -6,7 +6,7 @@ We ran benchmark buffalo with the well known open source libraries so far.
 - [lyst LightFM](https://github.com/lyst/lightfm)
 - [Implicit](https://github.com/benfred/implicit)
 
-We tested two algorithms, ALS, BPRMF and measured training speed and memory usage for vairous datasets. Some of libraries not support either ALS or BPRMF, in that case excluded.
+We tested two algorithms, ALS and BPRMF, measuring training speed and memory usage for vairous datasets. Some of libraries not support either ALS or BPRMF, in that case excluded.
 
 - Test Environments
   - CPU Machine
@@ -60,10 +60,10 @@ KakaoReco730M | 21,940,315 | 1,467,298 | 730M
 
 Note that there is no Python version of QMF. Since we ran benchmark by Python script, we have to capture printed datetime information from standard output of QMF.
 
-There is a restriction where the number of the latent dimensions must be 32 times when using GPU for implicit. For example, 80 demensions has been upscaled to 96 but not for 160. Therefore, it is not an accurate comparison between implicit-gpu and buffalo-gpu.
+There is a restriction such that the number of the latent dimensions must be multiple of 32 when using GPU in implicit. For example, 80 demensions has been upscaled to 96 but not for 160. Therefore, it is not an accurate comparison between implicit-gpu and buffalo-gpu.
 
 ### KakaoReco730M
-The biggest one and only buffalo and implicit can handle this with the system resource in tolerable time. Even implicit did not run on GPU accelerator mode due to lack of memory of GPU card. For buffalo-gpu, the memory management option `batch_mb` also worked consistently in GPU accelerator mode, allowing it to work with KakaoReco730M that data size cannot fit in memory.
+KakaoReco730M, the biggest dataset among our datasets, is handled by only buffalo and implicit with the system resource in tolerable time. Owing to lack of memory of GPU card, even implicit did not run on GPU accelerator mode. For buffalo-gpu, the memory management option `batch_mb` also worked consistently in GPU accelerator mode, allowing it to work with KakaoReco730M that data size cannot fit in memory.
 
 - In this experiment, we set number of iteration to 2. 
 
