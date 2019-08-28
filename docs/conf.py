@@ -21,6 +21,8 @@ project = 'Buffalo'
 copyright = '2019, Kakao Corp.'
 author = 'Kakao Recommendation Team'
 
+master_doc = 'index'
+
 # The full version, including alpha/beta/rc tags
 release = '1.0'
 
