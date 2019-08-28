@@ -27,6 +27,7 @@ Basic Usage
 We highly recommend starting with the unit-test codes. Checkout ./tests directory, `./tests/algo/test_algo.py` will be a good starting point.
 
 .. code-block:: bash
+
     $ tests> nosetests ./tests/algo/test_algo.py -v
 
 
@@ -85,6 +86,7 @@ Logging
 It is recommend to use the log library of buffalo for consistent log format.
 
 .. code-block:: python
+
     >>> from aurochs.misc import log
     >>> print(log.NOTSET, log.WARN, log.INFO, log.DEBUG, log.TRACE)
     (0, 1, 2, 3, 4, 5)
