@@ -6,7 +6,7 @@ We ran benchmark tests on some well known open source libraries.
 - [lyst LightFM](https://github.com/lyst/lightfm)
 - [Implicit](https://github.com/benfred/implicit)
 
-We tested two algorithms, ALS, BPRMF and measured training speed and memory usage for various datasets. Some libraries do not support either ALS or BPRMF, hence excluded.
+We tested two algorithms, ALS and BPRMF, measuring training speed and memory usage for various datasets. Some libraries do not support either ALS or BPRMF, hence excluded.
 
 - Test Environments
   - CPU Machine
