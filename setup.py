@@ -16,7 +16,6 @@ from setuptools.command.install import install
 
 import n2
 import numpy
-import pkgconfig
 
 # TODO: Python3 Support
 if sys.version_info[:3] < (3, 6):
@@ -26,11 +25,9 @@ assert platform.system() == 'Linux'  # TODO: MacOS
 numpy_include_dirs = os.path.split(numpy.__file__)[0] + '/core/include'
 n2_shared_object = n2.__file__
 
-assert pkgconfig.exists('eigen3'), 'Cannot find eigen3 library from pkg-config'
-
 MAJOR = 1
 MINOR = 0
-MICRO = 3
+MICRO = 4
 Release = True
 STAGE = {True: '', False: 'b'}.get(Release)
 VERSION = f'{MAJOR}.{MINOR}.{MICRO}{STAGE}'
@@ -47,7 +44,8 @@ Operating System :: MacOS
 License :: OSI Approved :: Apache Software License""".format(status=STATUS.get(Release))
 EXTRA_INCLUDE_DIRS = [numpy_include_dirs,
                       '3rd/json11',
-                      '3rd/spdlog/include'] + pkgconfig.parse('eigen3')['include_dirs']
+                      '3rd/spdlog/include',
+                      '3rd/eigen3']
 
 
 def get_extend_compile_flags():

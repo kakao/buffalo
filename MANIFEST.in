@@ -9,3 +9,4 @@ recursive-include buffalo/ *.hpp
 recursive-include 3rd/n2/ *
 recursive-include 3rd/json11/ *
 recursive-include 3rd/spdlog/ *
+recursive-include 3rd/eigen3/ *

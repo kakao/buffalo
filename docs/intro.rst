@@ -23,6 +23,13 @@ Installation
 Type `pip install buffalo`.
 
 
+Requirements
+^^^^^^^^^^^^
+  - numpy
+  - cython
+  - n2
+
+
 From source code
 ^^^^^^^^^^^^^^^^
 
