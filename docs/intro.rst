@@ -25,7 +25,7 @@ Installation
     $> git clone -b master https://github.com/kakao/buffalo
     $> cd buffalo
     $> git submodule update --init
-    $> pip -r requirements.txt
+    $> pip install -r requirements.txt
     $> python setup.py install
 
 
