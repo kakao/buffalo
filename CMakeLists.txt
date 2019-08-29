@@ -8,6 +8,7 @@ include_directories("./include")
 include_directories("./3rd/json11")
 include_directories("./3rd/spdlog/include")
 include_directories("./3rd/n2/include")
+include_directories("./3rd/eigen3")
 
 set(SOURCES
     "./3rd/json11/json11.cpp"
