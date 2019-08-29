@@ -313,7 +313,11 @@ vector<string> _sort_and_compressed_binarization(
     vector<triple_t> records;
     records.reserve(total_lines);
     for (const auto& v : split_records) {
-       records.insert(end(records), begin(v), end(v)); 
+        auto end_it = end(v);
+        if (records.size() + v.size() > (uint64_t)total_lines) {
+            end_it = next(begin(v), total_lines - records.size());
+        }
+        records.insert(end(records), begin(v), end_it);
     }
 
     assert(records.size == total_lines);
