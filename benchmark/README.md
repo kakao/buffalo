@@ -119,7 +119,13 @@ buffalo-gpu | 107.455 | 87.9746
 
 - In this experiment, we set number of iteration to 2.
 
+<center><img src="./fig/20190829.buffalo.memory.kakaoreco730m.png" width="1024px"></center>
+
 This experiment is about effect of data buffer size. As we can see, buffalo can deal the large database with relatively small size of memory.
+
+  | M=128 | M=256 | M=512 | M=1024 | M=2048 | M=4096 | M=8192
+-- | -- | -- | -- | -- | -- | -- | --
+Training Time | 189.893548647563 | 165.782581965129 | 152.206786870956 | 140.953485012054 | 136.714899778366 | 140.10299817721 | 143.101685285568
 
 
 ## Bayesian Personalized Ranking Matrix Factorization
