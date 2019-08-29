@@ -30,7 +30,7 @@ assert pkgconfig.exists('eigen3'), 'Cannot find eigen3 library from pkg-config'
 
 MAJOR = 1
 MINOR = 0
-MICRO = 2
+MICRO = 3
 Release = True
 STAGE = {True: '', False: 'b'}.get(Release)
 VERSION = f'{MAJOR}.{MINOR}.{MICRO}{STAGE}'
@@ -47,8 +47,7 @@ Operating System :: MacOS
 License :: OSI Approved :: Apache Software License""".format(status=STATUS.get(Release))
 EXTRA_INCLUDE_DIRS = [numpy_include_dirs,
                       '3rd/json11',
-                      '3rd/spdlog/include',
-                      pkgconfig.parse('eigen3')['include_dirs']]
+                      '3rd/spdlog/include'] + pkgconfig.parse('eigen3')['include_dirs']
 
 
 def get_extend_compile_flags():
@@ -104,7 +103,7 @@ extensions = [
     Extension(name="buffalo.parallel._core",
               sources=['buffalo/parallel/_core.cpp'],
               libraries=['gomp'],
-              include_dirs=EXTRA_INCLUDE_DIRS,
+              include_dirs=EXTRA_INCLUDE_DIRS + ['./3rd/n2/include'],
               library_dirs=['/usr/local/lib64'],
               extra_objects=[n2_shared_object],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
@@ -212,6 +211,7 @@ class BuildExtension(build_ext, object):
 
 class PostInstallCommand(install):
     def run(self):
+        subprocess.call(['git', 'submodule', 'update', '--init'])
         install.run(self)
         subprocess.call('echo /usr/local/lib64 > /etc/ld.so.conf.d/buffalo.conf', shell=True)
         if CUDA:

@@ -1,2 +1,11 @@
 include cuda_setup.py
+include CMakeLists.txt
+include requirements.txt
 include tests/res/*.json
+recursive-exclude  buffalo/ *.cpp
+recursive-include buffalo/ *.pyx
+recursive-include buffalo/ *.hpp
+
+recursive-include 3rd/n2/ *
+recursive-include 3rd/json11/ *
+recursive-include 3rd/spdlog/ *
