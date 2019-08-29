@@ -25,8 +25,9 @@ Type `pip install buffalo`.
 
 Requirements
 ^^^^^^^^^^^^
-  - Eigen3
-  - Please see the requirements.txt for the python packages.
+  - numpy
+  - cython
+  - n2
 
 
 From source code
