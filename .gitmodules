@@ -7,3 +7,6 @@
 [submodule "3rd/n2"]
 	path = 3rd/n2
 	url = https://github.com/kakao/n2.git
+[submodule "3rd/eigen3"]
+	path = 3rd/eigen3
+	url = https://github.com/eigenteam/eigen-git-mirror.git
