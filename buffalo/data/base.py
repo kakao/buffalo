@@ -16,7 +16,7 @@ class Data(object):
         self.opt = aux.Option(opt)
         self.tmp_root = opt.data.tmp_dir
         if not os.path.isdir(self.tmp_root):
-            aux.mkdirs(self.tmp_root)
+            os.makedirs(self.tmp_root)
         self.handle = None
         self.header = None
         self.prepro = prepro.PreProcess(self.opt.data)

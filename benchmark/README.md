@@ -119,6 +119,9 @@ buffalo-gpu | 107.455 | 87.9746
 
 - In this experiment, we set number of iteration to 2.
 
+This experiment is about effect of data buffer size. As we can see, buffalo can deal the large database with relatively small size of memory.
+
+
 ## Bayesian Personalized Ranking Matrix Factorization
 
 - Fixed options (used default options except for controlled options)
@@ -166,5 +169,3 @@ method | T=1 | T=2 | T=4
 ParALS - N2 | 0.222992 | 0.147501 | 0.0984209
 ParALS | 63.9272 | 34.0839 | 21.7597
 ALS | 83.6309 | 76.1695 | 74.9105
-
-

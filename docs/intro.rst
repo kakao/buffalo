@@ -5,10 +5,10 @@ Buffalo is a fast and scalable production-ready open source project for recommen
 
 Buffalo provides the following algorithms:
 
-  - Alternating Least Squares [1]_ 
-  - Bayesian Personalized Ranking Matrix Factorization [2]_
-  - Word2Vec [3]_
-  - CoFactors [4]_
+  - Alternating Least Squares
+  - Bayesian Personalized Ranking Matrix Factorization
+  - Word2Vec
+  - CoFactors
 
 All algorithms are optimized for multi-threading and some support GPU accelerators.
  
@@ -25,7 +25,7 @@ Installation
     $> git clone -b master https://github.com/kakao/buffalo
     $> cd buffalo
     $> git submodule update --init
-    $> pip -r requirements.txt
+    $> pip install -r requirements.txt
     $> python setup.py install
 
 
