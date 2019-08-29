@@ -15,6 +15,7 @@ from distutils.extension import Extension
 
 import n2
 import numpy
+import pkgconfig
 
 # TODO: Python3 Support
 if sys.version_info[:3] < (3, 6):
@@ -23,6 +24,8 @@ if sys.version_info[:3] < (3, 6):
 assert platform.system() == 'Linux'  # TODO: MacOS
 numpy_include_dirs = os.path.split(numpy.__file__)[0] + '/core/include'
 n2_shared_object = n2.__file__
+
+assert pkgconfig.exists('eigen3'), 'Cannot find eigen3 library from pkg-config'
 
 MAJOR = 1
 MINOR = 0
@@ -41,8 +44,10 @@ Operating System :: POSIX :: Linux
 Operating System :: Unix
 Operating System :: MacOS
 License :: OSI Approved :: Apache Software License""".format(status=STATUS.get(Release))
-site_cfg = ConfigParser()
-site_cfg.read('site.cfg')
+EXTRA_INCLUDE_DIRS = [numpy_include_dirs,
+                      '3rd/json11',
+                      '3rd/spdlog/include',
+                      pkgconfig.parse('eigen3')['include_dirs']]
 
 
 def get_extend_compile_flags():
@@ -63,51 +68,31 @@ extensions = [
     CMakeExtension(name="cbuffalo"),
     Extension(name="buffalo.algo._als",
               sources=['buffalo/algo/_als.cpp'],
-              include_dirs=['./include',
-                            numpy_include_dirs,
-                            '3rd/json11',
-                            '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')],
+              include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._cfr",
               sources=['buffalo/algo/_cfr.cpp'],
-              include_dirs=['./include',
-                            numpy_include_dirs,
-                            '3rd/json11',
-                            '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')],
+              include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._bpr",
               sources=['buffalo/algo/_bpr.cpp'],
-              include_dirs=['./include',
-                            numpy_include_dirs,
-                            '3rd/json11',
-                            '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')],
+              include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._w2v",
               sources=['buffalo/algo/_w2v.cpp'],
-              include_dirs=['./include',
-                            numpy_include_dirs,
-                            '3rd/json11',
-                            '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')],
+              include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.misc.log",
               sources=['buffalo/misc/log.cpp'],
-              include_dirs=['./include',
-                            numpy_include_dirs,
-                            '3rd/json11',
-                            '3rd/spdlog/include',
-                            site_cfg.get('eigen', 'include_dirs')],
+              include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
               library_dirs=['/usr/local/lib64'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
@@ -118,10 +103,7 @@ extensions = [
     Extension(name="buffalo.parallel._core",
               sources=['buffalo/parallel/_core.cpp'],
               libraries=['gomp'],
-              include_dirs=[numpy_include_dirs,
-                            '3rd/n2/include',
-                            '3rd/spdlog/include',
-                            site_cfg.get("eigen", "include_dirs")],
+              include_dirs=EXTRA_INCLUDE_DIRS,
               library_dirs=['/usr/local/lib64'],
               extra_objects=[n2_shared_object],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
