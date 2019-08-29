@@ -12,6 +12,7 @@ from setuptools import setup
 from configparser import ConfigParser
 from cuda_setup import CUDA, build_ext
 from distutils.extension import Extension
+from setuptools.command.install import install
 
 import n2
 import numpy
@@ -209,9 +210,21 @@ class BuildExtension(build_ext, object):
         os.chdir(str(cwd))
 
 
+class PostInstallCommand(install):
+    def run(self):
+        install.run(self)
+        subprocess.call('echo /usr/local/lib64 > /etc/ld.so.conf.d/buffalo.conf', shell=True)
+        if CUDA:
+            subprocess.call(f'echo {CUDA["lib64"]} >> /etc/ld.so.conf.d/buffalo.conf', shell=True)
+        subprocess.call('ldconfig', shell=True)
+
+
 def setup_package():
     write_version_py()
-    cmdclass = {'build_ext': BuildExtension}
+    cmdclass = {
+        'build_ext': BuildExtension,
+        'install': PostInstallCommand
+    }
 
     build_requires = [l.strip() for l in open('requirements.txt')]
 
