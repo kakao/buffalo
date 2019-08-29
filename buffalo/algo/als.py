@@ -74,12 +74,12 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
             self.opt._nrz_P = True
 
     def initialize(self):
-        self.vdim = self.obj.get_vdim() if self.opt.accelerator else self.opt.d
         super().initialize()
         self.init_factors()
 
     def init_factors(self):
         assert self.data, 'Data is not setted'
+        self.vdim = self.obj.get_vdim() if self.opt.accelerator else self.opt.d
         header = self.data.get_header()
         for name, rows in [('P', header['num_users']), ('Q', header['num_items'])]:
             setattr(self, name, None)
