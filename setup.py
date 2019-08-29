@@ -9,10 +9,10 @@ import pathlib
 import platform
 import subprocess
 from setuptools import setup
-from setuptools.command.install import install
 from configparser import ConfigParser
 from cuda_setup import CUDA, build_ext
 from distutils.extension import Extension
+from setuptools.command.install import install
 
 import n2
 import numpy
