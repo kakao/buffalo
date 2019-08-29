@@ -207,7 +207,7 @@ class Algo(abc.ABC):
 
     def save_best_only(self, loss, best_loss, i):
         if self.opt.save_best and best_loss > loss and self.periodical(self.opt.save_period, i):
-            self.save(self.model_path)
+            self.save(self.opt.model_path)
             return loss
         return best_loss
 

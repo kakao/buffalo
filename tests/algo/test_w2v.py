@@ -83,7 +83,7 @@ class TestW2V(TestBase):
             w.train()
             w.build_itemid_map()
 
-        with open('./text8/questions-words.txt') as fin:
+        with open('./ext/text8/questions-words.txt') as fin:
             questions = fin.read().strip().split('\n')
 
         met = {}

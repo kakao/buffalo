@@ -43,7 +43,6 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.obj = CuALS() if self.opt.accelerator else CyALS()
         assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
             'cannot parse option file: %s' % opt_path
-        self.vdim = self.obj.get_vdim() if self.opt.accelerator else self.opt.d
         self.data = None
         data = kwargs.get('data')
         data_opt = self.opt.get('data_opt')
@@ -80,6 +79,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def init_factors(self):
         assert self.data, 'Data is not setted'
+        self.vdim = self.obj.get_vdim() if self.opt.accelerator else self.opt.d
         header = self.data.get_header()
         for name, rows in [('P', header['num_users']), ('Q', header['num_items'])]:
             setattr(self, name, None)
