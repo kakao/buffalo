@@ -156,18 +156,18 @@ def prepare_dataset():
                     for i in range(0, len(words), 1000):
                         fout.write('%s\n' % ' '.join(words[i:i + 1000]))
 
-    if not os.path.isdir('brunch'):
+    if not os.path.isdir('ext/kakao-brunch-12m'):
         logger.warn('Cannot find the brunch directory')
     else:
-        if not os.path.isfile('./ext/brunch/main'):
-            os.makedirs('./ext/brunch/tmp', exist_ok=True)
-            to_dir = './ext/brunch/tmp'
+        if not os.path.isfile('./ext/kakao-brunch-12m/main'):
+            os.makedirs('./ext/kakao-brunch-12m/tmp', exist_ok=True)
+            to_dir = './ext/kakao-brunch-12m/tmp'
 
             logger.info('dividing...')
             num_chunks = 30
             fouts = {i: open(os.path.join(to_dir, str(i)), 'w')
                     for i in range(num_chunks)}
-            for path, fname in iterate_brunch_data_files('./ext/brunch'):
+            for path, fname in iterate_brunch_data_files('./ext/kakao-brunch-12m'):
                 for line in open(path):
                     uid = line.strip().split()[0]
                     fid = hash(uid) % num_chunks
@@ -176,8 +176,8 @@ def prepare_dataset():
                 val.close()
 
             logger.info('merging...')
-            with open('./ext/brunch/main', 'w') as fout, \
-                    open('./ext/brunch/uid', 'w') as fout_uid:
+            with open('./ext/kakao-brunch-12m/main', 'w') as fout, \
+                    open('./ext/kakao-brunch-12m/uid', 'w') as fout_uid:
                 for fid in fouts.keys():
                     seens = {}
                     chunk_path = os.path.join(to_dir, str(fid))
@@ -191,7 +191,7 @@ def prepare_dataset():
                 for fid in fouts.keys():
                     chunk_path = os.path.join(to_dir, str(fid))
                     os.remove(chunk_path)
-    make_mm_from_stream('./ext/brunch/', './ext/brunch/mm')
+    make_mm_from_stream('./ext/kakao-brunch-12m/', './ext/kakao-brunch-12m/mm')
 
 
 
