@@ -68,7 +68,7 @@ class TestAnn(TestBase):
         ann_elapsed = time.time() - start_t
         self.assertTrue(naive_elapsed > par_elapsed * 1.5 > ann_elapsed * 5.0,
                         msg=f'{naive_elapsed} > {par_elapsed} > {ann_elapsed}')
-        idnex.unload()
+        index.unload()
         os.remove('n2.bin')
 
 
