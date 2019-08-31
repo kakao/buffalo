@@ -14,7 +14,7 @@ Some tests rely on external databases. Before run the tests, please download bel
   - Text8: http://mattmahoney.net/dc/text8.zip
     - Unarchving it to ./ext/text8
   - Question-words: https://raw.githubusercontent.com/nicholas-leonard/word2vec/master/questions-words.txt
-    - Place it to ./ext/text8
+    - Place it to ./ext/text8 and renaming it to `text8`
   - KakaoBrunch12M: https://arena.kakao.com/datasets?id=1
     - Place it to ./ext/kakao-brunch-12m
   - KakaoReco730M: https://arena.kakao.com/datasets?id=2
