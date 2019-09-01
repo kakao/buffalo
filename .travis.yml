@@ -1,15 +1,22 @@
+langauge: python
 python:
   - "3.6"
   - "3.7"
 
 before_install:
   - git submodule update --init
+  - pip install numpy cython
+  - pip install n2 nose
+
+install:
+  - pip setup.py install
+  - pip install -r requirements.txt
 
 script:
-  - "pip install numpy cython"
-  - "pip install n2 nose"
-  - "python setup.py install"
-  - "cd tests && nosetests -v ./tests/data"
+  - echo 1
 
 notifications:
   email: false
+
+virtualenv:
+  system_site_packages: true
