@@ -1,0 +1,15 @@
+python:
+  - "3.6"
+  - "3.7"
+
+before_install:
+  - git submodule update --init
+
+script:
+  - "pip install numpy cython"
+  - "pip install n2 nose"
+  - "python setup.py install"
+  - "cd tests && nosetests -v ./tests/data"
+
+notifications:
+  email: false
