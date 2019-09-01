@@ -3,6 +3,9 @@ python:
   - "3.6"
   - "3.7"
 
+cache:
+  pip: true
+
 before_install:
   - git submodule update --init
   - pip install numpy cython
