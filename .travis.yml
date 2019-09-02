@@ -41,15 +41,15 @@ before_script:
   - cd tests
 
 script:
-  - "pytest -k 'not ml_20m' -k 'not text8' ./data/"
-  - "pytest -k 'not ml_20m' -k 'not text8' ./util/"
-  - "pytest -k 'not ml_20m' -k 'not text8' ./algo/test_base.py"
-  - "pytest -k 'not ml_20m' -k 'not text8' ./algo/test_als.py"
-  - "pytest -k 'not ml_20m' -k 'not text8' ./algo/test_bpr.py"
-  - "pytest -k 'not ml_20m' -k 'not text8' ./algo/test_cfr.py"
-  - "pytest -k 'not ml_20m' -k 'not text8' ./algo/test_optimize.py"
-  - "pytest -k 'not ml_20m' -k 'not text8' ./algo/test_quickselect.py"
-  - "pytest -k 'not ml_20m' -k 'not text8' ./parallel/"
+  - "pytest ./data/"
+  - "pytest ./util/"
+  - "pytest ./algo/test_base.py"
+  - "pytest ./algo/test_als.py"
+  - "pytest ./algo/test_bpr.py"
+  - "pytest ./algo/test_cfr.py"
+  - "pytest ./algo/test_optimize.py"
+  - "pytest ./algo/test_quickselect.py"
+  - "pytest ./parallel/"
 
 notifications:
   email: false
