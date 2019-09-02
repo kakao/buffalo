@@ -9,12 +9,12 @@ cache:
 before_install:
   - git submodule update --init
   - git lfs pull
-  - pip install numpy cython
-  - pip install n2 nose
+  - pip install numpy cython --user
+  - pip install n2 nose --user
 
 install:
-  - pip setup.py install
-  - pip install -r requirements.txt
+  - pip setup.py install --user
+  - pip install -r requirements.txt --user
 
 script:
   - cd tests && pytest -k "not ml_20m" -k "not text8"
