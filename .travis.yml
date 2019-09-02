@@ -15,6 +15,7 @@ cache:
     - $HOME/.cache/pip
 
 before_install:
+  - pip3 install --upgrade pip --user
   - git submodule update --init
   - git lfs pull
   - pip3 install numpy cython --user
