@@ -11,6 +11,7 @@ git:
 addons:
   apt:
     packages:
+      - cmake
       - python3
       - python3-pip
       - python3-setuptools
@@ -30,6 +31,7 @@ matrix:
         - git lfs pull
         - pip3 install numpy cython --user
         - pip3 install n2 --user
+        - cmake --version
         - python3 setup.py install
       after_install:
         - pip3 install pytest --user
