@@ -14,6 +14,7 @@ cache:
   pip: true
   directories:
     - $HOME/.cache/pip
+    - ./tests/ext
 
 matrix:
   include:
@@ -24,7 +25,7 @@ matrix:
         - git lfs pull
         - pip3 install numpy cython --user
         - pip3 install n2 nose --user
-        - python3 setup.py install
+        - python3.7 setup.py install
       after_install:
         - pip3 install -r requirements.txt --user
 
