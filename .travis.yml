@@ -34,7 +34,6 @@ matrix:
         - pip3 install n2 --user
         - cmake --version
         - sudo python3 setup.py install
-      after_install:
         - pip3 install pytest --user
         - pip3 install -r requirements.txt --user
 
