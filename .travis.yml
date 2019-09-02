@@ -1,8 +1,12 @@
 langauge: python
-sudo: false
 python:
   - "3.6"
   - "3.7"
+
+addons:
+  apt:
+    packages:
+      - python3.6
 
 cache:
   pip: true
