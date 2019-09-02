@@ -13,7 +13,7 @@ before_install:
   - pip install n2 nose --user
 
 install:
-  - pip setup.py install --user
+  - pip setup.py install
   - pip install -r requirements.txt --user
 
 script:
