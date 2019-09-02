@@ -42,8 +42,8 @@ class TestOptimize(TestBase):
                     space=space,
                     algo=tpe.suggest,
                     max_evals=600)
-        self.assertGreaterEqual(int(best['d']), 16)
-        self.assertGreaterEqual(int(best['alpha']), 16)
+        self.assertGreaterEqual(int(best['d']), 14)
+        self.assertGreaterEqual(int(best['alpha']), 14)
         self.assertGreaterEqual(best['reg_i'], 0.5)
         self.assertGreaterEqual(best['reg_u'], 0.5)
         self.assertEqual(best['adaptive_reg'], 1)
