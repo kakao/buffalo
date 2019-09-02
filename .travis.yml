@@ -15,16 +15,19 @@ cache:
   directories:
     - $HOME/.cache/pip
 
-before_install:
-  - pip3 install --upgrade pip --user
-  - git submodule update --init
-  - git lfs pull
-  - pip3 install numpy cython --user
-  - pip3 install n2 nose --user
-  - python3 setup.py install
+matrix:
+  include:
+    python: 3.6
+      before_install:
+      - pip3 install --upgrade pip --user
+      - git submodule update --init
+      - git lfs pull
+      - pip3 install numpy cython --user
+      - pip3 install n2 nose --user
+      - python3 setup.py install
 
-after_install:
-  - pip3 install -r requirements.txt --user
+      after_install:
+      - pip3 install -r requirements.txt --user
 
 script:
   - cd tests && pytest -k "not ml_20m" -k "not text8"
