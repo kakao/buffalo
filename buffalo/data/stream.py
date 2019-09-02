@@ -51,8 +51,8 @@ class StreamOptions(DataOption):
                     'max_samples': 500
                 },
                 'sppmi': {
-                    'windows': 5,
-                    'k': 1
+                    # 'windows': 5,
+                    # 'k': 1
                 },
                 'batch_mb': 1024,
                 'use_cache': False,
