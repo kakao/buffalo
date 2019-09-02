@@ -1,19 +1,22 @@
 langauge: python
+sudo: false
 python:
   - "3.6"
   - "3.7"
 
 cache:
   pip: true
+  directories:
+    - $HOME/.cache/pip
 
 before_install:
   - git submodule update --init
   - git lfs pull
   - pip install numpy cython --user
   - pip install n2 nose --user
-
-install:
   - python setup.py install
+
+after_install:
   - pip install -r requirements.txt --user
 
 script:
