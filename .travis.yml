@@ -6,7 +6,8 @@ python:
 addons:
   apt:
     packages:
-      - python3.6
+      - python3
+      - python3-pip
 
 cache:
   pip: true
@@ -16,12 +17,12 @@ cache:
 before_install:
   - git submodule update --init
   - git lfs pull
-  - pip install numpy cython --user
-  - pip install n2 nose --user
-  - python setup.py install
+  - pip3 install numpy cython --user
+  - pip3 install n2 nose --user
+  - python3 setup.py install
 
 after_install:
-  - pip install -r requirements.txt --user
+  - pip3 install -r requirements.txt --user
 
 script:
   - cd tests && pytest -k "not ml_20m" -k "not text8"
