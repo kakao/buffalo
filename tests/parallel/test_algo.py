@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+os.environ['OMP_NUM_THREADS'] = '1'
 import time
 import unittest
 from itertools import combinations
@@ -152,22 +153,22 @@ class TestAlgo(TestBase):
         als = ALS(opt, data_opt=data_opt)
         als.initialize()
         als.train()
-        pals = ParALS(als)
 
         als.build_userid_map()
-        all_keys = als._idmanager.userids[::]
+        all_keys = als._idmanager.userids
         start_t = time.time()
-        naive = als.topk_recommendation(all_keys, topk=10)
+        naive = als.topk_recommendation(all_keys, topk=5)
         naive_elapsed = time.time() - start_t
 
-        start_t = time.time()
+        pals = ParALS(als)
         pals.num_workers = 4
-        qkeys1, topks1, scores1 = pals.topk_recommendation(all_keys, topk=10, repr=True)
+        start_t = time.time()
+        qkeys1, topks1, scores1 = pals.topk_recommendation(all_keys, topk=5, repr=True)
         par_elapsed = time.time() - start_t
         self.assertEqual(len(qkeys1), len(naive))
         for q, t in zip(qkeys1, topks1):
             self.assertEqual(naive[q], t)
-        self.assertTrue(naive_elapsed > par_elapsed * 2.0)
+        self.assertTrue(naive_elapsed > par_elapsed * 1.5)
 
     def test06_topk_pool(self):
         set_log_level(2)

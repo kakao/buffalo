@@ -60,7 +60,7 @@ The Stream data format consists of two files:
   - main 
 
     - Assumed that the data is reading history of users from some blog service, then each line is a reading history corresponding to each row of UID files. (i.e. users lists)
-    - The reading history is sererated by spaces, and the past is the left and the right is the most recent history.
+    - The reading history is seperated by spaces, and the past is the left and the right is the most recent history.
     - e.g. `A B C D D E` means that a user read the contents in the order A B C D D E.
 
   - uid

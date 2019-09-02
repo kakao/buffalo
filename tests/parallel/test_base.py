@@ -43,7 +43,7 @@ class TestParallelBase(TestBase):
         Q = self.get_factors(128, 5)
         indexes = np.array([0, 1, 2, 3, 4], dtype=np.int32)
         pool = np.array([], dtype=np.int32)
-        topks1, scores1 = mp._most_similar(indexes, Q, 10, pool)
+        topks1, scores1 = mp._most_similar('item', indexes, Q, 10, pool, -1, True)
         topks2, scores2 = self.get_most_similar(indexes, Q, 10)
         self.assertTrue(np.allclose(topks1, topks2))
         self.assertTrue(np.allclose(scores1, scores2))
@@ -61,7 +61,7 @@ class TestParallelBase(TestBase):
         for num_workers in [1, 2, 4, 8]:
             mp.num_workers = num_workers
             start_t = time.time()
-            ret = mp._most_similar(indexes, Q, 10, pool)
+            ret = mp._most_similar('item', indexes, Q, 10, pool, -1, True)
             elapsed.append(time.time() - start_t)
             results.append(ret)
         for i in range(1, len(elapsed)):
@@ -76,7 +76,7 @@ class TestParallelBase(TestBase):
         Q = self.get_factors(128, 5)
         indexes = np.array([0, 1, 2, 3, 4], dtype=np.int32)
         pool = np.array([5, 6, 7], dtype=np.int32)
-        topks, scores = mp._most_similar(indexes, Q, 10, pool)
+        topks, scores = mp._most_similar('item', indexes, Q, 10, pool, -1, True)
         self.assertTrue(set(topks[::].reshape(10 * 5)), set([5, 6, 7, -1]))
 
     def test04_topk(self):

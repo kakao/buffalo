@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import unittest
 from buffalo.misc import aux
-from buffalo.algo.als import ALS
 from buffalo.misc.log import set_log_level
 from buffalo.algo.options import ALSOption
+from buffalo.algo.als import ALS, inited_CUALS
 
 from .base import TestBase
 
@@ -81,6 +81,8 @@ class TestALS(TestBase):
         opt.d = 100
         opt.validation = aux.Option({'topk': 10})
         opt.compute_loss_on_training = True
+        if not inited_CUALS:
+            return
         opt.accelerator = True
         opt.num_cg_max_iters = 3
         self._test7_train_ml_20m(ALS, opt)

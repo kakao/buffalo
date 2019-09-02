@@ -16,11 +16,12 @@ from buffalo.algo.tensorflow._als import TFALS
 from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
+inited_CUALS = True
 try:
     from buffalo.algo.cuda._als import CyALS as CuALS
 except Exception as e:
     log.get_logger("system").error(f"ImportError CuALS, no cuda library exists. error message: {e}")
-    CuALS = lambda x: ()
+    inited_CUALS = False
 
 
 class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
@@ -41,6 +42,8 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.logger = log.get_logger('ALS')
         self.opt, self.opt_path = self.get_option(opt_path)
         self.obj = CuALS() if self.opt.accelerator else CyALS()
+        if self.opt.accelerator and not inited_CUALS:
+            raise RuntimeError()
         assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
             'cannot parse option file: %s' % opt_path
         self.data = None

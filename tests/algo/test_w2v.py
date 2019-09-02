@@ -61,7 +61,7 @@ class TestW2V(TestBase):
         self.load_text8_model()
         self.assertTrue(True)
 
-    def test5_accuracy(self):
+    def test5_text8_accuracy(self):
         set_log_level(2)
         opt = W2VOption().get_default_option()
         opt.num_workers = 12

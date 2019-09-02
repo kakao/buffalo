@@ -1,0 +1,50 @@
+dist: bionic
+sudo: required
+
+langauge: python
+python:
+  - "3.6"
+  - "3.7"
+
+git:
+  depth: 1
+
+addons:
+  apt:
+    packages:
+      - cmake
+      - python3
+      - python3-pip
+      - python3-setuptools
+
+cache:
+  pip: true
+  directories:
+    - $HOME/.cache/pip
+    - ./tests/ext
+
+matrix:
+  include:
+    - python: 3.7
+      before_install:
+        - pip3 install --upgrade pip --user
+        - git submodule update --init
+        - git lfs pull
+        - pip3 install numpy cython --user
+        - pip3 install n2 --user
+        - cmake --version
+        - sudo python3 setup.py install
+        - pip3 install pytest --user
+        - pip3 install -r requirements.txt --user
+
+before_script:
+  - cd tests
+
+script:
+  - pytest -k "not ml_20m" -k "not text8"
+
+notifications:
+  email: false
+
+virtualenv:
+  system_site_packages: true
