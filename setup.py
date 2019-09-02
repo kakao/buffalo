@@ -20,6 +20,7 @@ import numpy
 # TODO: Python3 Support
 if sys.version_info[:3] < (3, 6):
     raise RuntimeError("Python version 3.6 or later required.")
+print(sys.version_info, file=sys.stderr)
 
 assert platform.system() == 'Linux'  # TODO: MacOS
 numpy_include_dirs = os.path.split(numpy.__file__)[0] + '/core/include'
