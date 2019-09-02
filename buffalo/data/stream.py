@@ -296,17 +296,19 @@ class Stream(Data):
                                        {'main_path': stream_main_path,
                                         'uid_path': stream_uid_path,
                                         'iid_path': stream_iid_path})
-            _opt = self.opt.data.sppmi
-            if _opt:
-                with_sppmi, windows, k = True, _opt.windows, _opt.k
+            sppmi_opt = self.opt.data.sppmi
             try:
                 self.logger.info('Creating working data...')
-                tmp_main, validation_data, tmp_sppmi = \
-                    self._create_working_data(db, stream_main_path, itemids, with_sppmi, windows)
+                if sppmi_opt:
+                    tmp_main, validation_data, tmp_sppmi = \
+                        self._create_working_data(db, stream_main_path, itemids, True, sppmi_opt.windows)
+                else:
+                    tmp_main, validation_data, tmp_sppmi = \
+                        self._create_working_data(db, stream_main_path, itemids, False)
                 self.logger.debug(f'Working data is created on {tmp_main}')
                 self.logger.info('Building data part...')
                 self._build_data(db, tmp_main, validation_data)
-                if with_sppmi:
+                if sppmi_opt:
                     self.logger.debug(f'sppmi data is created on {tmp_sppmi}')
                     self._build_sppmi(db, tmp_sppmi, k)
                 db.attrs['completed'] = 1

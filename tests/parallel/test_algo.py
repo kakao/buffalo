@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+os.environ['OMP_NUM_THREADS'] = '1'
 import time
 import unittest
 from itertools import combinations
@@ -167,6 +168,7 @@ class TestAlgo(TestBase):
         self.assertEqual(len(qkeys1), len(naive))
         for q, t in zip(qkeys1, topks1):
             self.assertEqual(naive[q], t)
+        print(naive_elapsed, par_elapsed)
         self.assertTrue(naive_elapsed > par_elapsed * 2.0)
 
     def test06_topk_pool(self):
