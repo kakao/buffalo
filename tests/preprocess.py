@@ -113,9 +113,6 @@ def prepare_dataset():
                     for i in range(0, len(words), 1000):
                         fout.write('%s\n' % ' '.join(words[i:i + 1000]))
 
-    if not os.path.isdir('ext/kakao-brunch-12m'):
-        logger.warn('Cannot find the kakao-brunch-12m directory')
-
 
 if __name__ == '__main__':
     prepare_dataset()
