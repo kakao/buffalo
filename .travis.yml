@@ -38,6 +38,7 @@ matrix:
         - pip3 install -r requirements.txt --user
 
 script:
+  - python -c 'import os;print(os.name)'
   - pytest -k "not ml_20m" -k "not text8"
 
 notifications:
