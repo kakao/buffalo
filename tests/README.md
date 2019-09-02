@@ -1,5 +1,5 @@
 # Testing
-Unit-test was created using python standard unittest library.
+Unit-test was created using python standard unittest library. (don't forget to run preprocessing.py)
 
 ```bash
 tests $> nosetests ./algo/test_algo.py -v
@@ -13,8 +13,9 @@ Some tests rely on external databases. Before run the tests, please download bel
     - Unarchiving it to ./ext/ml-20m
   - Text8: http://mattmahoney.net/dc/text8.zip
     - Unarchving it to ./ext/text8
+    - Note) Create the directory, ./ext/text8, before unarching text8.zip, then unzip it within.
   - Question-words: https://raw.githubusercontent.com/nicholas-leonard/word2vec/master/questions-words.txt
-    - Place it to ./ext/text8 and renaming it to `text8`
+    - Place it to ./ext/text8
   - KakaoBrunch12M: https://arena.kakao.com/datasets?id=1
     - Place it to ./ext/kakao-brunch-12m
   - KakaoReco730M: https://arena.kakao.com/datasets?id=2
