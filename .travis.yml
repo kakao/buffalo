@@ -1,7 +1,12 @@
+dist: bionic
+
 langauge: python
 python:
   - "3.6"
   - "3.7"
+
+git:
+  depth: 1
 
 addons:
   apt:
@@ -24,9 +29,10 @@ matrix:
         - git submodule update --init
         - git lfs pull
         - pip3 install numpy cython --user
-        - pip3 install n2 nose --user
-        - python3.7 setup.py install
+        - pip3 install n2 --user
+        - python3 setup.py install
       after_install:
+        - pip3 install pytest --user
         - pip3 install -r requirements.txt --user
 
 script:
