@@ -32,6 +32,8 @@ def locate_cuda():
 
     # check env variables CUDA_HOME, CUDAHOME, CUDA_PATH.
     for env_name in ['CUDA_HOME', 'CUDAHOME', 'CUDA_PATH']:
+        if env_name not in os.environ:
+            continue
         home = os.environ[env_name]
         nvcc = os.path.join(home, 'bin', nvcc_bin)
     else:
