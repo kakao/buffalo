@@ -30,7 +30,7 @@ class TestOptimize(TestBase):
     def test2_optimize(self):
         def mock_fn(opt):
             loss = 1.0 - opt['adaptive_reg'] / 1.0
-            loss += 1.0 / opt['d']
+            loss += 1.0 / (opt['d'] ** 2)
             loss += 1.0 / opt['alpha']
             loss += 1.0 / opt['reg_i']
             loss += 1.0 / opt['reg_u']

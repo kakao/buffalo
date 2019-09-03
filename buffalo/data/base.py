@@ -297,11 +297,11 @@ class Data(object):
                         continue
                     total_records = int(total_size / RECORD_SIZE)
                     fin.seek(0, 0)
-                    data = np.fromstring(fin.read(),
+                    data = np.frombuffer(fin.read(),
                                          dtype=np.dtype([('u', 'i'),
                                                          ('i', 'i'),
                                                          ('v', 'f')]),
-                                         count=total_records)
+                                         count=total_records).copy()
                     U, I, V = data['u'], data['i'], data['v']
                     if is_colwise:
                         U, I = I, U
