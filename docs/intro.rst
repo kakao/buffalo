@@ -20,7 +20,7 @@ Plus, Buffalo provides a variety of convenient features for research and product
 Installation
 ------------
 
-Type `pip install buffalo`.
+Type `sudo pip install buffalo`.
 
 
 Requirements
@@ -39,7 +39,7 @@ From source code
     $> cd buffalo
     $> git submodule update --init
     $> pip install -r requirements.txt
-    $> python setup.py install
+    $> sudo python setup.py install  # need root permission
 
 
 Basic Usage

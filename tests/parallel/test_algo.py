@@ -49,6 +49,7 @@ class TestAlgo(TestBase):
         data_opt.input.main = self.ml_100k + 'main'
         data_opt.input.uid = self.ml_100k + 'uid'
         data_opt.input.iid = self.ml_100k + 'iid'
+        data_opt.data.use_cache = True
         data_opt.data.path = './ml100k.h5py'
         return data_opt
 
@@ -144,7 +145,7 @@ class TestAlgo(TestBase):
 
         self.assertTrue(naive_elapsed > par_elapsed * 3.0)
 
-    def test05_topk(self):
+    def test05_topk_MT(self):
         set_log_level(2)
         data_opt = self.get_ml100k_mm_opt()
         opt = ALSOption().get_default_option()
