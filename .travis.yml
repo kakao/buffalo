@@ -41,15 +41,15 @@ before_script:
   - cd tests
 
 script:
-  - "pytest ./data/"
-  - "pytest ./util/"
-  - "pytest ./algo/test_base.py"
-  - "pytest ./algo/test_als.py"
-  - "pytest ./algo/test_bpr.py"
-  - "pytest ./algo/test_cfr.py"
-  - "pytest ./algo/test_optimize.py"
-  - "pytest ./algo/test_quickselect.py"
-  - "pytest ./parallel/"
+  - pytest ./data/
+  - pytest ./util/
+  - pytest ./algo/test_base.py
+  - pytest ./algo/test_als.py
+  - pytest ./algo/test_bpr.py
+  - pytest ./algo/test_cfr.py
+  - pytest ./algo/test_optimize.py
+  - pytest ./algo/test_quickselect.py
+  - pytest ./parallel/
 
 notifications:
   email: false
