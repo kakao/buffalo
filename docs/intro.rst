@@ -48,7 +48,14 @@ We highly recommend starting with the unit-test codes. Checkout ./tests director
 
 .. code-block:: bash
 
-    $ tests> nosetests ./tests/algo/test_algo.py -v
+    $ buffalo.git/tests> nosetests ./algo/test_algo.py -v
+
+
+or 
+
+.. code-block:: bash
+
+    $ buffalo.git/tests> pytest ./algo/test_algo.py -v
 
 
 Database
