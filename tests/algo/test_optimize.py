@@ -30,10 +30,10 @@ class TestOptimize(TestBase):
     def test2_optimize(self):
         def mock_fn(opt):
             loss = 1.0 - opt['adaptive_reg'] / 1.0
-            loss += 1.0 / (opt['d'] ** 2)
+            loss += 1.0 / (opt['d'] ** 2 + 1)
             loss += 1.0 / opt['alpha']
-            loss += 1.0 / opt['reg_i']
-            loss += 1.0 / opt['reg_u']
+            loss += (opt['reg_i'] / 2.0)
+            loss += (opt['reg_u'] / 2.0)
             return loss
 
         option = ALSOption().get_default_optimize_option()
@@ -42,10 +42,10 @@ class TestOptimize(TestBase):
                     space=space,
                     algo=tpe.suggest,
                     max_evals=600)
-        self.assertGreaterEqual(int(best['d']), 14)
-        self.assertGreaterEqual(int(best['alpha']), 14)
-        self.assertGreaterEqual(best['reg_i'], 0.5)
-        self.assertGreaterEqual(best['reg_u'], 0.5)
+        self.assertGreaterEqual(int(best['d']), 5)  # this is shifted by 10
+        self.assertGreaterEqual(int(best['alpha']), 15)
+        self.assertLessEqual(best['reg_i'], 0.3)
+        self.assertLessEqual(best['reg_u'], 0.3)
         self.assertEqual(best['adaptive_reg'], 1)
 
     def test3_optimize(self):

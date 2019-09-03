@@ -31,7 +31,7 @@ def locate_cuda():
         nvcc_bin = 'nvcc.exe'
 
     # check env variables CUDA_HOME, CUDAHOME, CUDA_PATH.
-    for env_name in ['CUDA_HOME', 'CUDAHOME', 'CUDA_PATH']:
+    for env_name in ['CU_PATH', 'CUDAHOME', 'CUDA_HOME']:
         if env_name not in os.environ:
             continue
         home = os.environ[env_name]
