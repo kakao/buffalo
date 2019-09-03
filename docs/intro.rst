@@ -28,6 +28,7 @@ Requirements
   - numpy
   - cython
   - n2
+  - cmake
 
 
 From source code
