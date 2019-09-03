@@ -310,7 +310,7 @@ class Stream(Data):
                 self._build_data(db, tmp_main, validation_data)
                 if sppmi_opt:
                     self.logger.debug(f'sppmi data is created on {tmp_sppmi}')
-                    self._build_sppmi(db, tmp_sppmi, k)
+                    self._build_sppmi(db, tmp_sppmi, sppmi_opt.k)
                 db.attrs['completed'] = 1
                 db.close()
                 self.handle = h5py.File(data_path, 'r')

@@ -89,11 +89,11 @@ class BufferedDataMatrix(BufferedData):
                 if not flushed:
                     m["sz"] = m["indptr"][-1]
                     yield m['indptr'][-1]
-                raise StopIteration
+                return
 
             if m['next_x'] + 1 >= m['max_x']:
                 m['start_x'], m['next_x'] = 0, 0
-                raise StopIteration
+                return
 
             m['start_x'] = m['next_x']
 
@@ -141,7 +141,7 @@ class BufferedDataMatrix(BufferedData):
         start_x, next_x, flushed = 0, 0, False
         while True:
             if flushed:
-                raise StopIteration
+                return
 
             start_x = next_x
 
@@ -224,11 +224,11 @@ class BufferedDataStream(BufferedData):
             if m['start_x'] == 0 and m['next_x'] + 1 >= m['max_x']:
                 if not flushed:
                     yield m['indptr'][-1]
-                raise StopIteration
+                return
 
             if m['next_x'] + 1 >= m['max_x']:
                 m['start_x'], m['next_x'] = 0, 0
-                raise StopIteration
+                return
 
             m['start_x'] = m['next_x']
 

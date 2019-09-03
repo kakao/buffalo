@@ -39,7 +39,7 @@ class TestAnn(TestBase):
         c.save()
         return c
 
-    def test01_most_similar(self):
+    def test01_text8_most_similar(self):
         set_log_level(1)
         model = self.load_text8_model()
         index = HnswIndex(model.L0.shape[1])

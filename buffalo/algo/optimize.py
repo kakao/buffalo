@@ -43,6 +43,9 @@ class Optimizable(object):
                     loss = self._optimize({})
                 self.logger.info(f'Starting with default parameter result: {loss}')
                 self._optimization_info['best'] = loss
+                if opt.deployment:
+                    self.logger.info('Saving model... to {}'.format(self.opt.model_path))
+                    self.save(self.opt.model_path)
             # NOTE: need better way
             tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick
             self.initialize_tensorboard(1000000 if max_trials == -1 else max_trials,

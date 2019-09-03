@@ -254,13 +254,13 @@ class Data(object):
             total_size = fin.seek(0, 2)
             fin.seek(0, 0)
             assert estimated_size == total_size, f'Not valid file size {total_size} (excepted: {estimated_size})'
-            indptr = np.fromstring(fin.read(max_key * 8),
+            indptr = np.frombuffer(fin.read(max_key * 8),
                                    dtype=np.int64,
                                    count=max_key)
-            data = np.fromstring(fin.read(),
+            data = np.frombuffer(fin.read(),
                                  dtype=np.dtype([('i', 'i'),
                                                  ('v', 'f')]),
-                                 count=num_lines)
+                                 count=num_lines).copy()
             I, V = data['i'], data['v']
             I -= 1
             V = self.value_prepro(V)
@@ -297,11 +297,11 @@ class Data(object):
                         continue
                     total_records = int(total_size / RECORD_SIZE)
                     fin.seek(0, 0)
-                    data = np.fromstring(fin.read(),
+                    data = np.frombuffer(fin.read(),
                                          dtype=np.dtype([('u', 'i'),
                                                          ('i', 'i'),
                                                          ('v', 'f')]),
-                                         count=total_records)
+                                         count=total_records).copy()
                     U, I, V = data['u'], data['i'], data['v']
                     if is_colwise:
                         U, I = I, U

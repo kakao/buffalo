@@ -110,7 +110,7 @@ class TestCFR(TestBase):
         self.assertIn('180.Return_of_the_Jedi_(1983)', ret_b)
         self.assertEqual(ret_a, ret_b)
 
-    def test7_train_ml20m(self):
+    def test7_train_ml_20m(self):
         set_log_level(3)
         opt = CFROption().get_default_option()
         data_opt = StreamOptions().get_default_option()

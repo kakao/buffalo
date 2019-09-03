@@ -27,7 +27,7 @@ n2_shared_object = n2.__file__
 
 MAJOR = 1
 MINOR = 0
-MICRO = 6
+MICRO = 7
 Release = True
 STAGE = {True: '', False: 'b'}.get(Release)
 VERSION = f'{MAJOR}.{MINOR}.{MICRO}{STAGE}'
