@@ -126,7 +126,7 @@ class TestAlgo(TestBase):
 
         self.assertTrue(naive_elapsed > parbpr_elapsed * 3.0)
 
-    def test04_most_similar(self):
+    def test04_text8_most_similar(self):
         set_log_level(1)
         model = self.load_text8_model()
         par = ParW2V(model)
