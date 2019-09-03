@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import time
+import psutil
 import unittest
 
 import numpy as np
@@ -49,6 +50,9 @@ class TestParallelBase(TestBase):
         self.assertTrue(np.allclose(scores1, scores2))
 
     def test02_most_similar(self):
+        num_cpu = psutil.cpu_count()
+        if num_cpu < 2:
+            return
         set_log_level(1)
         als = ALS()
         mp = MockParallel(als)
@@ -58,7 +62,9 @@ class TestParallelBase(TestBase):
         pool = np.array([], dtype=np.int32)
         elapsed = []
         results = []
-        for num_workers in [1, 2, 4, 8]:
+        for num_workers in [1] + [i * 2
+                                  for i in range(1, num_cpu + 1)
+                                  if i * 2 < num_cpu][:3]:
             mp.num_workers = num_workers
             start_t = time.time()
             ret = mp._most_similar('item', indexes, Q, 10, pool, -1, True)
