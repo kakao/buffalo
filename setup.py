@@ -31,7 +31,7 @@ n2_shared_object = n2.__file__
 MAJOR = 1
 MINOR = 0
 MICRO = 8
-Release = True
+Release = False
 STAGE = {True: '', False: 'b'}.get(Release)
 VERSION = f'{MAJOR}.{MINOR}.{MICRO}{STAGE}'
 STATUS = {False: 'Development Status :: 4 - Beta',
@@ -211,21 +211,10 @@ class BuildExtension(build_ext, object):
         os.chdir(str(cwd))
 
 
-class PostInstallCommand(install):
-    def run(self):
-        subprocess.call(['git', 'submodule', 'update', '--init'])
-        install.run(self)
-        '''subprocess.call('echo /usr/local/lib64 > /etc/ld.so.conf.d/buffalo.conf', shell=True)
-        if CUDA:
-            subprocess.call(f'echo {CUDA["lib64"]} >> /etc/ld.so.conf.d/buffalo.conf', shell=True)
-        subprocess.call('ldconfig', shell=True)'''
-
-
 def setup_package():
     write_version_py()
     cmdclass = {
-        'build_ext': BuildExtension,
-        'install': PostInstallCommand
+        'build_ext': BuildExtension
     }
 
     build_requires = [l.strip() for l in open('requirements.txt')]
