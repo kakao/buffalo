@@ -40,7 +40,7 @@ From source code
     $> cd buffalo
     $> git submodule update --init
     $> pip install -r requirements.txt
-    $> python setup.py install  # need root permission
+    $> python setup.py install
 
 
 Basic Usage
