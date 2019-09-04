@@ -5,17 +5,13 @@ DOCLINES = __doc__.split("\n")
 
 import os
 import sys
-import shutil
 import pathlib
 import platform
 import sysconfig
 import subprocess
 from setuptools import setup
-from setuptools import Distribution
-from configparser import ConfigParser
 from cuda_setup import CUDA, build_ext
 from distutils.extension import Extension
-from setuptools.command.install import install
 
 import n2
 import numpy
