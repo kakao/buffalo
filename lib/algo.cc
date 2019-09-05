@@ -61,8 +61,8 @@ void Algorithm::_leastsquare(Map<MatrixType>& X, int idx, MatrixType& A, VectorT
                 X.row(idx).setZero(); r = y;
             }
             p = r;
+            rs_old = r.dot(r);
             for (int it=0; it<num_cg_max_iters_; ++it){
-                rs_old = r.dot(r);
                 alpha = rs_old / ((p * A).dot(p) + eps_);
                 X.row(idx).noalias() += alpha * p;
                 r.noalias() -= alpha * (p * A);
@@ -72,6 +72,7 @@ void Algorithm::_leastsquare(Map<MatrixType>& X, int idx, MatrixType& A, VectorT
                     break;
                 beta = rs_new / (rs_old + eps_);
                 p.noalias() = r + beta * p;
+                rs_old = rs_new;
             }
             break;
         case 3: // eigen implementation of conjugate gradient descent
