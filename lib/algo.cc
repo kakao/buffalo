@@ -63,14 +63,14 @@ void Algorithm::_leastsquare(Map<MatrixType>& X, int idx, MatrixType& A, VectorT
             p = r;
             for (int it=0; it<num_cg_max_iters_; ++it){
                 rs_old = r.dot(r);
-                alpha = rs_old / (p * A).dot(p);
+                alpha = rs_old / ((p * A).dot(p) + eps_);
                 X.row(idx).noalias() += alpha * p;
                 r.noalias() -= alpha * (p * A);
                 rs_new = r.dot(r);
                 // stop iteration if rs_new is sufficiently small
                 if (rs_new < cg_tolerance_)
                     break;
-                beta = rs_new / rs_old;
+                beta = rs_new / (rs_old + eps_);
                 p.noalias() = r + beta * p;
             }
             break;
