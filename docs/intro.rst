@@ -20,7 +20,7 @@ Plus, Buffalo provides a variety of convenient features for research and product
 Installation
 ------------
 
-Type `sudo pip install buffalo`.
+Type `pip install buffalo`.
 
 
 Requirements
@@ -28,6 +28,7 @@ Requirements
   - numpy
   - cython
   - n2
+  - cmake
 
 
 From source code
@@ -39,7 +40,7 @@ From source code
     $> cd buffalo
     $> git submodule update --init
     $> pip install -r requirements.txt
-    $> sudo python setup.py install  # need root permission
+    $> python setup.py install
 
 
 Basic Usage
