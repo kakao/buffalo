@@ -71,7 +71,7 @@ class TestParallelBase(TestBase):
             elapsed.append(time.time() - start_t)
             results.append(ret)
         for i in range(1, len(elapsed)):
-            self.assertTrue(elapsed[i - 1] > elapsed[i] * 1.5)
+            self.assertTrue(elapsed[i - 1] > elapsed[i] * 1.3)
             self.assertTrue(np.allclose(results[i - 1][0], results[i][0]))
             self.assertTrue(np.allclose(results[i - 1][1], results[i][1]))
 
