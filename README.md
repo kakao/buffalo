@@ -1,3 +1,5 @@
+[![Linux/Mac Build Status](https://travis-ci.org/kakao/buffalo.svg?branch=master)](https://travis-ci.org/kakao/buffalo)
+
 <center><img src="./docs/buffalo.png" width="320px"></center>
 
 
