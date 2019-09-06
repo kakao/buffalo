@@ -159,6 +159,10 @@ class ProgressBar(object):
             self.t = t
             self.logger(self.get_msg())
 
+    def refresh(self):
+        # backward-compatability
+        pass
+
 pbar = ProgressBar
 iter_pbar = ProgressBar
 
