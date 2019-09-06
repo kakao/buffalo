@@ -26,8 +26,8 @@ n2_shared_object = n2.__file__
 
 MAJOR = 1
 MINOR = 0
-MICRO = 8
-Release = True
+MICRO = 9
+Release = False
 STAGE = {True: '', False: 'b'}.get(Release)
 VERSION = f'{MAJOR}.{MINOR}.{MICRO}{STAGE}'
 STATUS = {False: 'Development Status :: 4 - Beta',
