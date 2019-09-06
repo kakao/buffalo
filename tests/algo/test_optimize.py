@@ -15,11 +15,11 @@ from .base import TestBase, MockAlgo
 
 
 class TestOptimize(TestBase):
-    def test0_get_space(self):
+    def test00_get_space(self):
         Optimizable()._get_space({'x': ['uniform', ['x', 1, 10]]})
         self.assertTrue(True)
 
-    def test1_optimize(self):
+    def test01_optimize(self):
         space = Optimizable()._get_space({'x': ['uniform', ['x', 1, 10]]})
         best = fmin(fn=lambda opt: opt['x'] ** 2,
                     space=space,
@@ -27,7 +27,7 @@ class TestOptimize(TestBase):
                     max_evals=100)
         self.assertEqual(int(best['x']), 1)
 
-    def test2_optimize(self):
+    def test02_optimize(self):
         def mock_fn(opt):
             loss = 1.0 - opt['adaptive_reg'] / 1.0
             loss += 1.0 / (opt['d'] ** 2 + 1)
@@ -48,12 +48,12 @@ class TestOptimize(TestBase):
         self.assertLessEqual(best['reg_u'], 0.3)
         self.assertEqual(best['adaptive_reg'], 1)
 
-    def test3_optimize(self):
+    def test03_optimize(self):
         algo = MockAlgo()
         algo.optimize()
         self.assertTrue(True)
 
-    def test4_optimize(self):
+    def test04_optimize(self):
         set_log_level(2)
         opt = ALSOption().get_default_option()
         opt.d = 5

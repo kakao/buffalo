@@ -4,7 +4,6 @@ import abc
 import json
 import time
 from buffalo.misc import aux, log
-from buffalo.misc.log import pbar
 
 from hyperopt import hp, fmin, tpe, Trials
 
@@ -33,9 +32,9 @@ class Optimizable(object):
         opt = self.opt.optimize
         iters, max_trials = 0, opt.get('max_trials', -1)
         space = self._get_space(opt.space)
-        with log.pbar(log.INFO, desc='optimizing... ',
-                      total=None if max_trials == -1 else max_trials,
-                      mininterval=30) as pbar:
+        with log.ProgressBar(log.INFO, desc='optimizing... ',
+                             total=None if max_trials == -1 else max_trials,
+                             mininterval=30) as pbar:
             tb_opt = None
             tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick
             if opt.start_with_default_parameters:

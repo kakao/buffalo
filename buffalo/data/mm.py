@@ -65,7 +65,7 @@ class MatrixMarket(Data):
         uid_path, iid_path, main_path = P['uid_path'], P['iid_path'], P['main_path']
         num_users, num_items, num_nnz = map(int, H.split())
         # Manually updating progress bar is a bit naive
-        with log.pbar(log.DEBUG, total=5, mininterval=30) as pbar:
+        with log.ProgressBar(log.DEBUG, total=5, mininterval=30) as pbar:
             uid_max_col = len(str(num_users)) + 1
             if uid_path:
                 uid_max_col = get_max_column_length(uid_path) + 1
@@ -133,7 +133,7 @@ class MatrixMarket(Data):
             vali_indexes = sorted(vali_indexes)
             target_index = vali_indexes[0] if vali_indexes else -1
             vali_indexes = vali_indexes[1:]
-            with log.pbar(log.INFO, total=total, mininterval=10) as pbar:
+            with log.ProgressBar(log.INFO, total=total, mininterval=10) as pbar:
                 while True:
                     buffered += fin.read(CHUNK_SIZE)
                     if buffered == '':

@@ -119,8 +119,8 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         loss_nume, loss_deno = 0.0, 0.0
         update_t, feed_t, updated = el, 0, 0
         buf.set_group(group)
-        with log.pbar(log.DEBUG, desc='%s' % group,
-                      total=header['num_nnz'], mininterval=30) as pbar:
+        with log.ProgressBar(log.DEBUG, desc='%s' % group,
+                             total=header['num_nnz'], mininterval=30) as pbar:
             for sz in buf.fetch_batch():
                 updated += sz
                 start_x, next_x, indptr, keys, vals = buf.get()

@@ -36,11 +36,11 @@ class TestW2V(TestBase):
         c.save()
         return c
 
-    def test0_get_default_option(self):
+    def test00_get_default_option(self):
         W2VOption().get_default_option()
         self.assertTrue(True)
 
-    def test1_is_valid_option(self):
+    def test01_is_valid_option(self):
         opt = W2VOption().get_default_option()
         self.assertTrue(W2VOption().is_valid_option(opt))
         opt['save_best'] = 1
@@ -48,20 +48,20 @@ class TestW2V(TestBase):
         opt['save_best'] = False
         self.assertTrue(W2VOption().is_valid_option(opt))
 
-    def test2_init_with_dict(self):
+    def test02_init_with_dict(self):
         set_log_level(3)
         opt = W2VOption().get_default_option()
         W2V(opt)
         self.assertTrue(True)
 
-    def test3_init(self):
+    def test03_init(self):
         pass
 
-    def test4_train(self):
+    def test04_train(self):
         self.load_text8_model()
         self.assertTrue(True)
 
-    def test5_text8_accuracy(self):
+    def test05_text8_accuracy(self):
         set_log_level(2)
         opt = W2VOption().get_default_option()
         opt.num_workers = 12
@@ -118,7 +118,7 @@ class TestW2V(TestBase):
         print('Top1-Accuracy={:0.3f}'.format(acc))
         self.assertTrue(acc > 0.7)
 
-    def test6_most_similar(self):
+    def test06_most_similar(self):
         w = self.load_text8_model()
         q1, q2, q3 = 'apple', 'macintosh', 'microsoft'
         self._test_most_similar(w, q1, q2, q3)

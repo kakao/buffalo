@@ -285,7 +285,7 @@ class Data(object):
 
     def _build_compressed_triplets(self, db, job_files, num_lines, max_key, is_colwise=0):
         self.logger.info('Total job files: %s' % len(job_files))
-        with log.pbar(log.INFO, total=len(job_files), mininterval=10) as pbar:
+        with log.ProgressBar(log.INFO, total=len(job_files), mininterval=10) as pbar:
             indptr_index = 0
             data_index = 0
             RECORD_SIZE = 12

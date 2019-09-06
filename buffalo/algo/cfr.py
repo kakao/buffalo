@@ -9,6 +9,7 @@ from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
 from buffalo.misc import aux, log
+from buffalo.misc.log import ProgressBar
 from buffalo.data.base import Data
 from buffalo.algo._cfr import CyCFR
 from buffalo.evaluate import Evaluable
@@ -135,8 +136,8 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
             total = header["sppmi_nnz"]
             _groups = ["sppmi"]
 
-        with log.pbar(log.DEBUG, desc='%s' % group,
-                      total=total, mininterval=30) as pbar:
+        with ProgressBar(log.DEBUG, desc='%s' % group,
+                         total=total, mininterval=30) as pbar:
             st = time.time()
             for start_x, next_x in buf.fetch_batch_range(_groups):
                 feed_t += time.time() - st

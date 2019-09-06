@@ -163,9 +163,6 @@ class ProgressBar(object):
         # backward-compatability
         pass
 
-pbar = ProgressBar
-iter_pbar = ProgressBar
-
 
 class supress_log_level(object):
     def __init__(self, log_level):

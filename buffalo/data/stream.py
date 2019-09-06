@@ -102,7 +102,7 @@ class Stream(Data):
         if self.opt.data.validation.name not in ["oldest", "newest"]:
             vali_n = 0
         with open(main_path) as fin:
-            for line in log.iter_pbar(level=log.DEBUG, iterable=fin):
+            for line in log.ProgressBar(level=log.DEBUG, iterable=fin):
                 data = line.strip().split()
                 if not iid_path:
                     itemids |= set(data)
@@ -225,7 +225,7 @@ class Stream(Data):
                 open(file_path, 'w') as w:
                 total_index = 0
                 internal_data_type = self.opt.data.internal_data_type
-                for line_idx, data in log.iter_pbar(level=log.DEBUG, iterable=enumerate(fin)):
+                for line_idx, data in log.ProgressBar(level=log.DEBUG, iterable=enumerate(fin)):
                     data = data.strip().split()
                     total_data_size = len(data)
                     user = line_idx + 1

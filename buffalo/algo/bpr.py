@@ -9,8 +9,8 @@ from numpy.linalg import norm
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
-from buffalo.data.base import Data
 from buffalo.misc import aux, log
+from buffalo.data.base import Data
 from buffalo.algo._bpr import CyBPRMF
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import BPRMFOption
@@ -154,8 +154,8 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
         end = header['num_users']
         update_t, feed_t, updated = 0, 0, 0
         self.buf.set_group('rowwise')
-        with log.pbar(log.DEBUG,
-                      total=header['num_nnz'], mininterval=30) as pbar:
+        with log.ProgressBar(log.DEBUG,
+                             total=header['num_nnz'], mininterval=30) as pbar:
             start_t = time.time()
             for sz in self.buf.fetch_batch():
                 updated += sz
