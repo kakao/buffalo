@@ -5,7 +5,6 @@ import time
 import json
 
 import numpy as np
-from numpy.linalg import norm
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
@@ -151,7 +150,7 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def _iterate(self):
         header = self.data.get_header()
-        end = header['num_users']
+        # end = header['num_users']
         update_t, feed_t, updated = 0, 0, 0
         self.buf.set_group('rowwise')
         with log.ProgressBar(log.DEBUG,
@@ -176,7 +175,7 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
                                      self._sub_samples[2])
 
     def train(self):
-        rmse, self.validation_result = None, {}
+        self.validation_result = {}
         self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
         self.sampling_loss_samples()
@@ -187,7 +186,6 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
             self._iterate()
             self.obj.wait_until_done()
             loss = self.compute_loss() if self.opt.compute_loss_on_training else 0.0
-            train_t = time.time() - start_t
 
             metrics = {'train_loss': loss}
             if self.opt.validation and self.opt.evaluation_on_learning and self.periodical(self.opt.evaluation_period, i):
