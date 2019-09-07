@@ -12,14 +12,13 @@ from buffalo.algo._als import CyALS
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import ALSOption
 from buffalo.algo.optimize import Optimizable
-from buffalo.algo.tensorflow._als import TFALS
 from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
 inited_CUALS = True
 try:
     from buffalo.algo.cuda._als import CyALS as CuALS
-except Exception as e:
+except Exception:
     inited_CUALS = False
 
 
