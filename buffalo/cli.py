@@ -1,8 +1,4 @@
 # -*- coding: utf-8 -*-
-import os
-import time
-import shutil
-
 import fire
 
 from buffalo.misc import log, aux
