@@ -3,7 +3,6 @@ import time
 import json
 import logging
 
-import tqdm
 import numpy as np
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
