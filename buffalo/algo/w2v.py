@@ -166,7 +166,7 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
         return dist
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
-        raise NotImplemented
+        raise NotImplementedError
 
     def _get_most_similar_item(self, col, topk, pool):
         if not isinstance(col, np.ndarray):
@@ -182,7 +182,7 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def _iterate(self):
         header = self.data.get_header()
-        end = header['num_users']
+        # end = header['num_users']
         update_t, feed_t, updated = 0, 0, 0
         self.buf.set_group('rowwise')
         with log.ProgressBar(log.DEBUG,
@@ -207,7 +207,8 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
             start_t = time.time()
             self._iterate()
             self.logger.info('Iteration %s: Elapsed %.3f secs' % (i + 1, time.time() - start_t))
-        loss = self.obj.join()
+        # loss = self.obj.join()
+        self.obj.join()
         return {}
 
     def _optimize(self, params):
