@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import time
 import json
-import logging
 
 import numpy as np
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
@@ -182,7 +181,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
     def train(self):
         assert self.is_initialized, "embedding matrix is not initialized"
         buf = self._get_buffer()
-        best_loss, rmse, self.validation_result = 987654321.0, None, {}
+        best_loss, self.validation_result = 987654321.0, {}
         self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
         scale = self.compute_scale()
