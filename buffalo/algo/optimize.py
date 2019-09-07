@@ -1,8 +1,5 @@
 # -*- coding: utf-8 -*-
-import os
 import abc
-import json
-import time
 from buffalo.misc import aux, log
 
 from hyperopt import hp, fmin, tpe, Trials
@@ -26,7 +23,7 @@ class Optimizable(object):
 
     @abc.abstractmethod
     def _optimize(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def optimize(self):
         opt = self.opt.optimize
