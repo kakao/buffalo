@@ -255,4 +255,4 @@ class TestBase(unittest.TestCase):
         for i in range(100):
             model.most_similar(q1, pool=indexes)
         elapsed_b = time.time() - start_t
-        self.assertTrue(elapsed_a > elapsed_b * 1.5)
+        self.assertTrue(elapsed_a > elapsed_b)
