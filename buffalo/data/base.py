@@ -274,10 +274,10 @@ class Data(object):
                 data = np.frombuffer(fin.read(),
                                      dtype=np.dtype([('i', 'i'),
                                                      ('v', 'f')]),
-                                     count=total_records).copy()
+                                     count=total_records)
                 I, V = data['i'], data['v']
-                I -= 1
-                V = self.value_prepro(V)
+                if self.opt.data.value_prepro:
+                    V = self.value_prepro(V.copy())
                 db['key'][data_index:data_index + total_records] = I
                 db['val'][data_index:data_index + total_records] = V
                 data_index += total_records
@@ -318,13 +318,12 @@ class Data(object):
                                          dtype=np.dtype([('u', 'i'),
                                                          ('i', 'i'),
                                                          ('v', 'f')]),
-                                         count=total_records).copy()
+                                         count=total_records)
                     U, I, V = data['u'], data['i'], data['v']
                     if is_colwise:
                         U, I = I, U
-                    U -= 1
-                    I -= 1
-                    V = self.value_prepro(V)
+                    if self.opt.data.value_prepro:
+                        V = self.value_prepro(V.copy())
                     self.logger.debug("minU: {}, maxU: {}".format(U[0], U[-1]))
                     assert data_index + total_records <= num_lines, 'Requests data size(%s) exceed capacity(%s)' % (data_index + total_records, num_lines)
                     db['key'][data_index:data_index + total_records] = I

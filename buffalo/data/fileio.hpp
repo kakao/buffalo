@@ -90,6 +90,8 @@ vector<string> _chunking_into_bins(string path, string to_dir,
             float v;
             while (getline(fins[i], _line)) {
                 sscanf(_line.c_str(), "%d %d %f", &r, &c, &v);
+                --r;
+                --c;
                 fwrite((char*)&r, sizeof(r), 1, fouts[i]);
                 fwrite((char*)&c, sizeof(c), 1, fouts[i]);
                 fwrite((char*)&v, sizeof(v), 1, fouts[i]);
@@ -393,12 +395,14 @@ vector<string> _sort_and_compressed_binarization(
             long end_index = min(per_workers_num * (i+1), records_size);
 
             for (long j=start_index; j < end_index; ++j) {
-                const auto& r = records[j];
+                auto& r = records[j];
                 if (sort_key == 1 or sort_key == -1) {
+                    --r.c;
                     fwrite((char*)&r.c, sizeof(r.c), 1, fouts[i]);
                     fwrite((char*)&r.v, sizeof(r.v), 1, fouts[i]);
                 }
                 else {
+                    --r.r;
                     fwrite((char*)&r.r, sizeof(r.r), 1, fouts[i]);
                     fwrite((char*)&r.v, sizeof(r.v), 1, fouts[i]);
                 }
