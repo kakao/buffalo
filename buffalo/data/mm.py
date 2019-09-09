@@ -222,4 +222,4 @@ class MatrixMarket(Data):
             if hasattr(self, 'patr'):
                 if os.path.isfile(self.path):
                     os.remove(self.path)
-    self.logger.info('DB built on %s' % data_path)
+        self.logger.info('DB built on %s' % data_path)
