@@ -83,7 +83,7 @@ class Evaluable(object):
                                                  topk=topk + self._validation_max_seen_size)
             for row, _topk in recs:
                 seen = self._validation_seen.get(row, set())
-                _topk = [t for t in _topk if t not in seen][:topk]
+                _topk = filter_seen_items(_topk, seen, topk)
                 _gt = gt[row]
 
                 # accuracy
