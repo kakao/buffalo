@@ -74,8 +74,8 @@ class Evaluable(object):
             for t in _topk:
                 if t not in seen:
                     ret.append(t)
-                if len(ret) >= topk:
-                    break
+                    if len(ret) >= topk:
+                        break
             return ret
 
         for index in range(0, len(rows), batch_size):
