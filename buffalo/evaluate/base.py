@@ -67,6 +67,17 @@ class Evaluable(object):
         AP = 0.0
         HIT = 0.0
         N = 0.0
+        idcgs = np.cumsum(1.0 / np.log2(np.arange(2, topk + 2)))
+
+        def filter_seen_items(_topk, seen, topk):
+            ret = []
+            for t in _topk:
+                if t not in seen:
+                    ret.append(t)
+                if len(ret) >= topk:
+                    break
+            return ret
+
         for index in range(0, len(rows), batch_size):
             recs = self._get_topk_recommendation(rows[index:index + batch_size],
                                                  topk=topk + self._validation_max_seen_size)
@@ -80,8 +91,7 @@ class Evaluable(object):
                 HIT += hit
 
                 # ndcg, map
-                idcg = sum([1.0 / math.log(i + 2, 2)
-                            for i in range(min(len(_gt), len(_topk)))])
+                idcg = idcgs[min(len(_gt), len(_topk)) - 1]
                 dcg = 0.0
                 hit, ap = 0.0, 0.0
                 for i, r in enumerate(_topk):
