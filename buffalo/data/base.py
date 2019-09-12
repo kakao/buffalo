@@ -245,29 +245,46 @@ class Data(object):
             num_lines, max_key, sort_key, num_workers)
         return merged_bin
 
-    def _load_compressed_triplet_bin(self, db, bin_path, num_lines, max_key, is_colwise=0):
-        self.logger.info('Load triplet bin: %s' % bin_path)
+    def _load_compressed_triplet_bin(self, db, job_files, num_lines, max_key, is_colwise=0):
+        self.logger.info('Load triplet files. Total job files: %s' % len(job_files))
         INDPTR_SIZE = 8
         RECORD_SIZE = 8
-        with open(bin_path, 'rb') as fin:
-            estimated_size = num_lines * 8 + max_key * 8
-            total_size = fin.seek(0, 2)
+        record_estimated_size = num_lines * RECORD_SIZE
+        indptr_estimated_size = max_key * INDPTR_SIZE
+        indptr_file = job_files[0]
+        job_files = job_files[1:]
+        with open(indptr_file, 'rb') as fin:
+            indptr_total_size = fin.seek(0, 2)
             fin.seek(0, 0)
-            assert estimated_size == total_size, f'Not valid file size {total_size} (excepted: {estimated_size})'
+            assert indptr_estimated_size == indptr_total_size, f'Not valid indptr file size {indptr_total_size} (excepted: {indptr_estimated_size})'
             indptr = np.frombuffer(fin.read(max_key * 8),
                                    dtype=np.int64,
                                    count=max_key)
-            data = np.frombuffer(fin.read(),
-                                 dtype=np.dtype([('i', 'i'),
-                                                 ('v', 'f')]),
-                                 count=num_lines).copy()
-            I, V = data['i'], data['v']
-            I -= 1
-            V = self.value_prepro(V)
-            db['key'][:num_lines] = I
-            db['val'][:num_lines] = V
             db['indptr'][:max_key] = indptr
-        os.remove(bin_path)
+        record_total_size = 0
+        data_index = 0
+        for job in job_files:
+            with open(job, 'rb') as fin:
+                total_size = fin.seek(0, 2)
+                if total_size == 0:
+                    continue
+                record_total_size += total_size
+                total_records = int(total_size / RECORD_SIZE)
+                fin.seek(0, 0)
+                data = np.frombuffer(fin.read(),
+                                     dtype=np.dtype([('i', 'i'),
+                                                     ('v', 'f')]),
+                                     count=total_records)
+                I, V = data['i'], data['v']
+                if self.opt.data.value_prepro:
+                    V = self.value_prepro(V.copy())
+                db['key'][data_index:data_index + total_records] = I
+                db['val'][data_index:data_index + total_records] = V
+                data_index += total_records
+        assert record_estimated_size == record_total_size, f'Not valid record file size {record_total_size} (excepted: {record_estimated_size})'
+        os.remove(indptr_file)
+        for path in job_files:
+            os.remove(path)
 
     def _chunking_into_bins(self, mm_path, num_lines, max_key, sep_idx):
         num_workers = psutil.cpu_count()
@@ -301,13 +318,12 @@ class Data(object):
                                          dtype=np.dtype([('u', 'i'),
                                                          ('i', 'i'),
                                                          ('v', 'f')]),
-                                         count=total_records).copy()
+                                         count=total_records)
                     U, I, V = data['u'], data['i'], data['v']
                     if is_colwise:
                         U, I = I, U
-                    U -= 1
-                    I -= 1
-                    V = self.value_prepro(V)
+                    if self.opt.data.value_prepro:
+                        V = self.value_prepro(V.copy())
                     self.logger.debug("minU: {}, maxU: {}".format(U[0], U[-1]))
                     assert data_index + total_records <= num_lines, 'Requests data size(%s) exceed capacity(%s)' % (data_index + total_records, num_lines)
                     db['key'][data_index:data_index + total_records] = I
@@ -348,13 +364,13 @@ class Data(object):
             self.prepro.pre(db)
             if approximated_data_mb * 1.2 < available_mb:
                 self.logger.info('In-memory Compressing ...')
-                merged_bin = self._sort_and_compressed_binarization(
+                job_files = self._sort_and_compressed_binarization(
                     working_data_path,
                     db.attrs['num_nnz'],
                     max_key,
                     sort_key=sep_idx + 1 if sort else -1)
                 self._load_compressed_triplet_bin(
-                    db[group], merged_bin,
+                    db[group], job_files,
                     num_lines=db.attrs['num_nnz'],
                     max_key=max_key,
                     is_colwise=sep_idx)

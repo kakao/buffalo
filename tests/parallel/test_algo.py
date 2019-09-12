@@ -77,7 +77,7 @@ class TestAlgo(TestBase):
         for a, b in combinations([topks0, topks1, topks2], 2):
             self.assertEqual(a, b)
         for a, b in combinations([scores0, scores1, scores2], 2):
-            self.assertTrue(np.allclose(a, b))
+            self.assertTrue(np.allclose(a, b, atol=1e-07))
 
     def test02_most_similar(self):
         set_log_level(1)
