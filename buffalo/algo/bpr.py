@@ -103,7 +103,12 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
-        topks = super()._get_topk_recommendation(p, self.Q, pool, topk, self.opt.num_workers)
+        Q = self.Q
+        if self.opt.use_bias:
+            p = np.hstack([p, np.ones(shape=(p.shape[0], 1))]).astype("float32")
+            Q = np.hstack([Q, self.Qb]).astype("float32")
+
+        topks = super()._get_topk_recommendation(p, Q, pool, topk, self.opt.num_workers)
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk, pool):
