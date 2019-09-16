@@ -407,13 +407,13 @@ void CBPRMF::worker(int worker_id)
                         if (update_i) {
                             Q_.row(pos) += alpha * (item_deriv - reg_i * Q_.row(pos));
                             if (use_bias)
-                                Qb_(pos, 0) += (logit - reg_b * Qb_(pos, 0));
+                                Qb_(pos, 0) += alpha * (logit - reg_b * Qb_(pos, 0));
                         }
 
                         if (update_j) {
-                            Q_.row(neg) -= alpha * (item_deriv - reg_j * Q_.row(neg));
+                            Q_.row(neg) += alpha * (-item_deriv - reg_j * Q_.row(neg));
                             if (use_bias)
-                                Qb_(neg, 0) -= (logit - reg_b * Qb_(neg, 0));
+                                Qb_(neg, 0) += alpha * (-logit - reg_b * Qb_(neg, 0));
                         }
 
                         P_.row(u) += alpha * g;
