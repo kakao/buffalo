@@ -173,7 +173,7 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
             col = self._vocab.index[col] - 1
             if col < 0:
                 return [], []
-        topks, scores = super()._get_most_similar_item(col, topk, self.L0, self.opt._nrz_L0, pool)
+        topks, scores = self._get_most_similar(col, topk, self.L0, self.opt._nrz_L0, pool)
         topks = self._vocab.inv_index[topks]
         return topks, scores
 

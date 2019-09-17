@@ -108,7 +108,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk, pool):
-        return super()._get_most_similar_item(col, topk, self.I, self.opt._nrz_I, pool)
+        return self._get_most_similar(col, topk, self.I, self.opt._nrz_I, pool)
 
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.U[r].dot(self.I[c]) for r, c in row_col_pairs}
