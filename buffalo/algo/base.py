@@ -102,12 +102,13 @@ class Algo(abc.ABC):
         if group == 'item':
             if not self._idmanager.itemid_mapped:
                 self.build_itemid_map()
-            return self._most_similar_item(key, topk, pool)
         elif group == 'user':
             if not self._idmanager.userid_mapped:
                 self.build_userid_map()
-            return self._most_similar_user(key, topk, pool)
-        return []
+        else:
+            return []
+
+        return self._most_similar(key, topk, pool, group)
 
     def _get_most_similar(self, col, topk, Factor, nrz, pool):
         if isinstance(col, np.ndarray):
