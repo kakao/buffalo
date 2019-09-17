@@ -103,9 +103,13 @@ class Algo(abc.ABC):
             if not self._idmanager.itemid_mapped:
                 self.build_itemid_map()
             return self._most_similar_item(key, topk, pool)
+        elif group == 'user':
+            if not self._idmanager.userid_mapped:
+                self.build_userid_map()
+            return self._most_similar_user(key, topk, pool)
         return []
 
-    def _get_most_similar_item(self, col, topk, Factor, nrz, pool):
+    def _get_most_similar(self, col, topk, Factor, nrz, pool):
         if isinstance(col, np.ndarray):
             q = col
         else:
@@ -132,28 +136,45 @@ class Algo(abc.ABC):
             topks = np.array([pool[t] for t in topks])
         return topks, scores
 
-    def _most_similar_item(self, key, topk=10, pool=None):
+    def _most_similar(self, key, topk=10, pool=None, group='item'):
+        if group == 'item':
+            id_map = self._idmanager.itemid_map
+            id_list = self._idmanager.itemids
+            func = self._get_most_similar_item
+        else:
+            id_map = self._idmanager.userid_map
+            id_list = self._idmanager.userids
+            func = self._get_most_similar_user
+
         is_vector = False
         if isinstance(key, np.ndarray):
             f = key
             is_vector = True
         else:
-            col = self._idmanager.itemid_map.get(key)
+            col = id_map.get(key)
             if col is None:
                 return []
             f = col
         if pool is not None:
-            pool = self.get_index_pool(pool, group='item')
+            pool = self.get_index_pool(pool, group=group)
             if len(pool) == 0:
                 return []
-        topks, scores = self._get_most_similar_item(f, topk, pool)
+
+        topks, scores = func(f, topk, pool)
+
         if is_vector:
-            return [(self._idmanager.itemids[k], v)
+            return [(id_list[k], v)
                     for (k, v) in zip(topks, scores)]
         else:
-            return [(self._idmanager.itemids[k], v)
+            return [(id_list[k], v)
                     for (k, v) in zip(topks, scores)
                     if k != f]
+
+    def _get_most_similar_item(self, col, topk, pool):
+        raise NotImplementedError
+
+    def _get_most_similar_user(self, col, topk, pool):
+        raise NotImplementedError
 
     def build_itemid_map(self):
         idmap = self.data.get_group('idmap')

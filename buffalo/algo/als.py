@@ -98,7 +98,10 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk, pool):
-        return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q, pool)
+        return self._get_most_similar(col, topk, self.Q, self.opt._nrz_Q, pool)
+
+    def _get_most_similar_user(self, col, topk, pool):
+        return self._get_most_similar(col, topk, self.P, self.opt._nrz_P, pool)
 
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.P[r].dot(self.Q[c]) for r, c in row_col_pairs}
