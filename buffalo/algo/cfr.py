@@ -53,6 +53,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         data_opt = self.opt.get('data_opt')
         data_opt = kwargs.get('data_opt', data_opt)
         if data_opt:
+            assert data_opt.data.internal_data_type == "matrix"
             self.data = buffalo.data.load(data_opt)
             self.data.create()
         elif isinstance(data, Data):
