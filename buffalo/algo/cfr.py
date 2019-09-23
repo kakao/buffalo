@@ -55,6 +55,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
             assert data_opt.data.internal_data_type == "matrix", \
                 f"internal data type is {data_opt.data.internal_data_type}, not matrix"
             self.data = buffalo.data.load(data_opt)
+            assert self.data.data_type == 'stream'
             self.data.create()
         elif isinstance(data, Data):
             self.data = data
