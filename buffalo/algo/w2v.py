@@ -162,7 +162,7 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
         for i in range(total_vocab):
             summed += dist0[i]
             dist[i] = summed * domain
-        assert(dist[-1] == domain)
+        assert abs(dist[-1] - domain) < 3 # small difference is okay
         return dist
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
