@@ -33,8 +33,7 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.logger = log.get_logger('W2V')
         self.opt, self.opt_path = self.get_option(opt_path)
         self.obj = CyW2V()
-        assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
-            'cannot parse option file: %s' % opt_path
+        assert self.obj.init(bytes(self.opt_path, 'utf-8')), 'cannot parse option file: %s' % opt_path
         self.data = None
         data = kwargs.get('data')
         data_opt = self.opt.get('data_opt')
@@ -143,8 +142,8 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def init_factors(self, vocab_size):
         self.L0 = None
-        self.L0 = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
-                                         size=(vocab_size, self.opt.d)).astype("float32"))
+        self.L0 = np.abs(np.random.normal(scale=1.0 / (self.opt.d ** 2),
+                                          size=(vocab_size, self.opt.d)).astype("float32"))
 
     def get_sampling_distribution(self, uni, use, total_vocab):
         dist0 = np.zeros(shape=total_vocab, dtype=np.float64, order='C')

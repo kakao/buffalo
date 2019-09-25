@@ -331,7 +331,7 @@ class Data(object):
                     indptr = [data_index for j in range(U[0] - prev_key)]
                     indptr += [data_index + i
                                for i in range(1, total_records)
-                               for j in range(U[i] - U[i-1])]
+                               for j in range(U[i] - U[i - 1])]
                     db['indptr'][indptr_index:indptr_index + len(indptr)] = indptr
                     assert indptr_index + len(indptr) <= max_key
                     data_index += total_records

@@ -15,12 +15,12 @@ cdef extern from "buffalo/cuda/als/als.hpp" namespace "cuda_als":
     cdef cppclass CuALS:
         CuALS() nogil except +
         bool init(string) nogil except +
-        void set_placeholder(int64_t* lindptr, int64_t* rindptr, size_t batch_size);
+        void set_placeholder(int64_t* lindptr, int64_t* rindptr, size_t batch_size)
         void initialize_model(float*, int,
                               float*, int) nogil except +
         void precompute(int) nogil except +
         pair[double, double] partial_update(int, int,
-                             int64_t*, int32_t*, float*, int) nogil except +
+                                            int64_t*, int32_t*, float*, int) nogil except +
         int get_vdim() nogil except +
 
 
