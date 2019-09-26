@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import pkgutils
+import pkgutil
 import unittest
 
 from buffalo.misc import aux
@@ -78,7 +78,7 @@ class TestALS(TestBase):
         self._test10_fast_most_similar(ALS, opt)
 
     def test11_train_ml_20m_on_gpu(self):
-        if not pkgutils.find_loader("buffalo.algo.cuda._als"):
+        if not pkgutil.find_loader("buffalo.algo.cuda._als"):
             return
         opt = ALSOption().get_default_option()
         opt.num_workers = 8
