@@ -69,6 +69,5 @@ cdef class CyW2V:
                           &indptr[0],
                           &sequences[0])
 
-
     def join(self):
         return self.obj.join()

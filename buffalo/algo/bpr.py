@@ -33,8 +33,7 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
         self.logger = log.get_logger('BPRMF')
         self.opt, self.opt_path = self.get_option(opt_path)
         self.obj = CyBPRMF()
-        assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
-            'cannot parse option file: %s' % opt_path
+        assert self.obj.init(bytes(self.opt_path, 'utf-8')), 'cannot parse option file: %s' % opt_path
         self.data = None
         data = kwargs.get('data')
         data_opt = self.opt.get('data_opt')
@@ -79,11 +78,11 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
         header = self.data.get_header()
         for attr_name in ['P', 'Q', 'Qb']:
             setattr(self, attr_name, None)
-        self.P = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
+        self.P = np.abs(np.random.normal(scale=1.0 / (self.opt.d ** 2),
                                          size=(header['num_users'], self.opt.d)).astype("float32"), order='C')
-        self.Q = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
+        self.Q = np.abs(np.random.normal(scale=1.0 / (self.opt.d ** 2),
                                          size=(header['num_items'], self.opt.d)).astype("float32"), order='C')
-        self.Qb = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
+        self.Qb = np.abs(np.random.normal(scale=1.0 / (self.opt.d ** 2),
                                           size=(header['num_items'], 1)).astype("float32"), order='C')
         self.obj.initialize_model(self.P, self.Q, self.Qb, header['num_nnz'])
 
@@ -193,7 +192,9 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
             loss = self.compute_loss() if self.opt.compute_loss_on_training else 0.0
 
             metrics = {'train_loss': loss}
-            if self.opt.validation and self.opt.evaluation_on_learning and self.periodical(self.opt.evaluation_period, i):
+            if self.opt.validation and \
+               self.opt.evaluation_on_learning and \
+               self.periodical(self.opt.evaluation_period, i):
                 start_t = time.time()
                 self.validation_result = self.get_validation_results()
                 vali_t = time.time() - start_t

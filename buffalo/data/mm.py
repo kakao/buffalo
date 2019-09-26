@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import psutil
 import traceback
 
 import h5py
@@ -205,8 +204,8 @@ class MatrixMarket(Data):
             num_header_lines += 1  # add metaline
             self.logger.info('Creating working data...')
             tmp_main, validation_data = self._create_working_data(db,
-                                                                    mm_main_path,
-                                                                    num_header_lines)
+                                                                  mm_main_path,
+                                                                  num_header_lines)
             self.logger.debug(f'Working data is created on {tmp_main}')
             self.logger.info('Building data part...')
             self._build_data(db, tmp_main, validation_data)

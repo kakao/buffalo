@@ -1,6 +1,6 @@
 # cython: experimental_cpp_class_def=True, language_level=3
 # distutils: language=c++
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 from libc.stdint cimport int64_t
 from libcpp.vector cimport vector
 from libcpp.string cimport string
@@ -21,6 +21,7 @@ def chunking_into_bins(path, to_dir, total_lines, num_chunks, sep_idx, num_worke
                                sep_idx,
                                num_workers)
 
+
 def parallel_build_sppmi(from_path, to_path, total_lines, num_items, k, num_workers):
     return _parallel_build_sppmi(bytes(from_path, 'utf-8'),
                                  bytes(to_path, 'utf-8'),
@@ -28,6 +29,7 @@ def parallel_build_sppmi(from_path, to_path, total_lines, num_items, k, num_work
                                  num_items,
                                  k,
                                  num_workers)
+
 
 def sort_and_compressed_binarization(path, to_dir, total_lines, max_key, sort_key, num_workers):
     return _sort_and_compressed_binarization(

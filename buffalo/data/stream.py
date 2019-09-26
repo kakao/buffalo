@@ -8,10 +8,10 @@ from collections import Counter
 import h5py
 import numpy as np
 
-from buffalo.data import prepro
 from buffalo.misc import aux, log
 from buffalo.data.base import Data, DataOption
 from buffalo.data.fileio import parallel_build_sppmi
+
 
 class StreamOptions(DataOption):
     """
@@ -198,7 +198,7 @@ class Stream(Data):
         elif vali_method in ['newest']:
             vali_n = db['vali'].attrs['n']
         vali_lines = []
-        users = db['idmap']['rows'][:]
+        # users = db['idmap']['rows'][:] will be used someday?
         sppmi_total_lines = 0
 
         with warnings.catch_warnings():
@@ -206,13 +206,12 @@ class Stream(Data):
             if with_sppmi:
                 w_sppmi = open(aux.get_temporary_file(root=self.opt.data.tmp_dir), "w")
             file_path = aux.get_temporary_file(root=self.opt.data.tmp_dir)
-            with open(stream_main_path) as fin,\
-                open(file_path, 'w') as w:
+            with open(stream_main_path) as fin, open(file_path, 'w') as w:
                 total_index = 0
                 internal_data_type = self.opt.data.internal_data_type
                 for line_idx, data in log.ProgressBar(level=log.DEBUG, iterable=enumerate(fin)):
                     data = data.strip().split()
-                    total_data_size = len(data)
+                    # total_data_size = len(data) will be used someday?
                     user = line_idx + 1
                     vali_data, train_data = [], []
                     if vali_method in ['newest']:
@@ -249,16 +248,16 @@ class Stream(Data):
                         for col, val in Counter(vali_data).items():
                             vali_lines.append(f'{user} {col} {val}')
                     if with_sppmi:
-                       sz = len(train_data)
-                       for i in range(sz):
-                           beg, end = i + 1, i + windows + 1
-                           for j in range(beg, end):
-                               if j >= sz:
-                                   break
-                               _w, _c = train_data[i], train_data[j]
-                               w_sppmi.write(f'{_w} {_c}\n')
-                               w_sppmi.write(f'{_c} {_w}\n')
-                               sppmi_total_lines += 2
+                        sz = len(train_data)
+                        for i in range(sz):
+                            beg, end = i + 1, i + windows + 1
+                            for j in range(beg, end):
+                                if j >= sz:
+                                    break
+                                _w, _c = train_data[i], train_data[j]
+                                w_sppmi.write(f'{_w} {_c}\n')
+                                w_sppmi.write(f'{_c} {_w}\n')
+                                sppmi_total_lines += 2
                 if with_sppmi:
                     w_sppmi.close()
                     return w.name, vali_lines, w_sppmi.name, sppmi_total_lines
@@ -276,37 +275,37 @@ class Stream(Data):
             return
 
         self.logger.info('Create database from stream data')
-        with open(stream_main_path) as fin:
-            self.logger.debug('Building meta part...')
-            db, itemids = self._create(data_path,
-                                       {'main_path': stream_main_path,
-                                        'uid_path': stream_uid_path,
-                                        'iid_path': stream_iid_path})
-            sppmi_opt = self.opt.data.sppmi
-            try:
-                self.logger.info('Creating working data...')
-                if sppmi_opt:
-                    tmp_main, validation_data, tmp_sppmi, sppmi_total_lines = \
-                        self._create_working_data(db, stream_main_path, itemids, True, sppmi_opt.windows)
-                else:
-                    tmp_main, validation_data, tmp_sppmi, sppmi_total_lines = \
-                        self._create_working_data(db, stream_main_path, itemids, False)
-                self.logger.debug(f'Working data is created on {tmp_main}')
-                self.logger.info('Building data part...')
-                self._build_data(db, tmp_main, validation_data)
-                if sppmi_opt:
-                    self.logger.debug(f'sppmi data is created on {tmp_sppmi}')
-                    self._build_sppmi(db, tmp_sppmi, sppmi_total_lines, sppmi_opt.k)
-                db.attrs['completed'] = 1
-                db.close()
-                self.handle = h5py.File(data_path, 'r')
-                self.path = data_path
-            except Exception as e:
-                self.logger.error('Cannot create db: %s' % (str(e)))
-                self.logger.error(traceback.format_exc())
-                raise
-            finally:
-                if hasattr(self, 'patr'):
-                    if os.path.isfile(self.path):
-                        os.remove(self.path)
+
+        self.logger.debug('Building meta part...')
+        db, itemids = self._create(data_path,
+                                   {'main_path': stream_main_path,
+                                    'uid_path': stream_uid_path,
+                                    'iid_path': stream_iid_path})
+        sppmi_opt = self.opt.data.sppmi
+        try:
+            self.logger.info('Creating working data...')
+            if sppmi_opt:
+                tmp_main, validation_data, tmp_sppmi, sppmi_total_lines = \
+                    self._create_working_data(db, stream_main_path, itemids, True, sppmi_opt.windows)
+            else:
+                tmp_main, validation_data, tmp_sppmi, sppmi_total_lines = \
+                    self._create_working_data(db, stream_main_path, itemids, False)
+            self.logger.debug(f'Working data is created on {tmp_main}')
+            self.logger.info('Building data part...')
+            self._build_data(db, tmp_main, validation_data)
+            if sppmi_opt:
+                self.logger.debug(f'sppmi data is created on {tmp_sppmi}')
+                self._build_sppmi(db, tmp_sppmi, sppmi_total_lines, sppmi_opt.k)
+            db.attrs['completed'] = 1
+            db.close()
+            self.handle = h5py.File(data_path, 'r')
+            self.path = data_path
+        except Exception as e:
+            self.logger.error('Cannot create db: %s' % (str(e)))
+            self.logger.error(traceback.format_exc())
+            raise
+        finally:
+            if hasattr(self, 'patr'):
+                if os.path.isfile(self.path):
+                    os.remove(self.path)
         self.logger.info('DB built on %s' % data_path)
