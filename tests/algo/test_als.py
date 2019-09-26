@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
+import pkgutil
 import unittest
+
 from buffalo.misc import aux
 from buffalo.misc.log import set_log_level
 from buffalo.algo.options import ALSOption
@@ -76,6 +78,8 @@ class TestALS(TestBase):
         self._test10_fast_most_similar(ALS, opt)
 
     def test11_train_ml_20m_on_gpu(self):
+        if not pkgutil.find_loader("buffalo.algo.cuda._als"):
+            return
         opt = ALSOption().get_default_option()
         opt.num_workers = 8
         opt.d = 100
