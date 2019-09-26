@@ -39,11 +39,11 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
         self.logger = log.get_logger('ALS')
         self.opt, self.opt_path = self.get_option(opt_path)
-        self.obj = CuALS() if self.opt.accelerator else CyALS()
         if self.opt.accelerator and not inited_CUALS:
             self.logger.error("ImportError CuALS, no cuda library exists.")
             raise RuntimeError()
         assert self.obj.init(bytes(self.opt_path, 'utf-8')), 'cannot parse option file: %s' % opt_path
+
         self.data = None
         data = kwargs.get('data')
         data_opt = self.opt.get('data_opt')
