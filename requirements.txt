@@ -9,4 +9,3 @@ hyperopt
 tensorflow==1.14.0
 n2
 pytest
-pkgutils
