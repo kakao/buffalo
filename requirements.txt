@@ -3,9 +3,9 @@ fire
 pathlib
 numpy
 cython
-tqdm
 psutil
 h5py
 hyperopt
 tensorflow==1.14.0
 n2
+pytest

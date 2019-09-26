@@ -19,16 +19,8 @@ class MockParallel(Parallel):
 class TestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        if not os.path.isdir('ext/ml-100k/'):
-            raise RuntimeError('Cannot find the ./ml-100k directory')
         cls.ml_100k = './ext/ml-100k/'
-
-        if not os.path.isdir('ext/ml-20m'):
-            raise RuntimeError('Cannot find the ./ml-20m directory')
         cls.ml_20m = './ext/ml-20m/'
-
-        if not os.path.isdir('ext/text8'):
-            raise RuntimeError('Cannot find the ./text8 directory')
         cls.text8 = './ext/text8/'
         cls.temp_files = []
 

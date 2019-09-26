@@ -65,7 +65,7 @@ class MatrixMarket(Data):
         uid_path, iid_path, main_path = P['uid_path'], P['iid_path'], P['main_path']
         num_users, num_items, num_nnz = map(int, H.split())
         # Manually updating progress bar is a bit naive
-        with log.pbar(log.DEBUG, total=5, mininterval=30) as pbar:
+        with log.ProgressBar(log.DEBUG, total=5, mininterval=30) as pbar:
             uid_max_col = len(str(num_users)) + 1
             if uid_path:
                 uid_max_col = get_max_column_length(uid_path) + 1
@@ -133,7 +133,7 @@ class MatrixMarket(Data):
             vali_indexes = sorted(vali_indexes)
             target_index = vali_indexes[0] if vali_indexes else -1
             vali_indexes = vali_indexes[1:]
-            with log.pbar(log.INFO, total=total, mininterval=10) as pbar:
+            with log.ProgressBar(log.INFO, total=total, mininterval=10) as pbar:
                 while True:
                     buffered += fin.read(CHUNK_SIZE)
                     if buffered == '':
@@ -195,31 +195,31 @@ class MatrixMarket(Data):
             header = '%'
             while header.startswith('%'):
                 header = fin.readline()
-            self.logger.debug('Building meta part...')
-            db, num_header_lines = self._create(data_path,
-                                                {'main_path': mm_main_path,
-                                                 'uid_path': mm_uid_path,
-                                                 'iid_path': mm_iid_path},
-                                                header)
-            try:
-                num_header_lines += 1  # add metaline
-                self.logger.info('Creating working data...')
-                tmp_main, validation_data = self._create_working_data(db,
-                                                                      mm_main_path,
-                                                                      num_header_lines)
-                self.logger.debug(f'Working data is created on {tmp_main}')
-                self.logger.info('Building data part...')
-                self._build_data(db, tmp_main, validation_data)
-                db.attrs['completed'] = 1
-                db.close()
-                self.handle = h5py.File(data_path, 'r')
-                self.path = data_path
-            except Exception as e:
-                self.logger.error('Cannot create db: %s' % (str(e)))
-                self.logger.error(traceback.format_exc().splitlines())
-                raise
-            finally:
-                if hasattr(self, 'patr'):
-                    if os.path.isfile(self.path):
-                        os.remove(self.path)
+        self.logger.debug('Building meta part...')
+        db, num_header_lines = self._create(data_path,
+                                            {'main_path': mm_main_path,
+                                                'uid_path': mm_uid_path,
+                                                'iid_path': mm_iid_path},
+                                            header)
+        try:
+            num_header_lines += 1  # add metaline
+            self.logger.info('Creating working data...')
+            tmp_main, validation_data = self._create_working_data(db,
+                                                                    mm_main_path,
+                                                                    num_header_lines)
+            self.logger.debug(f'Working data is created on {tmp_main}')
+            self.logger.info('Building data part...')
+            self._build_data(db, tmp_main, validation_data)
+            db.attrs['completed'] = 1
+            db.close()
+            self.handle = h5py.File(data_path, 'r')
+            self.path = data_path
+        except Exception as e:
+            self.logger.error('Cannot create db: %s' % (str(e)))
+            self.logger.error(traceback.format_exc().splitlines())
+            raise
+        finally:
+            if hasattr(self, 'patr'):
+                if os.path.isfile(self.path):
+                    os.remove(self.path)
         self.logger.info('DB built on %s' % data_path)

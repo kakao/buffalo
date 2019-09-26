@@ -58,7 +58,7 @@ class Parallel(abc.ABC):
         :param use_mmap: This parameter is passed to N2 when hnsw_index given for the group. (default: True)
         :return: list of tuple(key, score)
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def _topk_recommendation(self, indexes, FactorP, FactorQ, topk, pool):
         dummy_bias = np.array([[]], dtype=np.float32)
@@ -82,7 +82,7 @@ class Parallel(abc.ABC):
         :param bool repr: Set True, to return as item key instead index.
         :return: list of tuple(key, score)
         """
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class ParALS(Parallel):
@@ -132,7 +132,9 @@ class ParALS(Parallel):
             pool = np.array([], dtype=np.int32)
         topks, scores = super()._topk_recommendation(indexes, self.algo.P, self.algo.Q, topk, pool)
         if repr:
-            topks = [[self.algo._idmanager.itemids[t] for t in tt if t != -1] for tt in topks]
+            mo = np.int32(-1)
+            topks = [[self.algo._idmanager.itemids[t] for t in tt if t != mo]
+                     for tt in topks]
         return keys, topks, scores
 
 
@@ -178,11 +180,13 @@ class ParW2V(Parallel):
             pool = np.array([], dtype=np.int32)
         topks, scores = super()._most_similar('item', indexes, self.algo.L0, topk, pool, ef_search, use_mmap)
         if repr:
-            topks = [[self.algo._idmanager.itemids[t] for t in tt if t != -1] for tt in topks]
+            mo = np.int32(-1)
+            topks = [[self.algo._idmanager.itemids[t] for t in tt if t != mo]
+                     for tt in topks]
         return topks, scores
 
     def topk_recommendation(self, keys, topk=10, pool=None):
-        raise NotImplemented
+        raise NotImplementedError
 
 
 # TODO: Re-think about CFR internal data structure.

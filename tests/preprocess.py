@@ -9,49 +9,6 @@ from buffalo.misc.log import set_log_level
 from buffalo.data.mm import MatrixMarketOptions
 
 
-def iterate_brunch_data_files(data_root):
-    for fname in os.listdir(data_root):
-        if len(fname) != len('2018100100_2018100103'):
-            continue
-        path = os.path.join(data_root, fname)
-        yield path, fname
-
-
-def make_mm_from_stream(stream_dir, to_dir):
-    os.makedirs(to_dir, exist_ok=True)
-
-    user_path, main_path = os.path.join(stream_dir, 'uid'), os.path.join(stream_dir, 'main')
-    uids = {u.strip(): idx + 1 for idx, u in enumerate(open(user_path))}
-
-    iids = set()
-    num_nnz = 0
-    with open(main_path) as fin:
-        for line in fin:
-            items = set()
-            for item in line.strip().split():
-                items.add(item)
-            iids |= items
-            num_nnz += len(items)
-    iids = {i: idx + 1 for idx, i in enumerate(iids)}
-
-    with open(os.path.join(to_dir, 'main'), 'w') as fout:
-        fout.write('%MatrixMarket matrix coordinate integer general\n')
-        fout.write('%d %d %d\n' % (len(uids), len(iids), num_nnz))
-        for idx, line in enumerate(open(main_path)):
-            items = line.strip().split()
-            items = Counter(items)
-            for item, cnt in items.items():
-                fout.write('%s %s %s\n' % (idx + 1, iids[item], cnt))
-    with open(os.path.join(to_dir, 'uid'), 'w') as fout:
-        uids = sorted(uids.items(), key=lambda x: x[1])
-        for u, _ in uids:
-            fout.write(u + '\n')
-    with open(os.path.join(to_dir, 'iid'), 'w') as fout:
-        iids = sorted(iids.items(), key=lambda x: x[1])
-        for i, _ in iids:
-            fout.write(i + '\n')
-
-
 def prepare_dataset():
     logger = log.get_logger()
     if not os.path.isdir('ext/ml-100k/'):
@@ -155,44 +112,6 @@ def prepare_dataset():
                 with open('./ext/text8/main', 'w') as fout:
                     for i in range(0, len(words), 1000):
                         fout.write('%s\n' % ' '.join(words[i:i + 1000]))
-
-    if not os.path.isdir('brunch'):
-        logger.warn('Cannot find the brunch directory')
-    else:
-        if not os.path.isfile('./ext/brunch/main'):
-            os.makedirs('./ext/brunch/tmp', exist_ok=True)
-            to_dir = './ext/brunch/tmp'
-
-            logger.info('dividing...')
-            num_chunks = 30
-            fouts = {i: open(os.path.join(to_dir, str(i)), 'w')
-                    for i in range(num_chunks)}
-            for path, fname in iterate_brunch_data_files('./ext/brunch'):
-                for line in open(path):
-                    uid = line.strip().split()[0]
-                    fid = hash(uid) % num_chunks
-                    fouts[fid].write(line)
-            for val in fouts.values():
-                val.close()
-
-            logger.info('merging...')
-            with open('./ext/brunch/main', 'w') as fout, \
-                    open('./ext/brunch/uid', 'w') as fout_uid:
-                for fid in fouts.keys():
-                    seens = {}
-                    chunk_path = os.path.join(to_dir, str(fid))
-                    for line in open(chunk_path):
-                        line = line.strip().split()
-                        uid, seen = line[0], line[1:]
-                        seens.setdefault(uid, []).extend(seen)
-                    for uid, seen in seens.items():
-                        fout.write(' '.join(seen) + '\n')
-                        fout_uid.write(uid + '\n')
-                for fid in fouts.keys():
-                    chunk_path = os.path.join(to_dir, str(fid))
-                    os.remove(chunk_path)
-    make_mm_from_stream('./ext/brunch/', './ext/brunch/mm')
-
 
 
 if __name__ == '__main__':

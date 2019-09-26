@@ -7,12 +7,11 @@ import os
 import sys
 import pathlib
 import platform
+import sysconfig
 import subprocess
 from setuptools import setup
-from configparser import ConfigParser
 from cuda_setup import CUDA, build_ext
 from distutils.extension import Extension
-from setuptools.command.install import install
 
 import n2
 import numpy
@@ -27,7 +26,7 @@ n2_shared_object = n2.__file__
 
 MAJOR = 1
 MINOR = 0
-MICRO = 4
+MICRO = 10
 Release = True
 STAGE = {True: '', False: 'b'}.get(Release)
 VERSION = f'{MAJOR}.{MINOR}.{MICRO}{STAGE}'
@@ -46,6 +45,8 @@ EXTRA_INCLUDE_DIRS = [numpy_include_dirs,
                       '3rd/json11',
                       '3rd/spdlog/include',
                       '3rd/eigen3']
+CLIB_DIR = os.path.join(sysconfig.get_path('purelib'), 'buffalo')
+LIBRARY_DIRS = [CLIB_DIR]
 
 
 def get_extend_compile_flags():
@@ -68,31 +69,36 @@ extensions = [
               sources=['buffalo/algo/_als.cpp'],
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
-              library_dirs=['/usr/local/lib64'],
+              library_dirs=LIBRARY_DIRS,
+              runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._cfr",
               sources=['buffalo/algo/_cfr.cpp'],
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
-              library_dirs=['/usr/local/lib64'],
+              library_dirs=LIBRARY_DIRS,
+              runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._bpr",
               sources=['buffalo/algo/_bpr.cpp'],
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
-              library_dirs=['/usr/local/lib64'],
+              library_dirs=LIBRARY_DIRS,
+              runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._w2v",
               sources=['buffalo/algo/_w2v.cpp'],
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
-              library_dirs=['/usr/local/lib64'],
+              library_dirs=LIBRARY_DIRS,
+              runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.misc.log",
-              sources=['buffalo/misc/log.cpp'],
+    Extension(name="buffalo.misc._log",
+              sources=['buffalo/misc/_log.cpp'],
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
-              library_dirs=['/usr/local/lib64'],
+              library_dirs=LIBRARY_DIRS,
+              runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.data.fileio",
               sources=['buffalo/data/fileio.cpp'],
@@ -102,7 +108,8 @@ extensions = [
               sources=['buffalo/parallel/_core.cpp'],
               libraries=['gomp'],
               include_dirs=EXTRA_INCLUDE_DIRS + ['./3rd/n2/include'],
-              library_dirs=['/usr/local/lib64'],
+              library_dirs=LIBRARY_DIRS,
+              runtime_library_dirs=LIBRARY_DIRS,
               extra_objects=[n2_shared_object],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
 ]
@@ -170,7 +177,7 @@ class BuildExtension(build_ext, object):
                      'buffalo/algo/cuda/_als.pyx',
                      'buffalo/algo/_bpr.pyx',
                      'buffalo/algo/_w2v.pyx',
-                     'buffalo/misc/log.pyx',
+                     'buffalo/misc/_log.pyx',
                      'buffalo/algo/_cfr.pyx',
                      'buffalo/parallel/_core.pyx',
                      'buffalo/data/fileio.pyx']
@@ -182,20 +189,13 @@ class BuildExtension(build_ext, object):
         cwd = pathlib.Path().absolute()
 
         build_temp = pathlib.Path(self.build_temp)
-        try:
-            build_temp.mkdir(parents=True)
-        except OSError:
-            pass
-        libdir = pathlib.Path(self.build_lib)
-        try:
-            libdir.mkdir(parents=True)
-        except OSError:
-            pass
+        build_temp.mkdir(parents=True, exist_ok=True)
+
         build_type = 'Debug' if self.debug else 'Release'
 
         cmake_args = [
             '-DCMAKE_BUILD_TYPE=' + build_type,
-            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + str(libdir.absolute()),
+            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + CLIB_DIR,
         ]
 
         build_args = []
@@ -203,25 +203,14 @@ class BuildExtension(build_ext, object):
         os.chdir(str(build_temp))
         self.spawn(['cmake', str(cwd)] + cmake_args)
         if not self.dry_run:
-            self.spawn(['cmake', '--build', '.'] + build_args + ['--target', 'install'])
+            self.spawn(['cmake', '--build', '.'] + build_args)
         os.chdir(str(cwd))
-
-
-class PostInstallCommand(install):
-    def run(self):
-        subprocess.call(['git', 'submodule', 'update', '--init'])
-        install.run(self)
-        subprocess.call('echo /usr/local/lib64 > /etc/ld.so.conf.d/buffalo.conf', shell=True)
-        if CUDA:
-            subprocess.call(f'echo {CUDA["lib64"]} >> /etc/ld.so.conf.d/buffalo.conf', shell=True)
-        subprocess.call('ldconfig', shell=True)
 
 
 def setup_package():
     write_version_py()
     cmdclass = {
-        'build_ext': BuildExtension,
-        'install': PostInstallCommand
+        'build_ext': BuildExtension
     }
 
     build_requires = [l.strip() for l in open('requirements.txt')]
@@ -253,7 +242,8 @@ def setup_package():
             'console_scripts': [
                 'Buffalo = buffalo.cli:_cli_buffalo',
             ]
-        }
+        },
+        python_requires='>=3.6',
     )
 
     metadata['version'] = VERSION

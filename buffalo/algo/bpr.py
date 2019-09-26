@@ -5,12 +5,11 @@ import time
 import json
 
 import numpy as np
-from numpy.linalg import norm
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
-from buffalo.data.base import Data
 from buffalo.misc import aux, log
+from buffalo.data.base import Data
 from buffalo.algo._bpr import CyBPRMF
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import BPRMFOption
@@ -104,7 +103,12 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
-        topks = super()._get_topk_recommendation(p, self.Q, pool, topk, self.opt.num_workers)
+        Q = self.Q
+        if self.opt.use_bias:
+            p = np.hstack([p, np.ones(shape=(p.shape[0], 1))]).astype("float32")
+            Q = np.hstack([Q, self.Qb]).astype("float32")
+
+        topks = super()._get_topk_recommendation(p, Q, pool, topk, self.opt.num_workers)
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk, pool):
@@ -151,11 +155,11 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def _iterate(self):
         header = self.data.get_header()
-        end = header['num_users']
+        # end = header['num_users']
         update_t, feed_t, updated = 0, 0, 0
         self.buf.set_group('rowwise')
-        with log.pbar(log.DEBUG,
-                      total=header['num_nnz'], mininterval=30) as pbar:
+        with log.ProgressBar(log.DEBUG,
+                             total=header['num_nnz'], mininterval=30) as pbar:
             start_t = time.time()
             for sz in self.buf.fetch_batch():
                 updated += sz
@@ -176,7 +180,7 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
                                      self._sub_samples[2])
 
     def train(self):
-        rmse, self.validation_result = None, {}
+        self.validation_result = {}
         self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
         self.sampling_loss_samples()
@@ -187,7 +191,6 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
             self._iterate()
             self.obj.wait_until_done()
             loss = self.compute_loss() if self.opt.compute_loss_on_training else 0.0
-            train_t = time.time() - start_t
 
             metrics = {'train_loss': loss}
             if self.opt.validation and self.opt.evaluation_on_learning and self.periodical(self.opt.evaluation_period, i):

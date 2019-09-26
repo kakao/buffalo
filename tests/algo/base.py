@@ -65,16 +65,8 @@ class MockAlgo(Algo, Optimizable, TensorboardExtention):
 class TestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        if not os.path.isdir('ext/ml-100k/'):
-            raise RuntimeError('Cannot find the ./ext/ml-100k directory')
         cls.ml_100k = './ext/ml-100k/'
-
-        if not os.path.isdir('ext/ml-20m'):
-            raise RuntimeError('Cannot find the ./ext/ml-20m directory')
         cls.ml_20m = './ext/ml-20m/'
-
-        if not os.path.isdir('ext/text8'):
-            raise RuntimeError('Cannot find the ./ext/text8 directory')
         cls.text8 = './ext/text8/'
         cls.temp_files = []
 
@@ -263,4 +255,4 @@ class TestBase(unittest.TestCase):
         for i in range(100):
             model.most_similar(q1, pool=indexes)
         elapsed_b = time.time() - start_t
-        self.assertTrue(elapsed_a > elapsed_b * 1.5)
+        self.assertTrue(elapsed_a > elapsed_b)

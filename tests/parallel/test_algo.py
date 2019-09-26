@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+os.environ['OMP_NUM_THREADS'] = '1'
 import time
 import unittest
 from itertools import combinations
@@ -48,6 +49,7 @@ class TestAlgo(TestBase):
         data_opt.input.main = self.ml_100k + 'main'
         data_opt.input.uid = self.ml_100k + 'uid'
         data_opt.input.iid = self.ml_100k + 'iid'
+        data_opt.data.use_cache = True
         data_opt.data.path = './ml100k.h5py'
         return data_opt
 
@@ -75,7 +77,7 @@ class TestAlgo(TestBase):
         for a, b in combinations([topks0, topks1, topks2], 2):
             self.assertEqual(a, b)
         for a, b in combinations([scores0, scores1, scores2], 2):
-            self.assertTrue(np.allclose(a, b))
+            self.assertTrue(np.allclose(a, b, atol=1e-07))
 
     def test02_most_similar(self):
         set_log_level(1)
@@ -125,7 +127,7 @@ class TestAlgo(TestBase):
 
         self.assertTrue(naive_elapsed > parbpr_elapsed * 3.0)
 
-    def test04_most_similar(self):
+    def test04_text8_most_similar(self):
         set_log_level(1)
         model = self.load_text8_model()
         par = ParW2V(model)
@@ -143,7 +145,7 @@ class TestAlgo(TestBase):
 
         self.assertTrue(naive_elapsed > par_elapsed * 3.0)
 
-    def test05_topk(self):
+    def test05_topk_MT(self):
         set_log_level(2)
         data_opt = self.get_ml100k_mm_opt()
         opt = ALSOption().get_default_option()
@@ -152,22 +154,22 @@ class TestAlgo(TestBase):
         als = ALS(opt, data_opt=data_opt)
         als.initialize()
         als.train()
-        pals = ParALS(als)
 
         als.build_userid_map()
-        all_keys = als._idmanager.userids[::]
+        all_keys = als._idmanager.userids
         start_t = time.time()
-        naive = als.topk_recommendation(all_keys, topk=10)
+        naive = als.topk_recommendation(all_keys, topk=5)
         naive_elapsed = time.time() - start_t
 
-        start_t = time.time()
+        pals = ParALS(als)
         pals.num_workers = 4
-        qkeys1, topks1, scores1 = pals.topk_recommendation(all_keys, topk=10, repr=True)
+        start_t = time.time()
+        qkeys1, topks1, scores1 = pals.topk_recommendation(all_keys, topk=5, repr=True)
         par_elapsed = time.time() - start_t
         self.assertEqual(len(qkeys1), len(naive))
         for q, t in zip(qkeys1, topks1):
             self.assertEqual(naive[q], t)
-        self.assertTrue(naive_elapsed > par_elapsed * 2.0)
+        self.assertTrue(naive_elapsed > par_elapsed * 1.5)
 
     def test06_topk_pool(self):
         set_log_level(2)

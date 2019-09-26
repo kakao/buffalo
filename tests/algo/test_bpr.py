@@ -12,11 +12,11 @@ from .base import TestBase
 
 
 class TestBPRMF(TestBase):
-    def test0_get_default_option(self):
+    def test00_get_default_option(self):
         BPRMFOption().get_default_option()
         self.assertTrue(True)
 
-    def test1_is_valid_option(self):
+    def test01_is_valid_option(self):
         opt = BPRMFOption().get_default_option()
         self.assertTrue(BPRMFOption().is_valid_option(opt))
         opt['save_best'] = 1
@@ -24,22 +24,22 @@ class TestBPRMF(TestBase):
         opt['save_best'] = False
         self.assertTrue(BPRMFOption().is_valid_option(opt))
 
-    def test2_init_with_dict(self):
+    def test02_init_with_dict(self):
         set_log_level(3)
         opt = BPRMFOption().get_default_option()
         BPRMF(opt)
         self.assertTrue(True)
 
-    def test3_init(self):
+    def test03_init(self):
         opt = BPRMFOption().get_default_option()
         self._test3_init(BPRMF, opt)
 
-    def test4_train(self):
+    def test04_train(self):
         opt = BPRMFOption().get_default_option()
         opt.d = 5
         self._test4_train(BPRMF, opt)
 
-    def test5_validation(self):
+    def test05_validation(self):
         np.random.seed(7)
         opt = BPRMFOption().get_default_option()
         opt.d = 5
@@ -52,20 +52,20 @@ class TestBPRMF(TestBase):
 
         self._test5_validation(BPRMF, opt, ndcg=0.03, map=0.02)
 
-    def test6_topk(self):
+    def test06_topk(self):
         opt = BPRMFOption().get_default_option()
         opt.d = 5
         opt.num_iters = 200
         opt.validation = aux.Option({'topk': 10})
         self._test6_topk(BPRMF, opt)
 
-    def test7_train_ml_20m(self):
+    def test07_train_ml_20m(self):
         opt = BPRMFOption().get_default_option()
         opt.num_workers = 8
         opt.validation = aux.Option({'topk': 10})
         self._test7_train_ml_20m(BPRMF, opt)
 
-    def test8_serialization(self):
+    def test08_serialization(self):
         opt = BPRMFOption().get_default_option()
         opt.num_iters = 200
         opt.d = 5
@@ -73,7 +73,7 @@ class TestBPRMF(TestBase):
 
         self._test8_serialization(BPRMF, opt)
 
-    def test9_compact_serialization(self):
+    def test09_compact_serialization(self):
         opt = BPRMFOption().get_default_option()
         opt.num_iters = 200
         opt.d = 5

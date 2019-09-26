@@ -39,7 +39,7 @@ class TestAnn(TestBase):
         c.save()
         return c
 
-    def test01_most_similar(self):
+    def test01_text8_most_similar(self):
         set_log_level(1)
         model = self.load_text8_model()
         index = HnswIndex(model.L0.shape[1])
@@ -68,7 +68,7 @@ class TestAnn(TestBase):
         ann_elapsed = time.time() - start_t
         self.assertTrue(naive_elapsed > par_elapsed * 1.5 > ann_elapsed * 5.0,
                         msg=f'{naive_elapsed} > {par_elapsed} > {ann_elapsed}')
-        idnex.unload()
+        index.unload()
         os.remove('n2.bin')
 
 

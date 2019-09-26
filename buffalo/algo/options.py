@@ -57,7 +57,7 @@ class AlgoOption(InputOptions):
     def is_valid_option(self, opt):
         b = super().is_valid_option(opt)
         for f in ['num_workers']:
-            if not f in opt:
+            if f not in opt:
                 raise RuntimeError(f'{f} not defined')
         return b
 

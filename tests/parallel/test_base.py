@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import time
+import psutil
 import unittest
 
 import numpy as np
@@ -43,12 +44,15 @@ class TestParallelBase(TestBase):
         Q = self.get_factors(128, 5)
         indexes = np.array([0, 1, 2, 3, 4], dtype=np.int32)
         pool = np.array([], dtype=np.int32)
-        topks1, scores1 = mp._most_similar(indexes, Q, 10, pool)
+        topks1, scores1 = mp._most_similar('item', indexes, Q, 10, pool, -1, True)
         topks2, scores2 = self.get_most_similar(indexes, Q, 10)
-        self.assertTrue(np.allclose(topks1, topks2))
-        self.assertTrue(np.allclose(scores1, scores2))
+        self.assertTrue(np.allclose(topks1, topks2, atol=1e-07))
+        self.assertTrue(np.allclose(scores1, scores2, atol=1e-07))
 
     def test02_most_similar(self):
+        num_cpu = psutil.cpu_count()
+        if num_cpu < 2:
+            return
         set_log_level(1)
         als = ALS()
         mp = MockParallel(als)
@@ -58,16 +62,18 @@ class TestParallelBase(TestBase):
         pool = np.array([], dtype=np.int32)
         elapsed = []
         results = []
-        for num_workers in [1, 2, 4, 8]:
+        for num_workers in [1] + [i * 2
+                                  for i in range(1, num_cpu + 1)
+                                  if i * 2 < num_cpu][:3]:
             mp.num_workers = num_workers
             start_t = time.time()
-            ret = mp._most_similar(indexes, Q, 10, pool)
+            ret = mp._most_similar('item', indexes, Q, 10, pool, -1, True)
             elapsed.append(time.time() - start_t)
             results.append(ret)
         for i in range(1, len(elapsed)):
-            self.assertTrue(elapsed[i - 1] > elapsed[i] * 1.5)
-            self.assertTrue(np.allclose(results[i - 1][0], results[i][0]))
-            self.assertTrue(np.allclose(results[i - 1][1], results[i][1]))
+            self.assertTrue(elapsed[i - 1] > elapsed[i] * 1.2)
+            self.assertTrue(np.allclose(results[i - 1][0], results[i][0], atol=1e-07))
+            self.assertTrue(np.allclose(results[i - 1][1], results[i][1], atol=1e-07))
 
     def test03_pool(self):
         set_log_level(1)
@@ -76,7 +82,7 @@ class TestParallelBase(TestBase):
         Q = self.get_factors(128, 5)
         indexes = np.array([0, 1, 2, 3, 4], dtype=np.int32)
         pool = np.array([5, 6, 7], dtype=np.int32)
-        topks, scores = mp._most_similar(indexes, Q, 10, pool)
+        topks, scores = mp._most_similar('item', indexes, Q, 10, pool, -1, True)
         self.assertTrue(set(topks[::].reshape(10 * 5)), set([5, 6, 7, -1]))
 
     def test04_topk(self):
@@ -89,8 +95,8 @@ class TestParallelBase(TestBase):
         pool = np.array([], dtype=np.int32)
         topks1, scores1 = mp._topk_recommendation(q_indexes, P, Q, 10, pool)
         topks2, scores2 = self.get_topk(q_indexes, P, Q, 10)
-        self.assertTrue(np.allclose(topks1, topks2))
-        self.assertTrue(np.allclose(scores1, scores2))
+        self.assertTrue(np.allclose(topks1, topks2, atol=1e-07))
+        self.assertTrue(np.allclose(scores1, scores2, atol=1e-07))
 
 
 if __name__ == '__main__':

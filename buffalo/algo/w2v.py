@@ -8,8 +8,8 @@ import numpy as np
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
-from buffalo.data.base import Data
 from buffalo.misc import aux, log
+from buffalo.data.base import Data
 from buffalo.algo._w2v import CyW2V
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import W2VOption
@@ -162,11 +162,11 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
         for i in range(total_vocab):
             summed += dist0[i]
             dist[i] = summed * domain
-        assert(dist[-1] == domain)
+        assert abs(dist[-1] - domain) < 3 # small difference is okay
         return dist
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
-        raise NotImplemented
+        raise NotImplementedError
 
     def _get_most_similar_item(self, col, topk, pool):
         if not isinstance(col, np.ndarray):
@@ -182,11 +182,11 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def _iterate(self):
         header = self.data.get_header()
-        end = header['num_users']
+        # end = header['num_users']
         update_t, feed_t, updated = 0, 0, 0
         self.buf.set_group('rowwise')
-        with log.pbar(log.DEBUG,
-                      total=header['num_nnz'], mininterval=15) as pbar:
+        with log.ProgressBar(log.DEBUG,
+                             total=header['num_nnz'], mininterval=15) as pbar:
             start_t = time.time()
             for sz in self.buf.fetch_batch():
                 updated += sz
@@ -207,7 +207,8 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
             start_t = time.time()
             self._iterate()
             self.logger.info('Iteration %s: Elapsed %.3f secs' % (i + 1, time.time() - start_t))
-        loss = self.obj.join()
+        # loss = self.obj.join()
+        self.obj.join()
         return {}
 
     def _optimize(self, params):

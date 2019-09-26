@@ -1,0 +1,6 @@
+tests/ext/ml-100k/main filter=lfs diff=lfs merge=lfs -text
+tests/ext/ml-100k/uid filter=lfs diff=lfs merge=lfs -text
+tests/ext/ml-100k/iid filter=lfs diff=lfs merge=lfs -text
+tests/ext/ml-20m/stream filter=lfs diff=lfs merge=lfs -text
+tests/ext/text8/main filter=lfs diff=lfs merge=lfs -text
+tests/ext/ml-100k/stream filter=lfs diff=lfs merge=lfs -text

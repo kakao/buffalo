@@ -12,15 +12,14 @@ from buffalo.algo._als import CyALS
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import ALSOption
 from buffalo.algo.optimize import Optimizable
-from buffalo.algo.tensorflow._als import TFALS
 from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
+inited_CUALS = True
 try:
     from buffalo.algo.cuda._als import CyALS as CuALS
-except Exception as e:
-    log.get_logger("system").error(f"ImportError CuALS, no cuda library exists. error message: {e}")
-    CuALS = lambda x: ()
+except Exception:
+    inited_CUALS = False
 
 
 class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
@@ -41,9 +40,11 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.logger = log.get_logger('ALS')
         self.opt, self.opt_path = self.get_option(opt_path)
         self.obj = CuALS() if self.opt.accelerator else CyALS()
+        if self.opt.accelerator and not inited_CUALS:
+            self.logger.error("ImportError CuALS, no cuda library exists.")
+            raise RuntimeError()
         assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
             'cannot parse option file: %s' % opt_path
-        self.vdim = self.obj.get_vdim() if self.opt.accelerator else self.opt.d
         self.data = None
         data = kwargs.get('data')
         data_opt = self.opt.get('data_opt')
@@ -80,6 +81,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def init_factors(self):
         assert self.data, 'Data is not setted'
+        self.vdim = self.obj.get_vdim() if self.opt.accelerator else self.opt.d
         header = self.data.get_header()
         for name, rows in [('P', header['num_users']), ('Q', header['num_items'])]:
             setattr(self, name, None)
@@ -116,8 +118,8 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         loss_nume, loss_deno = 0.0, 0.0
         update_t, feed_t, updated = el, 0, 0
         buf.set_group(group)
-        with log.pbar(log.DEBUG, desc='%s' % group,
-                      total=header['num_nnz'], mininterval=30) as pbar:
+        with log.ProgressBar(log.DEBUG, desc='%s' % group,
+                             total=header['num_nnz'], mininterval=30) as pbar:
             for sz in buf.fetch_batch():
                 updated += sz
                 start_x, next_x, indptr, keys, vals = buf.get()

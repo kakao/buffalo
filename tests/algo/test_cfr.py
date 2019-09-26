@@ -12,11 +12,11 @@ from buffalo.data.stream import StreamOptions
 
 
 class TestCFR(TestBase):
-    def test0_get_default_option(self):
+    def test00_get_default_option(self):
         CFROption().get_default_option()
         self.assertTrue(True)
 
-    def test1_is_valid_option(self):
+    def test01_is_valid_option(self):
         opt = CFROption().get_default_option()
         self.assertTrue(CFROption().is_valid_option(opt))
         opt['save_best'] = 1
@@ -24,13 +24,13 @@ class TestCFR(TestBase):
         opt['save_best'] = False
         self.assertTrue(CFROption().is_valid_option(opt))
 
-    def test2_init_with_dict(self):
+    def test02_init_with_dict(self):
         set_log_level(3)
         opt = CFROption().get_default_option()
         CFR(opt)
         self.assertTrue(True)
 
-    def test3_init(self):
+    def test03_init(self):
         set_log_level(3)
         opt = CFROption().get_default_option()
         opt.d = 20
@@ -48,7 +48,7 @@ class TestCFR(TestBase):
         self.assertEqual(c.U.shape, (943, 20))
         self.assertEqual(c.I.shape, (1682, 20))
 
-    def test4_train(self):
+    def test04_train(self):
         set_log_level(3)
         opt = CFROption().get_default_option()
         data_opt = StreamOptions().get_default_option()
@@ -64,7 +64,7 @@ class TestCFR(TestBase):
         c.train()
         self.assertTrue(True)
 
-    def test5_validation(self, ndcg=0.06, map=0.04):
+    def test05_validation(self, ndcg=0.06, map=0.04):
         set_log_level(3)
         opt = CFROption().get_default_option()
         opt.validation = aux.Option({'topk': 10})
@@ -86,7 +86,7 @@ class TestCFR(TestBase):
         self.assertTrue(results['ndcg'] > ndcg)
         self.assertTrue(results['map'] > map)
 
-    def test6_topk(self):
+    def test06_topk(self):
         set_log_level(1)
         opt = CFROption().get_default_option()
         opt.validation = aux.Option({'topk': 10})
@@ -110,7 +110,7 @@ class TestCFR(TestBase):
         self.assertIn('180.Return_of_the_Jedi_(1983)', ret_b)
         self.assertEqual(ret_a, ret_b)
 
-    def test7_train_ml20m(self):
+    def test07_train_ml_20m(self):
         set_log_level(3)
         opt = CFROption().get_default_option()
         data_opt = StreamOptions().get_default_option()
@@ -127,7 +127,7 @@ class TestCFR(TestBase):
         c.train()
         self.assertTrue(True)
 
-    def test8_serialization(self):
+    def test08_serialization(self):
         set_log_level(1)
 
         opt = CFROption().get_default_option()
@@ -150,7 +150,7 @@ class TestCFR(TestBase):
         ret_a = [x for x, _ in c.most_similar('49.Star_Wars_(1977)')]
         self.assertIn('180.Return_of_the_Jedi_(1983)', ret_a)
 
-    def test9_compact_serialization(self):
+    def test09_compact_serialization(self):
         set_log_level(1)
 
         opt = CFROption().get_default_option()
