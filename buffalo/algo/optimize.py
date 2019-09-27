@@ -85,5 +85,7 @@ class Optimizable(object):
             tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick
             self.finalize_tensorboard()
 
+            return self.get_optimization_data()
+
     def get_optimization_data(self):
         return self._optimization_info
