@@ -59,6 +59,10 @@ class AlgoOption(InputOptions):
         for f in ['num_workers']:
             if f not in opt:
                 raise RuntimeError(f'{f} not defined')
+        if self.opt.evaluation_on_learning is True:
+            if self.opt.num_iters < self.opt.evaluation_period:
+                self.opt.evaluation_period = self.opt.num_iters
+            self.logger.info(f'Validation period should be smaller than or eqaual to the number of iterations., validation period set {self.opt.num_iters} == the number of iterations')
         return b
 
 

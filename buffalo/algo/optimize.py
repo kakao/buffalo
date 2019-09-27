@@ -2,7 +2,7 @@
 import abc
 from buffalo.misc import aux, log
 
-from hyperopt import hp, fmin, tpe, Trials
+from hyperopt import hp, fmin, tpe, Trials, space_eval
 
 
 class Optimizable(object):
@@ -26,6 +26,12 @@ class Optimizable(object):
         raise NotImplementedError
 
     def optimize(self):
+        assert self.opt.evaluation_on_learning, \
+            'evaluation must be set to be true to do hyperparameter optimization.'
+        if self.opt.optimize.loss.startswith("val"):
+            assert self.opt.validation, \
+                'validation option must be set to be true to do hyperparameter optimization with validation results.'
+
         opt = self.opt.optimize
         iters, max_trials = 0, opt.get('max_trials', -1)
         space = self._get_space(opt.space)
@@ -49,12 +55,12 @@ class Optimizable(object):
             tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick
             while(max_trials):
                 with log.supress_log_level(log.WARN):
-                    best = fmin(fn=self._optimize,
-                                space=space,
-                                algo=tpe.suggest,
-                                max_evals=len(self._optimization_info['trials'].trials) + 1,
-                                trials=self._optimization_info['trials'],
-                                show_progressbar=False)
+                    raw_best_parameters = fmin(fn=self._optimize,
+                                               space=space,
+                                               algo=tpe.suggest,
+                                               max_evals=len(self._optimization_info['trials'].trials) + 1,
+                                               trials=self._optimization_info['trials'],
+                                               show_progressbar=False)
                 tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick
                 self.update_tensorboard_data(self._optimize_loss)
                 tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick
@@ -62,9 +68,11 @@ class Optimizable(object):
                 max_trials -= 1
                 if self._optimization_info.get('best', {}).get('loss', 987654321) > self._optimize_loss['loss']:
                     is_first_time = self._optimization_info['best'] == {}
-                    best = self._optimize_loss  # we cannot use return value of hyperopt due to randint behavior patch
-                    self.logger.info(f'Found new best parameters: {best} @ iter {iters}')
-                    self._optimization_info['best'] = best
+                    best_parameters = space_eval(space, raw_best_parameters)
+                    best_loss = self._optimize_loss  # we cannot use return value of hyperopt due to randint behavior patch
+                    self.logger.info(f'Found new best parameters: {best_parameters} @ iter {iters}')
+                    self._optimization_info['best'] = best_loss
+                    self._optimization_info['best_parameters'] = best_parameters
                     if opt.deployment and (is_first_time or not opt.min_trials or opt.min_trials >= iters):
                         if not self.opt.model_path:
                             raise RuntimeError('Failed to dump model: model path is not defined')
