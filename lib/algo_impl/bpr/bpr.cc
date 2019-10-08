@@ -461,8 +461,7 @@ double CBPRMF::compute_loss(int32_t num_loss_samples,
         loss[omp_get_thread_num()] += log(1.0 + exp(-x_uij));
     }
     double l = accumulate(loss.begin(), loss.end(), 0.0);
-    l /= (double)loss.size();
-    return l;
+    return l / (double) num_loss_samples;
 }
 
 void CBPRMF::update_adam(

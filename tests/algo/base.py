@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import time
+import logging
 import unittest
+logging.getLogger('tensorflow').disabled = True
 
 import numpy as np
 from hyperopt import STATUS_OK
