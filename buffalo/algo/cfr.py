@@ -230,7 +230,6 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.logger.info(params)
         self.initialize()
         loss = self.train()
-        loss['eval_time'] = time.time()
         loss['loss'] = loss.get(self.opt.optimize.loss)
         # TODO: deal with failure of training
         loss['status'] = HOPT_STATUS_OK

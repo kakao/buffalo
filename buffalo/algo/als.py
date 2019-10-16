@@ -206,7 +206,6 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.logger.info(params)
         self.initialize()
         loss = self.train()
-        loss['eval_time'] = time.time()
         loss['loss'] = loss.get(self.opt.optimize.loss)
         if any([metric in self.opt.optimize.loss for metric in ['ndcg', 'map', 'accracy']]):
             loss['loss'] *= -1

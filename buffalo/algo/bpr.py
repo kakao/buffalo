@@ -268,7 +268,6 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
         self.logger.info(params)
         self.init_factors()
         loss = self.train()
-        loss['eval_time'] = time.time()
         loss['loss'] = loss.get(self.opt.optimize.loss)
         # TODO: deal with failture of training
         loss['status'] = HOPT_STATUS_OK
