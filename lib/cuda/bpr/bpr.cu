@@ -124,21 +124,21 @@ __global__ void update_bpr_kernel(const int dim, const int vdim,
             float tmp = _P[threadIdx.x];
 
             //update user
-            _P[threadIdx.x] += lr * (logit * (_Qp[threadIdx.x] - _Qn[threadIdx.x]) - reg_u * tmp);
+            atomicAdd(_P + threadIdx.x, lr * (logit * (_Qp[threadIdx.x] - _Qn[threadIdx.x]) - reg_u * tmp));
 
             //update item
             if (update_i)
-                _Qp[threadIdx.x] += lr * (logit * tmp - reg_i * _Qp[threadIdx.x]);
+                atomicAdd(_Qp + threadIdx.x, lr * (logit * tmp - reg_i * _Qp[threadIdx.x]));
             if (update_j)
-                _Qn[threadIdx.x] -= lr * (logit * tmp + reg_j * _Qn[threadIdx.x]);
+                atomicAdd(_Qn + threadIdx.x, lr * (-logit * tmp - reg_j * _Qn[threadIdx.x]));
         }
 
         //update item bias
         if (threadIdx.x == 0 and use_bias){
             if (update_i)
-                Qb[_pos] += lr * (logit - reg_b * Qb[_pos]);
+                atomicAdd(Qb + _pos, lr * (logit - reg_b * Qb[_pos]));
             if (update_j)
-                Qb[_neg] -= lr * (logit + reg_b * Qb[_neg]);
+                atomicAdd(Qb + _neg, lr * (-logit - reg_b * Qb[_neg]));
         }
 
         __syncthreads();
@@ -395,22 +395,23 @@ std::pair<double, double> CuBPR::partial_update(int start_x,
 
     beg_t = get_now();
    
+    // decay lr
+    double progressed = (double) num_processed_ / ((double) num_total_process_ * (double) num_iters_);
+    double alpha = lr_ + (min_lr_ - lr_) * progressed;
+    alpha = fmax(min_lr_, alpha);
+    
     // update bpr
     update_bpr_kernel<<<block_cnt_, vdim_>>>(dim_, vdim_, 
             raw_pointer_cast(devP_.data()), raw_pointer_cast(devQ_.data()), 
             raw_pointer_cast(devQb_.data()), raw_pointer_cast(devLoss_.data()), 
             raw_pointer_cast(user_.data()), 
             raw_pointer_cast(pos_.data()), raw_pointer_cast(neg_.data()), 
-            sample_size*num_neg_samples_, lr_, compute_loss_,
+            sample_size*num_neg_samples_, alpha, compute_loss_,
             reg_u_, reg_i_, reg_j_, reg_b_,
             update_i_, update_j_, use_bias_);
     CHECK_CUDA(cudaDeviceSynchronize());
     num_processed_ += sample_size;
    
-    // decay lr
-    double progressed = (double) num_processed_ / ((double) num_total_process_ * (double) num_iters_);
-    lr_ = lr_ + (min_lr_ - lr_) * progressed;
-    lr_ = max(min_lr_, lr_);
 
     end_t = get_now();
     el = (GetTimeDiff(beg_t, end_t)) * 1000.0;
