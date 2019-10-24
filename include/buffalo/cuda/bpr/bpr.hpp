@@ -59,6 +59,8 @@ public:
     bool update_i_, update_j_, use_bias_, compute_loss_;
     int devId_, mp_cnt_, block_cnt_, cores_;
     int64_t rand_seed_;
+    bool random_positive_;
+    device_vector<default_random_engine> rngs_;
 
     // sampling option
     bool uniform_dist_, verify_neg_;

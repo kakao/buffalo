@@ -248,6 +248,7 @@ class BPRMFOption(AlgoOption):
         :ivar bool per_coordinate_normalize: This is a bit tricky option for Adam optimizer. Before update factors with graidents, do normalize gradients per class by its number of contributed samples. (default: False)
         :ivar int num_negative_samples: The number of negaitve samples. (default: 1)
         :ivar float sampling_power: This paramemter control sampling distribution. When it set to 0, it draw negative items from uniform distribution, while to set 1, it draw from the given data popularation. (default: 0.0)
+        :ivar bool random_positive: Set True, to draw positive sample uniformly instead of using straight forward positive sample, only implemented in cuda mode, according to the original paper, set True, but we found out False usually produces better results) (default: False)
         :ivar bool verify_neg: Set True, to ensure negative sample does not belong to positive samples. (default True)
         :ivar str model_path: Where to save model.
         :ivar dict data_opt: This options will be used to load data if given.
@@ -279,6 +280,7 @@ class BPRMFOption(AlgoOption):
             'num_negative_samples': 1,
             'sampling_power': 0.0,
             'verify_neg': True,
+            'random_positive': False,
 
             'model_path': '',
             'data_opt': {}

@@ -15,6 +15,9 @@ using namespace thrust;
 
 static const float MAX_EXP = 6;
 
+__global__ void init_rngs_kernel(default_random_engine* rngs, int rand_seed){
+    rngs[blockIdx.x].seed(blockIdx.x + rand_seed);
+}
 
 __global__ void fill_rows_kernel(const int start_x, const int next_x,
         const int64_t* indptr, int* rows){
@@ -33,22 +36,22 @@ __global__ void generate_samples_kernel(const int start_x, const int next_x,
         int* user, int* pos, int* neg,
         const int64_t* indptr, const float* dist, const int* rows, const int* keys, 
         const int num_items, const int sample_size, const bool uniform_dist, 
-        const bool verify_neg, const int64_t seed){
+        const bool verify_neg, default_random_engine* rngs, const bool random_positive){
     // prepare sampling
     int64_t beg = start_x == 0? 0: indptr[start_x - 1];
     int64_t end = indptr[next_x - 1];
     float Z = dist[num_items - 1];
 
     // set random generator
-    default_random_engine rng;
-    rng.seed(blockIdx.x + seed);
+    default_random_engine& rng = rngs[blockIdx.x];
     uniform_int_distribution<int> item_dist1(0, num_items-1); // item distribution in case of uniform sampling
     uniform_real_distribution<float> item_dist2(0.0, Z); // item distribution in case of multinomial sampling
     uniform_int_distribution<int64_t> pos_dist(0, end-beg-1); // positive sampler
     
-    int _ = item_dist1(rng); // draw junk number in order to stabilize randomness
     for(size_t s=blockIdx.x; s<sample_size; s+=gridDim.x){
-        int64_t idx = pos_dist(rng); // draw positive index
+        int64_t idx;
+        if (random_positive) idx = pos_dist(rng); // draw positive index
+        else idx = s; // straight-forward positive index
         int _user = rows[idx]; // find user
         int _pos = keys[idx]; // get postive key
         // indexes for finding positive keys of target user
@@ -135,7 +138,7 @@ __global__ void update_bpr_kernel(const int dim, const int vdim,
             if (update_i)
                 Qb[_pos] += lr * (logit - reg_b * Qb[_pos]);
             if (update_j)
-                Qb[_pos] -= lr * (logit + reg_b * Qb[_neg]);
+                Qb[_neg] -= lr * (logit + reg_b * Qb[_neg]);
         }
 
         __syncthreads();
@@ -254,6 +257,7 @@ bool CuBPR::init(std::string opt_path){
         use_bias_ = opt_["use_bias"].bool_value();
         lr_ = opt_["lr"].number_value();
         rand_seed_ = opt_["rand_seed"].int_value();
+        random_positive_ = opt_["random_positive"].bool_value();
 
         // virtual dimension
         vdim_ = (dim_ / WARP_SIZE) * WARP_SIZE;
@@ -261,7 +265,6 @@ bool CuBPR::init(std::string opt_path){
       
         // set block count
         block_cnt_ = opt_["hyper_threads"].int_value() * (cores_ / vdim_);
-
         // get sampling option
         uniform_dist_ = opt_["sampling_power"].number_value() == 0.0;
         num_neg_samples_ = opt_["num_negative_samples"].int_value();
@@ -271,6 +274,9 @@ bool CuBPR::init(std::string opt_path){
             hostLoss_.resize(block_cnt_);
             devLoss_.resize(block_cnt_);
         }
+        rngs_.resize(block_cnt_ * vdim_);
+        init_rngs_kernel<<<block_cnt_*vdim_, 1>>>(raw_pointer_cast(rngs_.data()), rand_seed_);
+        
     }
     return ok;
 }
@@ -311,6 +317,7 @@ void CuBPR::set_placeholder(int64_t* indptr, size_t batch_size)
 void CuBPR::set_cumulative_table(int64_t* sampling_table)
 {
     dist_.resize(Q_rows_);
+    // CHECK_CUDA(cudaDeviceSynchronize());
     copy(sampling_table, sampling_table+Q_rows_, dist_.begin());
 }
 
@@ -374,9 +381,8 @@ std::pair<double, double> CuBPR::partial_update(int start_x,
             raw_pointer_cast(indptr_.data()), raw_pointer_cast(dist_.data()), 
             raw_pointer_cast(rows_.data()), raw_pointer_cast(keys_.data()), 
             Q_rows_, sample_size*num_neg_samples_, uniform_dist_, 
-            verify_neg_, rand_seed_);
+            verify_neg_, raw_pointer_cast(rngs_.data()), random_positive_);
     CHECK_CUDA(cudaDeviceSynchronize());
-    rand_seed_ += block_cnt_ * vdim_;
     
     end_t = get_now();
     el = (GetTimeDiff(beg_t, end_t)) * 1000.0;

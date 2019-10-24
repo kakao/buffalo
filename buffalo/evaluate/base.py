@@ -61,13 +61,21 @@ class Evaluable(object):
         for r, c in zip(row, col):
             gt.setdefault(r, set()).add(c)
             rows.add(r)
-        rows = list(rows)
 
+        rows = list(rows)
+        # can significantly save evaluation time
+        if self.opt.validation.eval_samples:
+            size = min(self.opt.validation.eval_samples, len(rows))
+            rows = np.random.choice(rows, size=size, replace=False)
+
+        num_items = self.data.get_header()['num_items']
         NDCG = 0.0
         AP = 0.0
         HIT = 0.0
+        AUC = 0.0
         N = 0.0
         idcgs = np.cumsum(1.0 / np.log2(np.arange(2, topk + 2)))
+        dcgs = 1.0 / np.log2(np.arange(2, topk + 2))
 
         def filter_seen_items(_topk, seen, topk):
             ret = []
@@ -83,8 +91,13 @@ class Evaluable(object):
                                                  topk=topk + self._validation_max_seen_size)
             for row, _topk in recs:
                 seen = self._validation_seen.get(row, set())
+
+                if len(seen) == 0:
+                    continue
+
                 _topk = filter_seen_items(_topk, seen, topk)
                 _gt = gt[row]
+
 
                 # accuracy
                 hit = len(set(_topk) & _gt) / len(_gt)
@@ -93,24 +106,33 @@ class Evaluable(object):
                 # ndcg, map
                 idcg = idcgs[min(len(_gt), len(_topk)) - 1]
                 dcg = 0.0
-                hit, ap = 0.0, 0.0
+                hit, miss, ap = 0.0, 0.0, 0.0
+
+                # AUC
+                num_pos_items = len(_gt)
+                num_neg_items = num_items - num_pos_items
+                auc = 0.0
                 for i, r in enumerate(_topk):
                     if r in _gt:
                         hit += 1
                         ap += (hit / (i + 1.0))
-                    if r not in _gt:
-                        continue
-                    rank = i + 1
-                    dcg += 1.0 / math.log(rank + 1, 2)
+                        dcg += dcgs[i]
+                    else:
+                        miss += 1
+                        auc += hit
+                auc += ((hit + num_pos_items) / 2.0) * (num_neg_items - miss)
+                auc /= (num_pos_items * num_neg_items)
                 ndcg = dcg / idcg
                 NDCG += ndcg
                 ap /= min(len(_gt), len(_topk))
                 AP += ap
                 N += 1.0
+                AUC += auc
         NDCG /= N
         AP /= N
         ACC = HIT / N
-        ret = {'ndcg': NDCG, 'map': AP, 'accuracy': ACC}
+        AUC = AUC / N
+        ret = {'ndcg': NDCG, 'map': AP, 'accuracy': ACC, 'auc': AUC}
         return ret
 
     def _evaluate_score_metrics(self):
