@@ -90,6 +90,7 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def init_factors(self):
         header = self.data.get_header()
+        self.num_nnz = header['num_nnz']
         for attr_name in ['P', 'Q', 'Qb']:
             setattr(self, attr_name, None)
         self.P = np.abs(np.random.normal(scale=1.0 / (self.opt.d ** 2),
@@ -100,7 +101,7 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
                                           size=(header['num_items'], 1)).astype("float32"), order='C')
         if not self.opt.use_bias:
             self.Qb *= 0
-        self.obj.initialize_model(self.P, self.Q, self.Qb, header['num_nnz'])
+        self.obj.initialize_model(self.P, self.Q, self.Qb, self.num_nnz)
 
     def prepare_sampling(self):
         self.logger.info('Preparing sampling ...')
@@ -205,7 +206,7 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
                     setattr(self, attr, _F)
             indptr, _, batch_size = self.buf.get_indptrs()
             self.obj.set_placeholder(indptr, batch_size)
-            self.obj.initialize_model(self.P, self.Q, self.Qb, -1, True)
+            self.obj.initialize_model(self.P, self.Q, self.Qb, self.num_nnz, True)
         else:
             self.obj.launch_workers()
 

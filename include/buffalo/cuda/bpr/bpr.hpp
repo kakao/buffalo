@@ -29,7 +29,8 @@ public:
     
     void initialize_model(
             float* P, int P_rows,
-            float* Q, float* Qb, int Q_rows, bool set_gpu);
+            float* Q, float* Qb, int Q_rows, 
+            int64_t num_nnz, bool set_gpu);
     void set_placeholder(int64_t* indptr, size_t batch_size);
     void set_cumulative_table(int64_t* sampling_table);
     int get_vdim();
@@ -54,8 +55,9 @@ public:
     device_vector<float> devLoss_;
     device_vector<int> user_, pos_, neg_;
     device_vector<float> dist_;
-    int dim_, vdim_, P_rows_, Q_rows_;
-    float reg_u_, reg_i_, reg_j_, reg_b_, lr_;
+    int dim_, vdim_, P_rows_, Q_rows_, num_iters_;
+    float reg_u_, reg_i_, reg_j_, reg_b_, lr_, min_lr_;
+    int64_t num_processed_, num_total_process_;
     bool update_i_, update_j_, use_bias_, compute_loss_;
     int devId_, mp_cnt_, block_cnt_, cores_;
     int64_t rand_seed_;

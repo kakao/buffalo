@@ -35,7 +35,7 @@ __global__ void fill_rows_kernel(const int start_x, const int next_x,
 __global__ void generate_samples_kernel(const int start_x, const int next_x, 
         int* user, int* pos, int* neg,
         const int64_t* indptr, const float* dist, const int* rows, const int* keys, 
-        const int num_items, const int sample_size, const bool uniform_dist, 
+        const int num_items, const size_t sample_size, const int num_neg_samples, const bool uniform_dist, 
         const bool verify_neg, default_random_engine* rngs, const bool random_positive){
     // prepare sampling
     int64_t beg = start_x == 0? 0: indptr[start_x - 1];
@@ -48,10 +48,10 @@ __global__ void generate_samples_kernel(const int start_x, const int next_x,
     uniform_real_distribution<float> item_dist2(0.0, Z); // item distribution in case of multinomial sampling
     uniform_int_distribution<int64_t> pos_dist(0, end-beg-1); // positive sampler
     
-    for(size_t s=blockIdx.x; s<sample_size; s+=gridDim.x){
+    for(int64_t s=blockIdx.x; s<(sample_size*num_neg_samples); s+=gridDim.x){
         int64_t idx;
         if (random_positive) idx = pos_dist(rng); // draw positive index
-        else idx = s; // straight-forward positive index
+        else idx = s % sample_size; // straight-forward positive index
         int _user = rows[idx]; // find user
         int _pos = keys[idx]; // get postive key
         // indexes for finding positive keys of target user
@@ -182,6 +182,7 @@ __global__ void compute_bpr_sample_loss_kernel(const int dim, const int vdim,
 CuBPR::CuBPR(){
     logger_ = BuffaloLogger().get_logger();
     
+    num_processed_ = 0;
     CHECK_CUDA(cudaGetDevice(&devId_));
     cudaDeviceProp prop;
     CHECK_CUDA(cudaGetDeviceProperties(&prop, devId_));
@@ -248,14 +249,16 @@ bool CuBPR::init(std::string opt_path){
         // set options
         compute_loss_ = opt_["compute_loss_on_training"].bool_value();
         dim_ = opt_["d"].int_value();
+        num_iters_ = opt_["num_iters"].int_value();
         reg_u_ = opt_["reg_u"].number_value();
         reg_i_ = opt_["reg_i"].number_value();
         reg_j_ = opt_["reg_j"].number_value();
         reg_b_ = opt_["reg_b"].number_value();
+        lr_ = opt_["lr"].number_value();
+        min_lr_ = opt_["min_lr"].number_value();
         update_i_ = opt_["update_i"].bool_value();
         update_j_ = opt_["update_j"].bool_value();
         use_bias_ = opt_["use_bias"].bool_value();
-        lr_ = opt_["lr"].number_value();
         rand_seed_ = opt_["rand_seed"].int_value();
         random_positive_ = opt_["random_positive"].bool_value();
 
@@ -283,7 +286,8 @@ bool CuBPR::init(std::string opt_path){
 
 void CuBPR::initialize_model(
         float* P, int P_rows,
-        float* Q, float* Qb, int Q_rows, bool set_gpu)
+        float* Q, float* Qb, int Q_rows, 
+        int64_t num_total_process, bool set_gpu)
 {    
     // initialize parameters and send to gpu memory
     hostP_ = P;
@@ -291,7 +295,8 @@ void CuBPR::initialize_model(
     hostQb_ = Qb;
     P_rows_ = P_rows;
     Q_rows_ = Q_rows;
-    
+    num_total_process_ = num_total_process;
+
     if (set_gpu){
         devP_.resize(P_rows_*vdim_);
         devQ_.resize(Q_rows_*vdim_);
@@ -380,7 +385,7 @@ std::pair<double, double> CuBPR::partial_update(int start_x,
             raw_pointer_cast(pos_.data()), raw_pointer_cast(neg_.data()),
             raw_pointer_cast(indptr_.data()), raw_pointer_cast(dist_.data()), 
             raw_pointer_cast(rows_.data()), raw_pointer_cast(keys_.data()), 
-            Q_rows_, sample_size*num_neg_samples_, uniform_dist_, 
+            Q_rows_, sample_size, num_neg_samples_, uniform_dist_, 
             verify_neg_, raw_pointer_cast(rngs_.data()), random_positive_);
     CHECK_CUDA(cudaDeviceSynchronize());
     
@@ -389,7 +394,7 @@ std::pair<double, double> CuBPR::partial_update(int start_x,
     TRACE("elapsed for sampling: {} ms", el);
 
     beg_t = get_now();
-    
+   
     // update bpr
     update_bpr_kernel<<<block_cnt_, vdim_>>>(dim_, vdim_, 
             raw_pointer_cast(devP_.data()), raw_pointer_cast(devQ_.data()), 
@@ -400,7 +405,13 @@ std::pair<double, double> CuBPR::partial_update(int start_x,
             reg_u_, reg_i_, reg_j_, reg_b_,
             update_i_, update_j_, use_bias_);
     CHECK_CUDA(cudaDeviceSynchronize());
-    
+    num_processed_ += sample_size;
+   
+    // decay lr
+    double progressed = (double) num_processed_ / ((double) num_total_process_ * (double) num_iters_);
+    lr_ = lr_ + (min_lr_ - lr_) * progressed;
+    lr_ = max(min_lr_, lr_);
+
     end_t = get_now();
     el = (GetTimeDiff(beg_t, end_t)) * 1000.0;
     TRACE("elapsed for update: {} ms", el);
@@ -414,7 +425,7 @@ std::pair<double, double> CuBPR::partial_update(int start_x,
     }
     CHECK_CUDA(cudaDeviceSynchronize());
 
-    return std::make_pair(loss, sample_size);
+    return std::make_pair(loss, sample_size*num_neg_samples_);
 }
 
 double CuBPR::compute_loss(int num_loss_samples, 

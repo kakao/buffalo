@@ -18,7 +18,7 @@ cdef extern from "buffalo/cuda/bpr/bpr.hpp" namespace "cuda_bpr":
         void set_placeholder(int64_t* indptr, size_t batch_size) nogil except +
         void set_cumulative_table(int64_t*) nogil except +
         void initialize_model(float*, int,
-                              float*, float*, int, bool) nogil except +
+                              float*, float*, int, int64_t, bool) nogil except +
         pair[double, double] partial_update(int, int,
                              int64_t*, int32_t*) nogil except +
         double compute_loss(int, int32_t*, int32_t*, int32_t*) nogil except +
@@ -45,7 +45,7 @@ cdef class CyBPR:
                          np.ndarray[np.float32_t, ndim=2] Qb,
                          num_nnz, set_gpu=False):
         self.obj.initialize_model(&P[0, 0], P.shape[0],
-                                  &Q[0, 0], &Qb[0, 0], Q.shape[0], set_gpu)
+                                  &Q[0, 0], &Qb[0, 0], Q.shape[0], num_nnz, set_gpu)
 
     def set_placeholder(self, np.ndarray[np.int64_t, ndim=1] indptr, batch_size):
         self.obj.set_placeholder(&indptr[0], batch_size)
