@@ -11,7 +11,7 @@
 
 namespace cfr {
 
-CCFR::CCFR(): 
+CCFR::CCFR():
     U_(nullptr, 0, 0), I_(nullptr, 0, 0), C_(nullptr, 0, 0),
     Ib_(nullptr, 0), Cb_(nullptr, 0){}
 
@@ -36,17 +36,17 @@ bool CCFR::init(string opt_path){
         num_cg_max_iters_ = opt_["num_cg_max_iters"].int_value();
         alpha_ = opt_["alpha"].number_value();
         l_ = opt_["l"].number_value();
-    
+
         // floating number parameters
         cg_tolerance_ = opt_["cg_tolerance_"].number_value();
         eps_ = opt_["eps"].number_value();
         reg_u_ = opt_["reg_u"].number_value();
         reg_i_ = opt_["reg_i"].number_value();
         reg_c_ = opt_["reg_c"].number_value();
-        
+
         // boolean parameters
         compute_loss_ = opt_["compute_loss"].bool_value();
-     
+
         // get optimizer
         string optimizer = opt_["optimizer"].string_value();
         if (optimizer == "llt") optimizer_code_ = 0;
@@ -123,23 +123,23 @@ double CCFR::partial_update_user(int start_x, int next_x,
             MatrixType Fs(data_size, dim_);
             VectorType coeff(data_size);
             VectorType y(dim_);
-            
+
             A = FF_;
             for (size_t idx=0, it = beg; it < end; ++it, ++idx) {
                 const int& c = keys[it];
                 const float& v = vals[it];
                 Fs.row(idx) = I_.row(c);
-                coeff(idx) = v * alpha_; 
+                coeff(idx) = v * alpha_;
             }
             MatrixType _Fs = Fs.array().colwise() * coeff.transpose().array();
             A.noalias() += Fs.transpose() * _Fs;
             coeff.array() += 1;
-            y.noalias() = coeff * Fs; 
-            
+            y.noalias() = coeff * Fs;
+
             // multiplicate relative weight over item-context relation
             A.array() *= l_;
             y.array() *= l_;
-            
+
             for (int d=0; d < dim_; ++d)
                 A(d, d) += reg_u_;
             _leastsquare(U_, x, A, y);
@@ -158,7 +158,7 @@ double CCFR::partial_update_item(int start_x, int next_x,
         WARN0("No data to process");
         return 0.0;
     }
-    
+
     omp_set_num_threads(num_threads_);
     vector<double> losses(num_threads_, 0.0);
     int end_loop = next_x - start_x;
@@ -171,14 +171,14 @@ double CCFR::partial_update_item(int start_x, int next_x,
         for (int i=0; i<end_loop; ++i)
         {
             const int x = start_x + i;
-            
+
             MatrixType A(dim_, dim_);
-            VectorType y(dim_); 
-            
+            VectorType y(dim_);
+
             const size_t beg_u = x == 0? 0: indptr_u[x - 1] - shifted_u;
             const size_t end_u = indptr_u[x] - shifted_u;
             const size_t data_size_u = end_u - beg_u;
-            
+
             const size_t beg_c = x == 0? 0: indptr_c[x - 1] - shifted_c;
             const size_t end_c = indptr_c[x] - shifted_c;
             const size_t data_size_c = end_c - beg_c;
@@ -207,22 +207,22 @@ double CCFR::partial_update_item(int start_x, int next_x,
             MatrixType _Fs = Fs.array().colwise() * coeff.transpose().array();
             A.noalias() += Fs.transpose() * _Fs;
             coeff.array() += 1;
-            y.noalias() = coeff * Fs; 
-            
-            
+            y.noalias() = coeff * Fs;
+
+
             // multiplicate relative weight over item-context relation
             A.array() *= l_;
             y.array() *= l_;
             // computing for the part of item-context relation
             Fs.resize(data_size_c, dim_);
             coeff.resize(data_size_c);
-            
+
             loss = 0.0;
             for (size_t idx=0, it=beg_c; it < end_c; ++it, ++idx) {
                 const int& c = keys_c[it];
                 const float& v = vals_c[it];
                 Fs.row(idx) = C_.row(c);
-                coeff(idx) = v - Ib_(x) - Cb_(c); 
+                coeff(idx) = v - Ib_(x) - Cb_(c);
                 if (compute_loss_){
                     float err = v - I_.row(x).dot(C_.row(c)) - Ib_(x) - Cb_(c);
                     loss += err * err;
@@ -234,12 +234,12 @@ double CCFR::partial_update_item(int start_x, int next_x,
             }
             A.noalias() += Fs.transpose() * Fs;
             y.noalias() += coeff * Fs;
-            
+
             for (int d=0; d < dim_; ++d)
                 A(d, d) += reg_i_;
-            
+
             _leastsquare(I_, x, A, y);
-            
+
             // update bias
             float b = 0;
             for (size_t idx=0, it = beg_c; it < end_c; ++it, ++idx) {
@@ -271,14 +271,14 @@ double CCFR::partial_update_context(int start_x, int next_x,
         for (int i=0; i<end_loop; ++i)
         {
             const int x = start_x + i;
-            
+
             MatrixType A(dim_, dim_);
-            VectorType y(dim_); 
-            
+            VectorType y(dim_);
+
             const size_t beg = x == 0? 0: indptr[x - 1] - shifted;
             const size_t end = indptr[x] - shifted;
             const size_t data_size = end - beg;
-            
+
             if (data_size == 0) {
                 TRACE("No data exists for {}", x);
                 continue;
@@ -286,12 +286,12 @@ double CCFR::partial_update_context(int start_x, int next_x,
 
             MatrixType Fs(data_size, dim_);
             VectorType coeff(data_size);
-            
+
             for (size_t idx=0, it = beg; it < end; ++it, ++idx) {
                 const int& c = keys[it];
                 const float& v = vals[it];
                 Fs.row(idx) = I_.row(c);
-                coeff(idx) = v - Cb_(x) - Ib_(c); 
+                coeff(idx) = v - Cb_(x) - Ib_(c);
             }
             A = Fs.transpose() * Fs;
             y = coeff * Fs;

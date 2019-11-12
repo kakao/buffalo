@@ -58,7 +58,7 @@ class Parallel(abc.ABC):
         :param use_mmap: This parameter is passed to N2 when hnsw_index given for the group. (default: True)
         :return: list of tuple(key, score)
         """
-        raise NotImplemented
+        raise NotImplementedError
 
     def _topk_recommendation(self, indexes, FactorP, FactorQ, topk, pool):
         dummy_bias = np.array([[]], dtype=np.float32)
@@ -82,7 +82,7 @@ class Parallel(abc.ABC):
         :param bool repr: Set True, to return as item key instead index.
         :return: list of tuple(key, score)
         """
-        raise NotImplemented
+        raise NotImplementedError
 
 
 class ParALS(Parallel):
@@ -186,7 +186,7 @@ class ParW2V(Parallel):
         return topks, scores
 
     def topk_recommendation(self, keys, topk=10, pool=None):
-        raise NotImplemented
+        raise NotImplementedError
 
 
 # TODO: Re-think about CFR internal data structure.

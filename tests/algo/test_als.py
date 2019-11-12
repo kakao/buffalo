@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import unittest
+
 from buffalo.misc import aux
 from buffalo.misc.log import set_log_level
 from buffalo.algo.options import ALSOption

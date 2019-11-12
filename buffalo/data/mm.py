@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-import psutil
 import traceback
 
 import h5py
@@ -195,31 +194,31 @@ class MatrixMarket(Data):
             header = '%'
             while header.startswith('%'):
                 header = fin.readline()
-            self.logger.debug('Building meta part...')
-            db, num_header_lines = self._create(data_path,
-                                                {'main_path': mm_main_path,
-                                                 'uid_path': mm_uid_path,
-                                                 'iid_path': mm_iid_path},
-                                                header)
-            try:
-                num_header_lines += 1  # add metaline
-                self.logger.info('Creating working data...')
-                tmp_main, validation_data = self._create_working_data(db,
-                                                                      mm_main_path,
-                                                                      num_header_lines)
-                self.logger.debug(f'Working data is created on {tmp_main}')
-                self.logger.info('Building data part...')
-                self._build_data(db, tmp_main, validation_data)
-                db.attrs['completed'] = 1
-                db.close()
-                self.handle = h5py.File(data_path, 'r')
-                self.path = data_path
-            except Exception as e:
-                self.logger.error('Cannot create db: %s' % (str(e)))
-                self.logger.error(traceback.format_exc().splitlines())
-                raise
-            finally:
-                if hasattr(self, 'patr'):
-                    if os.path.isfile(self.path):
-                        os.remove(self.path)
+        self.logger.debug('Building meta part...')
+        db, num_header_lines = self._create(data_path,
+                                            {'main_path': mm_main_path,
+                                                'uid_path': mm_uid_path,
+                                                'iid_path': mm_iid_path},
+                                            header)
+        try:
+            num_header_lines += 1  # add metaline
+            self.logger.info('Creating working data...')
+            tmp_main, validation_data = self._create_working_data(db,
+                                                                  mm_main_path,
+                                                                  num_header_lines)
+            self.logger.debug(f'Working data is created on {tmp_main}')
+            self.logger.info('Building data part...')
+            self._build_data(db, tmp_main, validation_data)
+            db.attrs['completed'] = 1
+            db.close()
+            self.handle = h5py.File(data_path, 'r')
+            self.path = data_path
+        except Exception as e:
+            self.logger.error('Cannot create db: %s' % (str(e)))
+            self.logger.error(traceback.format_exc().splitlines())
+            raise
+        finally:
+            if hasattr(self, 'patr'):
+                if os.path.isfile(self.path):
+                    os.remove(self.path)
         self.logger.info('DB built on %s' % data_path)

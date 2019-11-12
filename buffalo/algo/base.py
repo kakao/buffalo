@@ -44,7 +44,7 @@ class Algo(abc.ABC):
 
     @abc.abstractmethod
     def normalize(self, group='item'):
-        raise NotImplemented
+        raise NotImplementedError
 
     def _get_topk_recommendation(self, p, Q, pool, topk, num_workers):
         # Warning: This should be inherited.
@@ -187,7 +187,7 @@ class Algo(abc.ABC):
 
     @abc.abstractmethod
     def _get_feature(self, index, group='item'):
-        raise NotImplemented
+        raise NotImplementedError
 
     def get_weighted_feature(self, weights, group='item', min_length=1):
         if isinstance(weights, dict):
@@ -322,7 +322,7 @@ class Serializable(abc.ABC):
 class TensorboardExtention(object):
     @abc.abstractmethod
     def get_evaluation_metrics(self):
-        raise NotImplemented
+        raise NotImplementedError
 
     def _get_initial_tensorboard_data(self):
         tb = aux.Option({'summary_writer': None,
