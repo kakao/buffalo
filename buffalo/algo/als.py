@@ -93,7 +93,10 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
-        topks = super()._get_topk_recommendation(p, self.Q, pool, topk, self.opt.num_workers)
+        topks = super()._get_topk_recommendation(
+            p, self.Q,
+            pb=None, Qb=None,
+            pool=pool, topk=topk, num_workers=self.opt.num_workers)
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk, pool):
@@ -102,6 +105,10 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.P[r].dot(self.Q[c]) for r, c in row_col_pairs}
         return rets
+
+    def _get_scores(self, row, col):
+        scores = (self.P[row] * self.Q[col]).sum(axis=1)
+        return scores
 
     def _get_buffer(self):
         buf = BufferedDataMatrix()
@@ -154,7 +161,6 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
             self.obj.set_placeholder(lindptr, rindptr, batch_size)
 
         best_loss, rmse, self.validation_result = 987654321.0, None, {}
-        self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
         full_st = time.time()
         for i in range(self.opt.num_iters):

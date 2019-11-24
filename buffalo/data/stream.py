@@ -45,8 +45,8 @@ class StreamOptions(DataOption):
             },
             'data': {
                 'validation': {
-                    'name': 'newest',  # sample or oldest or newest
-                    'p': 0.01,  # if set oldest or newest, ignored
+                    'name': 'newest',  # sample or newest
+                    'p': 0.01,  # if set newest, ignored
                     'n': 1,  # if set sample, ignored
                     'max_samples': 500
                 },
@@ -99,7 +99,7 @@ class Stream(Data):
         vali_n = self.opt.data.validation.get('n', 0)
         num_nnz, vali_limit, itemids = 0, 0, set()
         self.logger.info(f'gathering itemids from {main_path}...')
-        if self.opt.data.validation.name not in ["oldest", "newest"]:
+        if self.opt.data.validation.name not in ["newest"]:
             vali_n = 0
         with open(main_path) as fin:
             for line in log.ProgressBar(level=log.DEBUG, iterable=fin):

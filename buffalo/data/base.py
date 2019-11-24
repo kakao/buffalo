@@ -5,7 +5,7 @@ import psutil
 
 import h5py
 import numpy as np
-
+from scipy.sparse import csr_matrix
 from buffalo.data import prepro
 from buffalo.misc import aux, log
 from buffalo.data.fileio import chunking_into_bins, sort_and_compressed_binarization
@@ -198,7 +198,7 @@ class Data(object):
     def _create_validation(self, f, **kwargs):
         if not self.opt.data.validation:
             return kwargs['num_nnz']
-        num_nnz = kwargs['num_nnz']
+        num_users, num_nnz = kwargs['num_users'], kwargs['num_nnz']
         method = self.opt.data.validation.name
 
         f.create_group('vali')
@@ -208,9 +208,6 @@ class Data(object):
         if method == 'sample':
             sz = min(self.opt.data.validation.max_samples,
                      int(num_nnz * self.opt.data.validation.p))
-            g.create_dataset('row', (sz,), dtype='int32', maxshape=(sz,))
-            g.create_dataset('col', (sz,), dtype='int32', maxshape=(sz,))
-            g.create_dataset('val', (sz,), dtype='float32', maxshape=(sz,))
             g.create_dataset('indexes', (sz,), dtype='int64', maxshape=(sz,))
             # Watch out, create_working_data cannot deal with last line of data
             # for validation data thus we have to reduce index 1.
@@ -218,12 +215,13 @@ class Data(object):
             num_nnz -= sz
         elif method in ['newest']:
             sz = kwargs['num_validation_samples']
-            g.create_dataset('row', (sz,), dtype='int32', maxshape=(sz,))
-            g.create_dataset('col', (sz,), dtype='int32', maxshape=(sz,))
-            g.create_dataset('val', (sz,), dtype='float32', maxshape=(sz,))
             g.attrs['n'] = self.opt.data.validation.n
             # We don't need to reduce sample size for validation samples. It
             # already applied on caller side.
+
+        g.create_dataset('row', (sz,), dtype='int32', maxshape=(sz,))
+        g.create_dataset('col', (sz,), dtype='int32', maxshape=(sz,))
+        g.create_dataset('val', (sz,), dtype='float32', maxshape=(sz,))
         g.attrs['num_samples'] = sz
         return num_nnz
 
@@ -232,10 +230,52 @@ class Data(object):
             return
         validation_data = [line.strip().split() for line in validation_data]
         assert len(validation_data) == db['vali'].attrs['num_samples'], 'Mimatched validation data'
-        db['vali']['row'][:] = [int(r) - 1 for r, _, _ in validation_data]  # 0-based
-        db['vali']['col'][:] = [int(c) - 1 for _, c, _ in validation_data]  # 0-based
-        V = np.array([float(v) for _, _, v in validation_data], dtype=np.float32)
-        db['vali']['val'][:] = self.value_prepro(V)
+
+        num_users, num_items = db.attrs['num_users'], db.attrs['num_items']
+        row = [int(r) - 1 for r, _, _ in validation_data]  # 0-based
+        col = [int(c) - 1 for _, c, _ in validation_data]  # 0-based
+        val = np.array([float(v) for _, _, v in validation_data], dtype=np.float32)
+        temp_mat = csr_matrix((val, (row, col)), (num_users, num_items))
+        db['vali']['row'][:] = row
+        db['vali']['col'][:] = col
+        db['vali']['val'][:] = self.value_prepro(temp_mat.data)
+
+    def _prepare_validation_data(self):
+        if hasattr(self, 'vali_data'):
+            return True
+
+        db = self.handle
+        num_users, num_items = db.attrs['num_users'], db.attrs['num_items']
+        row = db['vali']['row'][::]
+        col = db['vali']['col'][::]
+        val = db['vali']['val'][::]
+
+        _temp_mat = csr_matrix((val, (row, col)), (num_users, num_items))
+        indptr = _temp_mat.indptr[1:]
+        key = _temp_mat.indices
+        vali_rows = np.arange(len(indptr))[np.ediff1d(indptr, to_begin=indptr[0]) > 0]
+        vali_gt = {
+            u: set(key[indptr[u - 1]:indptr[u]]) if u != 0 else set(key[:indptr[0]])
+            for u in vali_rows}
+        validation_seen = {}
+        max_seen_size = 0
+        for rowid in vali_rows:
+            seen, *_ = self.get(rowid)
+            validation_seen[rowid] = set(seen)
+            max_seen_size = max(len(seen), max_seen_size)
+        validation_seen = validation_seen
+        validation_max_seen_size = max_seen_size
+
+        self.vali_data = {
+            "row": row,
+            "col": col,
+            "val": val,
+            "vali_rows": vali_rows,
+            "vali_gt": vali_gt,
+            "validation_seen": validation_seen,
+            "validation_max_seen_size": validation_max_seen_size
+        }
+        return True
 
     def _sort_and_compressed_binarization(self, mm_path, num_lines, max_key, sort_key):
         num_workers = psutil.cpu_count()

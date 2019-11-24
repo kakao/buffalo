@@ -131,7 +131,7 @@ int _parallel_build_sppmi(string from_path, string to_path,
     #pragma omp parallel num_threads(num_workers)
     {
         ifstream fin(from_path.c_str());
-        
+
         // build appearances
         #pragma omp for schedule(dynamic, 1)
         for (int i=0; i < num_split; ++i) {
@@ -139,10 +139,10 @@ int _parallel_build_sppmi(string from_path, string to_path,
             long end_pos = (i+1) * split_size;
 
             fin.clear();
-            fin.seekg(start_pos, ios::beg); 
-        
+            fin.seekg(start_pos, ios::beg);
+
             string line;
-            if (i != 0) { 
+            if (i != 0) {
                 // first line is handled by previous thread
                 getline(fin, line);
             }
@@ -160,18 +160,18 @@ int _parallel_build_sppmi(string from_path, string to_path,
                 }
             }
         }
-        
+
         // build sppmi
         #pragma omp for schedule(dynamic, 1)
         for (int i=0; i < num_split; ++i) {
             long start_pos = i*split_size;
             long end_pos = (i+1) * split_size;
-            
+
             fin.clear();
-            fin.seekg(start_pos, ios::beg); 
- 
+            fin.seekg(start_pos, ios::beg);
+
             string line;
-            if (i != 0) { 
+            if (i != 0) {
                 // first line is handled by previous thread
                 getline(fin, line);
             }
@@ -186,7 +186,7 @@ int _parallel_build_sppmi(string from_path, string to_path,
                 sscanf(line.c_str(), "%d %d", &cur_id, &c);
                 assert(cur_id > 0 and cur_id <= num_items);
 
-                // first id found is handled by previous thread 
+                // first id found is handled by previous thread
                 if (i != 0 and (skip_id == -1 or skip_id == cur_id)) {
                     skip_id = cur_id;
 
@@ -207,19 +207,19 @@ int _parallel_build_sppmi(string from_path, string to_path,
                 } else if (probe_id != cur_id) {
                     unordered_set<int> chunk_set(chunk.begin(), chunk.end());
                     for (const auto& _c : chunk_set) {
-                        if (probe_id < _c) 
+                        if (probe_id < _c)
                             continue;
                         int cnt = count(chunk.begin(), chunk.end(), _c);
-                        double pmi = log(cnt) + log_d 
-                            - log(appearances[probe_id-1].load(memory_order_relaxed)) 
+                        double pmi = log(cnt) + log_d
+                            - log(appearances[probe_id-1].load(memory_order_relaxed))
                             - log(appearances[_c-1].load(memory_order_relaxed));
                         double sppmi = pmi - log_k;
 
                         if (sppmi > 0) {
                             #pragma omp critical(out)
                             {
-                                fout << probe_id << ' ' << _c << ' ' << sppmi << '\n'; 
-                                fout << _c << ' ' << probe_id << ' ' << sppmi << '\n'; 
+                                fout << probe_id << ' ' << _c << ' ' << sppmi << '\n';
+                                fout << _c << ' ' << probe_id << ' ' << sppmi << '\n';
                                 nnz += 2;
                             }
                         }
@@ -288,11 +288,11 @@ vector<string> _sort_and_compressed_binarization(
             long end_pos = (i+1) * split_size;
 
             fin.clear();
-            fin.seekg(start_pos, ios::beg); 
-        
+            fin.seekg(start_pos, ios::beg);
+
             vector<triple_t> records;
             string line;
-            if (i != 0) { 
+            if (i != 0) {
                 // first line is handled by previous thread
                 getline(fin, line);
             }

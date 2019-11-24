@@ -41,19 +41,30 @@ class Algo(abc.ABC):
     def initialize(self):
         self.__early_stopping = {'round': 0,
                                  'min_loss': 987654321}
+        if self.opt.random_seed:
+            np.random.seed(self.opt.random_seed)
 
     @abc.abstractmethod
     def normalize(self, group='item'):
         raise NotImplementedError
 
-    def _get_topk_recommendation(self, p, Q, pool, topk, num_workers):
-        # Warning: This should be inherited.
-        if pool is None:
-            topks = self.get_topk(p.dot(Q.T), k=topk, num_threads=num_workers)
-        else:
-            topks = self.get_topk(p.dot(Q[pool].T), k=topk, num_threads=num_workers)
+    def _get_topk_recommendation(self, p, Q, pb, Qb, pool, topk, num_workers):
+        if pool is not None:
+            Q = Q[pool]
+            if Qb is not None:
+                Qb = Qb[pool]
+
+        scores = p.dot(Q.T)
+        if pb is not None:
+            scores += pb
+        if Qb is not None:
+            scores += Qb.T
+
+        topks = self.get_topk(scores, k=topk, num_threads=num_workers)
+        if pool is not None:
             topks = np.array([pool[t] for t in topks])
         return topks
+
 
     def topk_recommendation(self, keys, topk=10, pool=None):
         """Return TopK recommendation for each users(keys)
