@@ -5,18 +5,24 @@ import time
 import json
 
 import numpy as np
-from numpy.linalg import norm
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
-from buffalo.data.base import Data
 from buffalo.misc import aux, log
+from buffalo.data.base import Data
 from buffalo.algo._bpr import CyBPRMF
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import BPRMFOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
+
+# TODO init structure of gpu modules will be abstracted to a higher module
+inited_CUBPR = True
+try:
+    from buffalo.algo.cuda._bpr import CyBPR as CuBPRMF
+except:
+    inited_CUBPR = False
 
 
 class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
@@ -33,9 +39,15 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
 
         self.logger = log.get_logger('BPRMF')
         self.opt, self.opt_path = self.get_option(opt_path)
-        self.obj = CyBPRMF()
+
+        if self.opt.accelerator and not inited_CUBPR:
+            self.logger.error(f"ImportError CuBPRMF, no cuda library exists.")
+            raise RuntimeError()
+        self.obj = CuBPRMF() if self.opt.accelerator else CyBPRMF()
+
         assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
             'cannot parse option file: %s' % opt_path
+
         self.data = None
         data = kwargs.get('data')
         data_opt = self.opt.get('data_opt')
@@ -69,8 +81,6 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
     def initialize(self):
         super().initialize()
         assert self.data, 'Data is not setted'
-        if self.opt.random_seed:
-            np.random.seed(self.opt.random_seed)
         self.buf = BufferedDataMatrix()
         self.buf.initialize(self.data)
         self.init_factors()
@@ -78,15 +88,18 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def init_factors(self):
         header = self.data.get_header()
+        self.num_nnz = header['num_nnz']
         for attr_name in ['P', 'Q', 'Qb']:
             setattr(self, attr_name, None)
-        self.P = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
+        self.P = np.abs(np.random.normal(scale=1.0 / (self.opt.d ** 2),
                                          size=(header['num_users'], self.opt.d)).astype("float32"), order='C')
-        self.Q = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
+        self.Q = np.abs(np.random.normal(scale=1.0 / (self.opt.d ** 2),
                                          size=(header['num_items'], self.opt.d)).astype("float32"), order='C')
-        self.Qb = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
+        self.Qb = np.abs(np.random.normal(scale=1.0 / (self.opt.d ** 2),
                                           size=(header['num_items'], 1)).astype("float32"), order='C')
-        self.obj.initialize_model(self.P, self.Q, self.Qb, header['num_nnz'])
+        if not self.opt.use_bias:
+            self.Qb *= 0
+        self.obj.initialize_model(self.P, self.Q, self.Qb, self.num_nnz)
 
     def prepare_sampling(self):
         self.logger.info('Preparing sampling ...')
@@ -104,8 +117,15 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
-        topks = super()._get_topk_recommendation(p, self.Q, pool, topk, self.opt.num_workers)
+        Qb = self.Qb if self.opt.use_bias else None
+
+        topks = super()._get_topk_recommendation(
+            p, self.Q,
+            pb=None, Qb=Qb,
+            pool=pool, topk=topk, num_workers=self.opt.num_workers)
+
         return zip(rows, topks)
+
 
     def _get_most_similar_item(self, col, topk, pool):
         return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q, pool)
@@ -113,6 +133,10 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.P[r].dot(self.Q[c]) + self.Qb[c][0] for r, c in row_col_pairs}
         return rets
+
+    def _get_scores(self, row, col):
+        scores = (self.P[row] * self.Q[col]).sum(axis=1) + self.Qb[col][0]
+        return scores
 
     def sampling_loss_samples(self):
         users, positives, negatives = [], [], []
@@ -151,17 +175,16 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def _iterate(self):
         header = self.data.get_header()
-        end = header['num_users']
+        # end = header['num_users']
         update_t, feed_t, updated = 0, 0, 0
         self.buf.set_group('rowwise')
-        with log.pbar(log.DEBUG,
-                      total=header['num_nnz'], mininterval=30) as pbar:
+        with log.ProgressBar(log.DEBUG,
+                             total=header['num_nnz'], mininterval=30) as pbar:
             start_t = time.time()
             for sz in self.buf.fetch_batch():
                 updated += sz
                 feed_t += time.time() - start_t
-                start_x, next_x, indptr, keys, vals = self.buf.get()
-
+                start_x, next_x, indptr, keys, _ = self.buf.get()
                 start_t = time.time()
                 self.obj.add_jobs(start_x, next_x, indptr, keys)
                 update_t += time.time() - start_t
@@ -175,22 +198,47 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
                                      self._sub_samples[1],
                                      self._sub_samples[2])
 
+    def _prepare_train(self):
+        if self.opt.accelerator:
+            vdim = self.obj.get_vdim()
+            for attr in ["P", "Q"]:
+                F = getattr(self, attr)
+                if F.shape[1] < vdim:
+                    _F = np.empty(shape=(F.shape[0], vdim), dtype=np.float32)
+                    _F[:,:F.shape[1]] = F
+                    _F[:,self.opt.d:] = 0.0
+                    setattr(self, attr, _F)
+            indptr, _, batch_size = self.buf.get_indptrs()
+            self.obj.set_placeholder(indptr, batch_size)
+            self.obj.initialize_model(self.P, self.Q, self.Qb, self.num_nnz, True)
+        else:
+            self.obj.launch_workers()
+
+    def _finalize_train(self):
+        if self.opt.accelerator:
+            self.P = self.P[:,:self.opt.d]
+            self.Q = self.Q[:,:self.opt.d]
+            return 0.0
+        else:
+            return self.obj.join()
+
     def train(self):
-        rmse, self.validation_result = None, {}
-        self.prepare_evaluation()
+        self.validation_result = {}
         self.initialize_tensorboard(self.opt.num_iters)
         self.sampling_loss_samples()
-        self.obj.launch_workers()
         best_loss = 987654321.0
+        # initialize placeholder in case of running accelerator otherwise launch workers
+        self._prepare_train()
+
         for i in range(self.opt.num_iters):
             start_t = time.time()
             self._iterate()
             self.obj.wait_until_done()
             loss = self.compute_loss() if self.opt.compute_loss_on_training else 0.0
-            train_t = time.time() - start_t
-
             metrics = {'train_loss': loss}
-            if self.opt.validation and self.opt.evaluation_on_learning and self.periodical(self.opt.evaluation_period, i):
+            if self.opt.validation and \
+               self.opt.evaluation_on_learning and \
+               self.periodical(self.opt.evaluation_period, i):
                 start_t = time.time()
                 self.validation_result = self.get_validation_results()
                 vali_t = time.time() - start_t
@@ -203,9 +251,8 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
             best_loss = self.save_best_only(loss, best_loss, i)
             if self.early_stopping(loss):
                 break
-        loss = self.obj.join()
-
-        ret = {'train_loss': loss}
+        # reshape factor if using accelerator else join workers
+        ret = {'train_loss': self._finalize_train()}
         ret.update({'val_%s' % k: v
                     for k, v in self.validation_result.items()})
         self.finalize_tensorboard()
@@ -224,7 +271,6 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
         self.logger.info(params)
         self.init_factors()
         loss = self.train()
-        loss['eval_time'] = time.time()
         loss['loss'] = loss.get(self.opt.optimize.loss)
         # TODO: deal with failture of training
         loss['status'] = HOPT_STATUS_OK

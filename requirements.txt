@@ -3,7 +3,6 @@ fire
 pathlib
 numpy
 cython
-tqdm
 psutil
 h5py
 hyperopt

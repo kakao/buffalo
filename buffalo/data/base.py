@@ -5,7 +5,7 @@ import psutil
 
 import h5py
 import numpy as np
-
+from scipy.sparse import csr_matrix
 from buffalo.data import prepro
 from buffalo.misc import aux, log
 from buffalo.data.fileio import chunking_into_bins, sort_and_compressed_binarization
@@ -198,7 +198,7 @@ class Data(object):
     def _create_validation(self, f, **kwargs):
         if not self.opt.data.validation:
             return kwargs['num_nnz']
-        num_nnz = kwargs['num_nnz']
+        num_users, num_nnz = kwargs['num_users'], kwargs['num_nnz']
         method = self.opt.data.validation.name
 
         f.create_group('vali')
@@ -208,9 +208,6 @@ class Data(object):
         if method == 'sample':
             sz = min(self.opt.data.validation.max_samples,
                      int(num_nnz * self.opt.data.validation.p))
-            g.create_dataset('row', (sz,), dtype='int32', maxshape=(sz,))
-            g.create_dataset('col', (sz,), dtype='int32', maxshape=(sz,))
-            g.create_dataset('val', (sz,), dtype='float32', maxshape=(sz,))
             g.create_dataset('indexes', (sz,), dtype='int64', maxshape=(sz,))
             # Watch out, create_working_data cannot deal with last line of data
             # for validation data thus we have to reduce index 1.
@@ -218,12 +215,13 @@ class Data(object):
             num_nnz -= sz
         elif method in ['newest']:
             sz = kwargs['num_validation_samples']
-            g.create_dataset('row', (sz,), dtype='int32', maxshape=(sz,))
-            g.create_dataset('col', (sz,), dtype='int32', maxshape=(sz,))
-            g.create_dataset('val', (sz,), dtype='float32', maxshape=(sz,))
             g.attrs['n'] = self.opt.data.validation.n
             # We don't need to reduce sample size for validation samples. It
             # already applied on caller side.
+
+        g.create_dataset('row', (sz,), dtype='int32', maxshape=(sz,))
+        g.create_dataset('col', (sz,), dtype='int32', maxshape=(sz,))
+        g.create_dataset('val', (sz,), dtype='float32', maxshape=(sz,))
         g.attrs['num_samples'] = sz
         return num_nnz
 
@@ -232,10 +230,52 @@ class Data(object):
             return
         validation_data = [line.strip().split() for line in validation_data]
         assert len(validation_data) == db['vali'].attrs['num_samples'], 'Mimatched validation data'
-        db['vali']['row'][:] = [int(r) - 1 for r, _, _ in validation_data]  # 0-based
-        db['vali']['col'][:] = [int(c) - 1 for _, c, _ in validation_data]  # 0-based
-        V = np.array([float(v) for _, _, v in validation_data], dtype=np.float32)
-        db['vali']['val'][:] = self.value_prepro(V)
+
+        num_users, num_items = db.attrs['num_users'], db.attrs['num_items']
+        row = [int(r) - 1 for r, _, _ in validation_data]  # 0-based
+        col = [int(c) - 1 for _, c, _ in validation_data]  # 0-based
+        val = np.array([float(v) for _, _, v in validation_data], dtype=np.float32)
+        temp_mat = csr_matrix((val, (row, col)), (num_users, num_items))
+        db['vali']['row'][:] = row
+        db['vali']['col'][:] = col
+        db['vali']['val'][:] = self.value_prepro(temp_mat.data)
+
+    def _prepare_validation_data(self):
+        if hasattr(self, 'vali_data'):
+            return True
+
+        db = self.handle
+        num_users, num_items = db.attrs['num_users'], db.attrs['num_items']
+        row = db['vali']['row'][::]
+        col = db['vali']['col'][::]
+        val = db['vali']['val'][::]
+
+        _temp_mat = csr_matrix((val, (row, col)), (num_users, num_items))
+        indptr = _temp_mat.indptr[1:]
+        key = _temp_mat.indices
+        vali_rows = np.arange(len(indptr))[np.ediff1d(indptr, to_begin=indptr[0]) > 0]
+        vali_gt = {
+            u: set(key[indptr[u - 1]:indptr[u]]) if u != 0 else set(key[:indptr[0]])
+            for u in vali_rows}
+        validation_seen = {}
+        max_seen_size = 0
+        for rowid in vali_rows:
+            seen, *_ = self.get(rowid)
+            validation_seen[rowid] = set(seen)
+            max_seen_size = max(len(seen), max_seen_size)
+        validation_seen = validation_seen
+        validation_max_seen_size = max_seen_size
+
+        self.vali_data = {
+            "row": row,
+            "col": col,
+            "val": val,
+            "vali_rows": vali_rows,
+            "vali_gt": vali_gt,
+            "validation_seen": validation_seen,
+            "validation_max_seen_size": validation_max_seen_size
+        }
+        return True
 
     def _sort_and_compressed_binarization(self, mm_path, num_lines, max_key, sort_key):
         num_workers = psutil.cpu_count()
@@ -245,29 +285,46 @@ class Data(object):
             num_lines, max_key, sort_key, num_workers)
         return merged_bin
 
-    def _load_compressed_triplet_bin(self, db, bin_path, num_lines, max_key, is_colwise=0):
-        self.logger.info('Load triplet bin: %s' % bin_path)
+    def _load_compressed_triplet_bin(self, db, job_files, num_lines, max_key, is_colwise=0):
+        self.logger.info('Load triplet files. Total job files: %s' % len(job_files))
         INDPTR_SIZE = 8
         RECORD_SIZE = 8
-        with open(bin_path, 'rb') as fin:
-            estimated_size = num_lines * 8 + max_key * 8
-            total_size = fin.seek(0, 2)
+        record_estimated_size = num_lines * RECORD_SIZE
+        indptr_estimated_size = max_key * INDPTR_SIZE
+        indptr_file = job_files[0]
+        job_files = job_files[1:]
+        with open(indptr_file, 'rb') as fin:
+            indptr_total_size = fin.seek(0, 2)
             fin.seek(0, 0)
-            assert estimated_size == total_size, f'Not valid file size {total_size} (excepted: {estimated_size})'
+            assert indptr_estimated_size == indptr_total_size, f'Not valid indptr file size {indptr_total_size} (excepted: {indptr_estimated_size})'
             indptr = np.frombuffer(fin.read(max_key * 8),
                                    dtype=np.int64,
                                    count=max_key)
-            data = np.frombuffer(fin.read(),
-                                 dtype=np.dtype([('i', 'i'),
-                                                 ('v', 'f')]),
-                                 count=num_lines).copy()
-            I, V = data['i'], data['v']
-            I -= 1
-            V = self.value_prepro(V)
-            db['key'][:num_lines] = I
-            db['val'][:num_lines] = V
             db['indptr'][:max_key] = indptr
-        os.remove(bin_path)
+        record_total_size = 0
+        data_index = 0
+        for job in job_files:
+            with open(job, 'rb') as fin:
+                total_size = fin.seek(0, 2)
+                if total_size == 0:
+                    continue
+                record_total_size += total_size
+                total_records = int(total_size / RECORD_SIZE)
+                fin.seek(0, 0)
+                data = np.frombuffer(fin.read(),
+                                     dtype=np.dtype([('i', 'i'),
+                                                     ('v', 'f')]),
+                                     count=total_records)
+                I, V = data['i'], data['v']
+                if self.opt.data.value_prepro:
+                    V = self.value_prepro(V.copy())
+                db['key'][data_index:data_index + total_records] = I
+                db['val'][data_index:data_index + total_records] = V
+                data_index += total_records
+        assert record_estimated_size == record_total_size, f'Not valid record file size {record_total_size} (excepted: {record_estimated_size})'
+        os.remove(indptr_file)
+        for path in job_files:
+            os.remove(path)
 
     def _chunking_into_bins(self, mm_path, num_lines, max_key, sep_idx):
         num_workers = psutil.cpu_count()
@@ -285,7 +342,7 @@ class Data(object):
 
     def _build_compressed_triplets(self, db, job_files, num_lines, max_key, is_colwise=0):
         self.logger.info('Total job files: %s' % len(job_files))
-        with log.pbar(log.INFO, total=len(job_files), mininterval=10) as pbar:
+        with log.ProgressBar(log.INFO, total=len(job_files), mininterval=10) as pbar:
             indptr_index = 0
             data_index = 0
             RECORD_SIZE = 12
@@ -301,13 +358,12 @@ class Data(object):
                                          dtype=np.dtype([('u', 'i'),
                                                          ('i', 'i'),
                                                          ('v', 'f')]),
-                                         count=total_records).copy()
+                                         count=total_records)
                     U, I, V = data['u'], data['i'], data['v']
                     if is_colwise:
                         U, I = I, U
-                    U -= 1
-                    I -= 1
-                    V = self.value_prepro(V)
+                    if self.opt.data.value_prepro:
+                        V = self.value_prepro(V.copy())
                     self.logger.debug("minU: {}, maxU: {}".format(U[0], U[-1]))
                     assert data_index + total_records <= num_lines, 'Requests data size(%s) exceed capacity(%s)' % (data_index + total_records, num_lines)
                     db['key'][data_index:data_index + total_records] = I
@@ -315,7 +371,7 @@ class Data(object):
                     indptr = [data_index for j in range(U[0] - prev_key)]
                     indptr += [data_index + i
                                for i in range(1, total_records)
-                               for j in range(U[i] - U[i-1])]
+                               for j in range(U[i] - U[i - 1])]
                     db['indptr'][indptr_index:indptr_index + len(indptr)] = indptr
                     assert indptr_index + len(indptr) <= max_key
                     data_index += total_records
@@ -348,13 +404,13 @@ class Data(object):
             self.prepro.pre(db)
             if approximated_data_mb * 1.2 < available_mb:
                 self.logger.info('In-memory Compressing ...')
-                merged_bin = self._sort_and_compressed_binarization(
+                job_files = self._sort_and_compressed_binarization(
                     working_data_path,
                     db.attrs['num_nnz'],
                     max_key,
                     sort_key=sep_idx + 1 if sort else -1)
                 self._load_compressed_triplet_bin(
-                    db[group], merged_bin,
+                    db[group], job_files,
                     num_lines=db.attrs['num_nnz'],
                     max_key=max_key,
                     is_colwise=sep_idx)

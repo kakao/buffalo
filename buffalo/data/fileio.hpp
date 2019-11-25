@@ -2,15 +2,25 @@
 #include <cmath>
 #include <omp.h>
 #include <vector>
+#include <unordered_set>
 #include <string>
 #include <cstdio>
 #include <fstream>
+#include <algorithm>
+#include <atomic>
+#include <iostream>
 #include <parallel/algorithm>
 
 using namespace std;
 
 namespace fileio
 {
+
+ifstream::pos_type get_file_size(const char* fname)
+{
+    ifstream in(fname, ios::ate);
+    return in.tellg();
+}
 
 vector<string> _chunking_into_bins(string path, string to_dir,
         int64_t total_lines, int num_chunks, int sep_idx, int num_workers)
@@ -80,6 +90,8 @@ vector<string> _chunking_into_bins(string path, string to_dir,
             float v;
             while (getline(fins[i], _line)) {
                 sscanf(_line.c_str(), "%d %d %f", &r, &c, &v);
+                --r;
+                --c;
                 fwrite((char*)&r, sizeof(r), 1, fouts[i]);
                 fwrite((char*)&c, sizeof(c), 1, fouts[i]);
                 fwrite((char*)&v, sizeof(v), 1, fouts[i]);
@@ -94,6 +106,149 @@ vector<string> _chunking_into_bins(string path, string to_dir,
     return chunk_files;
 }
 
+int _parallel_build_sppmi(string from_path, string to_path,
+        int64_t total_lines, int num_items, int k, int num_workers)
+{
+    double log_d = log(total_lines);
+    double log_k = log(k);
+
+    atomic<int64_t> appearances[num_items];
+    for (int i=0; i < num_items; ++i) {
+        appearances[i] = 0;
+    }
+
+    ofstream fout(to_path.c_str(), ofstream::out | ofstream::trunc);
+    int64_t nnz = 0;
+
+    long file_size = get_file_size(from_path.c_str());
+
+    long split_size = 4 * 1024 * 1024;
+    long num_split = file_size / split_size;
+    if (file_size % split_size != 0) {
+        ++num_split;
+    }
+
+    #pragma omp parallel num_threads(num_workers)
+    {
+        ifstream fin(from_path.c_str());
+
+        // build appearances
+        #pragma omp for schedule(dynamic, 1)
+        for (int i=0; i < num_split; ++i) {
+            long start_pos = i*split_size;
+            long end_pos = (i+1) * split_size;
+
+            fin.clear();
+            fin.seekg(start_pos, ios::beg);
+
+            string line;
+            if (i != 0) {
+                // first line is handled by previous thread
+                getline(fin, line);
+            }
+
+            while(getline(fin, line)) {
+                int cur_id;
+                sscanf(line.c_str(), "%d %*d", &cur_id);
+                assert(cur_id > 0 and cur_id <= num_items);
+
+                appearances[cur_id-1].fetch_add(1, memory_order_relaxed);
+
+                // not less than. for prcessing first line of next split
+                if (end_pos < fin.tellg()) {
+                    break;
+                }
+            }
+        }
+
+        // build sppmi
+        #pragma omp for schedule(dynamic, 1)
+        for (int i=0; i < num_split; ++i) {
+            long start_pos = i*split_size;
+            long end_pos = (i+1) * split_size;
+
+            fin.clear();
+            fin.seekg(start_pos, ios::beg);
+
+            string line;
+            if (i != 0) {
+                // first line is handled by previous thread
+                getline(fin, line);
+            }
+
+            int skip_id = -1;
+            int last_id = -1;
+            int probe_id = -1;
+            bool break_if_new_id_begin = false;
+            vector<int> chunk;
+            while(getline(fin, line)) {
+                int cur_id, c;
+                sscanf(line.c_str(), "%d %d", &cur_id, &c);
+                assert(cur_id > 0 and cur_id <= num_items);
+
+                // first id found is handled by previous thread
+                if (i != 0 and (skip_id == -1 or skip_id == cur_id)) {
+                    skip_id = cur_id;
+
+                    if (break_if_new_id_begin) {
+                        break;
+                    }
+
+                    // not less than. for prcessing first line of next split
+                    if (end_pos < fin.tellg()) {
+                        break_if_new_id_begin = true;
+                    }
+
+                    continue;
+                }
+
+                if (probe_id == -1) {
+                    probe_id = cur_id;
+                } else if (probe_id != cur_id) {
+                    unordered_set<int> chunk_set(chunk.begin(), chunk.end());
+                    for (const auto& _c : chunk_set) {
+                        if (probe_id < _c)
+                            continue;
+                        int cnt = count(chunk.begin(), chunk.end(), _c);
+                        double pmi = log(cnt) + log_d
+                            - log(appearances[probe_id-1].load(memory_order_relaxed))
+                            - log(appearances[_c-1].load(memory_order_relaxed));
+                        double sppmi = pmi - log_k;
+
+                        if (sppmi > 0) {
+                            #pragma omp critical(out)
+                            {
+                                fout << probe_id << ' ' << _c << ' ' << sppmi << '\n';
+                                fout << _c << ' ' << probe_id << ' ' << sppmi << '\n';
+                                nnz += 2;
+                            }
+                        }
+                    }
+
+                    probe_id = cur_id;
+                    chunk.clear();
+                }
+                chunk.push_back(c);
+
+                if (break_if_new_id_begin) {
+                    if (last_id == -1) {
+                        last_id = cur_id;
+                    } else if (last_id != cur_id) {
+                        break;
+                    }
+                }
+
+                // not less than. for prcessing first line of next split
+                if (end_pos < fin.tellg()) {
+                    break_if_new_id_begin = true;
+                }
+            }
+        }
+    }
+
+    return nnz;
+}
+
 
 struct triple_t
 {
@@ -101,9 +256,11 @@ struct triple_t
     float v;
     triple_t() : r(0), c(0), v(0.0) {
     }
+    triple_t(int r, int c, float v) : r(r), c(c), v(v) {
+    }
 };
 
-string _sort_and_compressed_binarization(
+vector<string> _sort_and_compressed_binarization(
         string path,
         string to_dir,
         int64_t total_lines,
@@ -111,12 +268,61 @@ string _sort_and_compressed_binarization(
         int sort_key,
         int num_workers)
 {
-    FILE* fin = fopen(path.c_str(), "r");
+    long file_size = get_file_size(path.c_str());
 
-    vector<triple_t> records(total_lines);
-    for (long i=0; i < total_lines; ++i) {
-        fscanf(fin, "%d %d %f", &records[i].r, &records[i].c, &records[i].v);
+    long split_size = 4 * 1024 * 1024;
+    long num_split = file_size / split_size;
+    if (file_size % split_size != 0) {
+        ++num_split;
     }
+
+    vector<vector<triple_t>> split_records(num_split);
+
+    #pragma omp parallel num_threads(num_workers)
+    {
+        ifstream fin(path.c_str());
+
+        #pragma omp for schedule(dynamic, 1)
+        for (int i=0; i < num_split; ++i) {
+            long start_pos = i*split_size;
+            long end_pos = (i+1) * split_size;
+
+            fin.clear();
+            fin.seekg(start_pos, ios::beg);
+
+            vector<triple_t> records;
+            string line;
+            if (i != 0) {
+                // first line is handled by previous thread
+                getline(fin, line);
+            }
+
+            while(getline(fin, line)) {
+                int r, c;
+                float v;
+                sscanf(line.c_str(), "%d %d %f", &r, &c, &v);
+                records.emplace_back(r, c, v);
+
+                // not less than. for prcessing first line of next split
+                if (end_pos < fin.tellg()) {
+                    break;
+                }
+            }
+            split_records[i] = records;
+        }
+    }
+
+    vector<triple_t> records;
+    records.reserve(total_lines);
+    for (const auto& v : split_records) {
+        auto end_it = end(v);
+        if (records.size() + v.size() > (uint64_t)total_lines) {
+            end_it = next(begin(v), total_lines - records.size());
+        }
+        records.insert(end(records), begin(v), end_it);
+    }
+
+    assert(records.size == total_lines);
 
     omp_set_num_threads(num_workers);
 
@@ -134,9 +340,18 @@ string _sort_and_compressed_binarization(
                                     });
     }
 
+    vector<string> chunk_files;
     char cbuffer[512];
-    sprintf(cbuffer, "%s/chunk.bin", to_dir.c_str());
-    FILE* fout = fopen(cbuffer, "w");
+    sprintf(cbuffer, "%s/indptr.bin", to_dir.c_str());
+    FILE* fout_indptr = fopen(cbuffer, "w");
+    chunk_files.push_back(cbuffer);
+
+    FILE* fouts[num_workers];
+    for (int i=0; i < num_workers; ++i) {
+        sprintf(cbuffer, "%s/chunk%d.bin", to_dir.c_str(), i);
+        fouts[i] = fopen(cbuffer, "w");
+        chunk_files.push_back(cbuffer);
+    }
 
     vector<int64_t> indptr;
     indptr.reserve(max_key);
@@ -163,24 +378,44 @@ string _sort_and_compressed_binarization(
     }
 
     for (const auto& i : indptr) {
-        fwrite((char*)&i, sizeof(i), 1, fout);
+        fwrite((char*)&i, sizeof(i), 1, fout_indptr);
     }
 
-    if (sort_key == 1 or sort_key == -1){
-        for (const auto& r : records) {
-            fwrite((char*)&r.c, sizeof(r.c), 1, fout);
-            fwrite((char*)&r.v, sizeof(r.v), 1, fout);
-        }
+    long records_size = records.size();
+    long per_workers_num = records_size / num_workers;
+    if (records_size % num_workers != 0) {
+        ++per_workers_num;
     }
-    else {
-        for (const auto& r : records) {
-            fwrite((char*)&r.r, sizeof(r.r), 1, fout);
-            fwrite((char*)&r.v, sizeof(r.v), 1, fout);
+
+    #pragma omp parallel num_threads(num_workers)
+    {
+        #pragma omp for
+        for (int i=0; i < num_workers; ++i) {
+            long start_index = per_workers_num * i;
+            long end_index = min(per_workers_num * (i+1), records_size);
+
+            for (long j=start_index; j < end_index; ++j) {
+                auto& r = records[j];
+                if (sort_key == 1 or sort_key == -1) {
+                    --r.c;
+                    fwrite((char*)&r.c, sizeof(r.c), 1, fouts[i]);
+                    fwrite((char*)&r.v, sizeof(r.v), 1, fouts[i]);
+                }
+                else {
+                    --r.r;
+                    fwrite((char*)&r.r, sizeof(r.r), 1, fouts[i]);
+                    fwrite((char*)&r.v, sizeof(r.v), 1, fouts[i]);
+                }
+            }
         }
     }
 
-    fclose(fout);
-    return string(cbuffer);
+    fclose(fout_indptr);
+    for (int i=0; i < num_workers; ++i) {
+        fclose(fouts[i]);
+    }
+
+    return chunk_files;
 }
 
 }

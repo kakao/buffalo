@@ -8,8 +8,8 @@ import numpy as np
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
-from buffalo.data.base import Data
 from buffalo.misc import aux, log
+from buffalo.data.base import Data
 from buffalo.algo._w2v import CyW2V
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import W2VOption
@@ -33,8 +33,7 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.logger = log.get_logger('W2V')
         self.opt, self.opt_path = self.get_option(opt_path)
         self.obj = CyW2V()
-        assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
-            'cannot parse option file: %s' % opt_path
+        assert self.obj.init(bytes(self.opt_path, 'utf-8')), 'cannot parse option file: %s' % opt_path
         self.data = None
         data = kwargs.get('data')
         data_opt = self.opt.get('data_opt')
@@ -88,8 +87,6 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
     def initialize(self):
         super().initialize()
         assert self.data, 'Data is not setted'
-        if self.opt.random_seed:
-            np.random.seed(self.opt.random_seed)
         self.buf = BufferedDataStream()
         self.buf.initialize(self.data)
         self.build_vocab()
@@ -143,8 +140,8 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def init_factors(self, vocab_size):
         self.L0 = None
-        self.L0 = np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
-                                         size=(vocab_size, self.opt.d)).astype("float32"))
+        self.L0 = np.abs(np.random.normal(scale=1.0 / (self.opt.d ** 2),
+                                          size=(vocab_size, self.opt.d)).astype("float32"))
 
     def get_sampling_distribution(self, uni, use, total_vocab):
         dist0 = np.zeros(shape=total_vocab, dtype=np.float64, order='C')
@@ -162,11 +159,11 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
         for i in range(total_vocab):
             summed += dist0[i]
             dist[i] = summed * domain
-        assert(dist[-1] == domain)
+        assert abs(dist[-1] - domain) < 3 # small difference is okay
         return dist
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
-        raise NotImplemented
+        raise NotImplementedError
 
     def _get_most_similar_item(self, col, topk, pool):
         if not isinstance(col, np.ndarray):
@@ -182,11 +179,11 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def _iterate(self):
         header = self.data.get_header()
-        end = header['num_users']
+        # end = header['num_users']
         update_t, feed_t, updated = 0, 0, 0
         self.buf.set_group('rowwise')
-        with log.pbar(log.DEBUG,
-                      total=header['num_nnz'], mininterval=15) as pbar:
+        with log.ProgressBar(log.DEBUG,
+                             total=header['num_nnz'], mininterval=15) as pbar:
             start_t = time.time()
             for sz in self.buf.fetch_batch():
                 updated += sz
@@ -201,13 +198,13 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def train(self):
         self.validation_result = {}
-        self.prepare_evaluation()
         self.obj.launch_workers()
         for i in range(self.opt.num_iters):
             start_t = time.time()
             self._iterate()
             self.logger.info('Iteration %s: Elapsed %.3f secs' % (i + 1, time.time() - start_t))
-        loss = self.obj.join()
+        # loss = self.obj.join()
+        self.obj.join()
         return {}
 
     def _optimize(self, params):
@@ -223,7 +220,6 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.logger.info(params)
         self.init_factors()
         loss = self.train()
-        loss['eval_time'] = time.time()
         loss['loss'] = loss.get(self.opt.optimize.loss)
         # TODO: deal with failture of training
         loss['status'] = HOPT_STATUS_OK

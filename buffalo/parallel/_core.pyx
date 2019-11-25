@@ -1,6 +1,6 @@
 # cython: experimental_cpp_class_def=True, language_level=3
 # distutils: language=c++
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 import cython
 from libcpp.string cimport string
 from libcpp.vector cimport vector

@@ -57,7 +57,7 @@ class AlgoOption(InputOptions):
     def is_valid_option(self, opt):
         b = super().is_valid_option(opt)
         for f in ['num_workers']:
-            if not f in opt:
+            if f not in opt:
                 raise RuntimeError(f'{f} not defined')
         return b
 
@@ -137,6 +137,7 @@ class ALSOption(AlgoOption):
         })
         return Option(opt)
 
+
 class CFROption(AlgoOption):
     def __init__(self, *args, **kwargs):
         super(CFROption, self).__init__(*args, **kwargs)
@@ -213,7 +214,7 @@ class CFROption(AlgoOption):
         b = super().is_valid_option(opt)
         possible_optimizers = ["llt", "ldlt", "manual_cg", "eigen_cg", "eigen_bicg",
                                "eigen_gmres", "eigen_dgmres", "eigen_minres"]
-        if not opt.optimizer in possible_optimizers:
+        if opt.optimizer not in possible_optimizers:
             msg = f"optimizer ({opt.optimizer}) should be in {possible_optimizers}"
             raise RuntimeError(msg)
         return b
@@ -226,9 +227,11 @@ class BPRMFOption(AlgoOption):
     def get_default_option(self):
         """Options for Bayesian Personalized Ranking Matrix Factorization.
 
+        :ivar bool accelerator: Set True, to accelerate training using GPU. (default: False)
         :ivar bool use_bias: Set True, to use bias term for the model.
         :ivar int evaluation_period: (default: 100)
         :ivar int num_workers: The number of threads. (default: 1)
+        :ivar int hyper_threads: The number of hyper threads when using cuda cores. (default: 256)
         :ivar int num_iters: The number of iterations for training. (default: 100)
         :ivar int d: The number of latent feature dimension. (default: 20)
         :ivar bool update_i: Set True, to update positive item feature. (default: True)
@@ -244,15 +247,19 @@ class BPRMFOption(AlgoOption):
         :ivar float beta2: The parameter of Adam optimizer. (default: 0.999)
         :ivar bool per_coordinate_normalize: This is a bit tricky option for Adam optimizer. Before update factors with graidents, do normalize gradients per class by its number of contributed samples. (default: False)
         :ivar int num_negative_samples: The number of negaitve samples. (default: 1)
-        :ivar float sampleling_power: This paramemter control sampling distribution. When it set to 0, it draw negative items from uniform distribution, while to set 1, it draw from the given data popularation. (default: 0.0)
+        :ivar float sampling_power: This paramemter control sampling distribution. When it set to 0, it draw negative items from uniform distribution, while to set 1, it draw from the given data popularation. (default: 0.0)
+        :ivar bool random_positive: Set True, to draw positive sample uniformly instead of using straight forward positive sample, only implemented in cuda mode, according to the original paper, set True, but we found out False usually produces better results) (default: False)
+        :ivar bool verify_neg: Set True, to ensure negative sample does not belong to positive samples. (default True)
         :ivar str model_path: Where to save model.
         :ivar dict data_opt: This options will be used to load data if given.
         """
         opt = super().get_default_option()
         opt.update({
+            'accelerator': False,
             'use_bias': True,
             'evaluation_period': 100,
             'num_workers': 1,
+            'hyper_threads': 256,
             'num_iters': 100,
             'd': 20,
             'update_i': True,
@@ -260,17 +267,20 @@ class BPRMFOption(AlgoOption):
             'reg_u': 0.025,
             'reg_i': 0.025,
             'reg_j': 0.025,
-            'reg_b': 0.025,
+            'reg_b': 1.0,
 
             'optimizer': 'sgd',
             'lr': 0.002,
             'min_lr': 0.0001,
             'beta1': 0.9,
             'beta2': 0.999,
+            'eps': 1e-10,
 
             'per_coordinate_normalize': False,
             'num_negative_samples': 1,
             'sampling_power': 0.0,
+            'verify_neg': True,
+            'random_positive': False,
 
             'model_path': '',
             'data_opt': {}

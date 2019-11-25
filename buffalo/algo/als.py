@@ -12,14 +12,13 @@ from buffalo.algo._als import CyALS
 from buffalo.evaluate import Evaluable
 from buffalo.algo.options import ALSOption
 from buffalo.algo.optimize import Optimizable
-from buffalo.algo.tensorflow._als import TFALS
 from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 
 inited_CUALS = True
 try:
     from buffalo.algo.cuda._als import CyALS as CuALS
-except Exception as e:
+except Exception:
     inited_CUALS = False
 
 
@@ -40,12 +39,12 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
         self.logger = log.get_logger('ALS')
         self.opt, self.opt_path = self.get_option(opt_path)
-        self.obj = CuALS() if self.opt.accelerator else CyALS()
         if self.opt.accelerator and not inited_CUALS:
             self.logger.error("ImportError CuALS, no cuda library exists.")
             raise RuntimeError()
-        assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
-            'cannot parse option file: %s' % opt_path
+        self.obj = CuALS() if self.opt.accelerator else CyALS()
+        assert self.obj.init(bytes(self.opt_path, 'utf-8')), 'cannot parse option file: %s' % opt_path
+
         self.data = None
         data = kwargs.get('data')
         data_opt = self.opt.get('data_opt')
@@ -86,7 +85,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         header = self.data.get_header()
         for name, rows in [('P', header['num_users']), ('Q', header['num_items'])]:
             setattr(self, name, None)
-            setattr(self, name, np.abs(np.random.normal(scale=1.0/(self.opt.d ** 2),
+            setattr(self, name, np.abs(np.random.normal(scale=1.0 / (self.opt.d ** 2),
                                        size=(rows, self.vdim)).astype("float32")))
         self.P[:, self.opt.d:] = 0.0
         self.Q[:, self.opt.d:] = 0.0
@@ -94,7 +93,10 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
-        topks = super()._get_topk_recommendation(p, self.Q, pool, topk, self.opt.num_workers)
+        topks = super()._get_topk_recommendation(
+            p, self.Q,
+            pb=None, Qb=None,
+            pool=pool, topk=topk, num_workers=self.opt.num_workers)
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk, pool):
@@ -103,6 +105,10 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.P[r].dot(self.Q[c]) for r, c in row_col_pairs}
         return rets
+
+    def _get_scores(self, row, col):
+        scores = (self.P[row] * self.Q[col]).sum(axis=1)
+        return scores
 
     def _get_buffer(self):
         buf = BufferedDataMatrix()
@@ -119,8 +125,8 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         loss_nume, loss_deno = 0.0, 0.0
         update_t, feed_t, updated = el, 0, 0
         buf.set_group(group)
-        with log.pbar(log.DEBUG, desc='%s' % group,
-                      total=header['num_nnz'], mininterval=30) as pbar:
+        with log.ProgressBar(log.DEBUG, desc='%s' % group,
+                             total=header['num_nnz'], mininterval=30) as pbar:
             for sz in buf.fetch_batch():
                 updated += sz
                 start_x, next_x, indptr, keys, vals = buf.get()
@@ -134,7 +140,8 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
                 pbar.update(sz)
                 feed_t += _feed_t
                 update_t += _update_t
-        self.logger.debug(f'{group} updated: processed({updated}) elapsed(data feed: {feed_t:0.3f}s update: {update_t:0.03}s)')
+        self.logger.debug(
+            f'{group} updated: processed({updated}) elapsed(data feed: {feed_t:0.3f}s update: {update_t:0.03}s)')
         return loss_nume, loss_deno
 
     def train(self):
@@ -144,7 +151,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
                 if F.shape[1] < self.vdim:
                     _F = np.empty(shape=(F.shape[0], self.vdim), dtype=np.float32)
                     _F[:, :self.P.shape[1]] = F
-                    _F[:, self.opt.d: ] = 0.0
+                    _F[:, self.opt.d:] = 0.0
                     setattr(self, attr, _F)
             self.obj.initialize_model(self.P, self.Q)
 
@@ -154,7 +161,6 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
             self.obj.set_placeholder(lindptr, rindptr, batch_size)
 
         best_loss, rmse, self.validation_result = 987654321.0, None, {}
-        self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
         full_st = time.time()
         for i in range(self.opt.num_iters):
@@ -168,7 +174,9 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
             train_t = time.time() - start_t
             rmse = (loss_nume / (loss_deno + self.opt.eps)) ** 0.5
             metrics = {'train_loss': rmse}
-            if self.opt.validation and self.opt.evaluation_on_learning and self.periodical(self.opt.evaluation_period, i):
+            if self.opt.validation and \
+               self.opt.evaluation_on_learning and \
+               self.periodical(self.opt.evaluation_period, i):
                 start_t = time.time()
                 self.validation_result = self.get_validation_results()
                 vali_t = time.time() - start_t
@@ -204,7 +212,6 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.logger.info(params)
         self.initialize()
         loss = self.train()
-        loss['eval_time'] = time.time()
         loss['loss'] = loss.get(self.opt.optimize.loss)
         if any([metric in self.opt.optimize.loss for metric in ['ndcg', 'map', 'accracy']]):
             loss['loss'] *= -1

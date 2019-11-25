@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import time
+import logging
 import unittest
+logging.getLogger('tensorflow').disabled = True
 
 import numpy as np
 from hyperopt import STATUS_OK
@@ -255,4 +257,4 @@ class TestBase(unittest.TestCase):
         for i in range(100):
             model.most_similar(q1, pool=indexes)
         elapsed_b = time.time() - start_t
-        self.assertTrue(elapsed_a > elapsed_b * 1.5)
+        self.assertTrue(elapsed_a > elapsed_b)

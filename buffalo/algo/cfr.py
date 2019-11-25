@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
 import time
 import json
-import logging
 
-import tqdm
 import numpy as np
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
 from buffalo.misc import aux, log
+from buffalo.misc.log import ProgressBar
 from buffalo.data.base import Data
 from buffalo.algo._cfr import CyCFR
 from buffalo.evaluate import Evaluable
@@ -53,7 +52,10 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         data_opt = self.opt.get('data_opt')
         data_opt = kwargs.get('data_opt', data_opt)
         if data_opt:
+            assert data_opt.data.internal_data_type == "matrix", \
+                f"internal data type is {data_opt.data.internal_data_type}, not matrix"
             self.data = buffalo.data.load(data_opt)
+            assert self.data.data_type == 'stream'
             self.data.create()
         elif isinstance(data, Data):
             self.data = data
@@ -95,7 +97,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
                                   ('Ib', (num_items, 1), "item_bias"),
                                   ('Cb', (num_items, 1), "context_bias")]:
             setattr(self, attr, None)
-            F = np.random.normal(scale=1.0/(d ** 2), size=shape).astype(np.float32)
+            F = np.random.normal(scale=1.0 / (d ** 2), size=shape).astype(np.float32)
             setattr(self, attr, F)
             self.obj.set_embedding(getattr(self, attr), name.encode("utf8"))
         self.P = self.U
@@ -104,7 +106,10 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
         u = self.U[rows]
-        topks = super()._get_topk_recommendation(u, self.I, pool, topk, self.opt.num_workers)
+        topks = super()._get_topk_recommendation(
+            u, self.I,
+            pb=None, Qb=None,
+            pool=pool, topk=topk, num_workers=self.opt.num_workers)
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk, pool):
@@ -113,6 +118,10 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.U[r].dot(self.I[c]) for r, c in row_col_pairs}
         return rets
+
+    def _get_scores(self, row, col):
+        scores = (self.U[row] * self.I[col]).sum(axis=1)
+        return scores
 
     def _get_buffer(self):
         buf = BufferedDataMatrix()
@@ -135,8 +144,8 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
             total = header["sppmi_nnz"]
             _groups = ["sppmi"]
 
-        with log.pbar(log.DEBUG, desc='%s' % group,
-                      total=total, mininterval=30) as pbar:
+        with ProgressBar(log.DEBUG, desc='%s' % group,
+                         total=total, mininterval=30) as pbar:
             st = time.time()
             for start_x, next_x in buf.fetch_batch_range(_groups):
                 feed_t += time.time() - st
@@ -148,7 +157,8 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
                 pbar.update(_updated)
                 st = time.time()
             pbar.refresh()
-        self.logger.debug(f'updated {group} processed({updated}) elapsed(data feed: {feed_t:.3f} update: {update_t:.3f}")')
+        self.logger.debug(
+            f'updated {group} processed({updated}) elapsed(data feed: {feed_t:.3f} update: {update_t:.3f}")')
         return err
 
     def partial_update(self, buf, group, start_x, next_x):
@@ -162,8 +172,8 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
             indptr_u, keys_u, vals_u = buf.get_specific_chunk("colwise", start_x, next_x)
             indptr_c, keys_c, vals_c = buf.get_specific_chunk("sppmi", start_x, next_x)
             feed_t, st = time.time() - st, time.time()
-            err =  self.obj.partial_update_item(start_x, next_x, indptr_u, keys_u, vals_u,
-                                                 indptr_c, keys_c, vals_c)
+            err = self.obj.partial_update_item(start_x, next_x, indptr_u, keys_u, vals_u,
+                                               indptr_c, keys_c, vals_c)
             return err, len(keys_u) + len(keys_c), time.time() - st, feed_t
         elif group == "context":
             indptr, keys, vals = buf.get_specific_chunk("sppmi", start_x, next_x)
@@ -182,8 +192,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
     def train(self):
         assert self.is_initialized, "embedding matrix is not initialized"
         buf = self._get_buffer()
-        best_loss, rmse, self.validation_result = 987654321.0, None, {}
-        self.prepare_evaluation()
+        best_loss, self.validation_result = 987654321.0, {}
         self.initialize_tensorboard(self.opt.num_iters)
         scale = self.compute_scale()
         for i in range(self.opt.num_iters):
@@ -194,7 +203,9 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
             loss /= scale
             train_t = time.time() - start_t
             metrics = {'train_loss': loss}
-            if self.opt.validation and self.opt.evaluation_on_learning and self.periodical(self.opt.evaluation_period, i):
+            if self.opt.validation and \
+               self.opt.evaluation_on_learning and \
+               self.periodical(self.opt.evaluation_period, i):
                 start_t = time.time()
                 self.validation_result = self.get_validation_results()
                 vali_t = time.time() - start_t
@@ -225,9 +236,8 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.logger.info(params)
         self.initialize()
         loss = self.train()
-        loss['eval_time'] = time.time()
         loss['loss'] = loss.get(self.opt.optimize.loss)
-        # TODO: deal with failture of training
+        # TODO: deal with failure of training
         loss['status'] = HOPT_STATUS_OK
         self._optimize_loss = loss
         return loss

@@ -46,8 +46,8 @@ class TestParallelBase(TestBase):
         pool = np.array([], dtype=np.int32)
         topks1, scores1 = mp._most_similar('item', indexes, Q, 10, pool, -1, True)
         topks2, scores2 = self.get_most_similar(indexes, Q, 10)
-        self.assertTrue(np.allclose(topks1, topks2))
-        self.assertTrue(np.allclose(scores1, scores2))
+        self.assertTrue(np.allclose(topks1, topks2, atol=1e-07))
+        self.assertTrue(np.allclose(scores1, scores2, atol=1e-07))
 
     def test02_most_similar(self):
         num_cpu = psutil.cpu_count()
@@ -71,9 +71,9 @@ class TestParallelBase(TestBase):
             elapsed.append(time.time() - start_t)
             results.append(ret)
         for i in range(1, len(elapsed)):
-            self.assertTrue(elapsed[i - 1] > elapsed[i] * 1.5)
-            self.assertTrue(np.allclose(results[i - 1][0], results[i][0]))
-            self.assertTrue(np.allclose(results[i - 1][1], results[i][1]))
+            self.assertTrue(elapsed[i - 1] > elapsed[i] * 1.2)
+            self.assertTrue(np.allclose(results[i - 1][0], results[i][0], atol=1e-07))
+            self.assertTrue(np.allclose(results[i - 1][1], results[i][1], atol=1e-07))
 
     def test03_pool(self):
         set_log_level(1)
@@ -95,8 +95,8 @@ class TestParallelBase(TestBase):
         pool = np.array([], dtype=np.int32)
         topks1, scores1 = mp._topk_recommendation(q_indexes, P, Q, 10, pool)
         topks2, scores2 = self.get_topk(q_indexes, P, Q, 10)
-        self.assertTrue(np.allclose(topks1, topks2))
-        self.assertTrue(np.allclose(scores1, scores2))
+        self.assertTrue(np.allclose(topks1, topks2, atol=1e-07))
+        self.assertTrue(np.allclose(scores1, scores2, atol=1e-07))
 
 
 if __name__ == '__main__':

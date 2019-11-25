@@ -11,7 +11,7 @@ from .base import TestBase, MockAlgo
 
 
 class TestAlgoBase(TestBase):
-    def test0_tensorboard(self):
+    def test00_tensorboard(self):
         set_log_level(2)
         opt = ALSOption().get_default_option()
         opt.d = 5
@@ -32,7 +32,7 @@ class TestAlgoBase(TestBase):
         self.assertTrue(results['ndcg'] > 0.025)
         self.assertTrue(results['map'] > 0.015)
 
-    def test1_early_stopping(self):
+    def test01_early_stopping(self):
         set_log_level(2)
         algo = MockAlgo()
         algo.initialize()
@@ -41,7 +41,7 @@ class TestAlgoBase(TestBase):
         algo.train()
         self.assertEqual(algo.last_iteration, 5)
 
-    def test2_most_similar(self):
+    def test02_most_similar(self):
         set_log_level(2)
         opt = ALSOption().get_default_option()
 

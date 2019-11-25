@@ -25,8 +25,8 @@ numpy_include_dirs = os.path.split(numpy.__file__)[0] + '/core/include'
 n2_shared_object = n2.__file__
 
 MAJOR = 1
-MINOR = 0
-MICRO = 10
+MINOR = 1
+MICRO = 0
 Release = True
 STAGE = {True: '', False: 'b'}.get(Release)
 VERSION = f'{MAJOR}.{MINOR}.{MICRO}{STAGE}'
@@ -128,6 +128,18 @@ if CUDA:
                                 include_dirs=["./include", numpy_include_dirs,
                                               CUDA['include'], "./3rd/json11",
                                               "./3rd/spdlog/include"]))
+    extensions.append(Extension("buffalo.algo.cuda._bpr",
+                                sources=["buffalo/algo/cuda/_bpr.cpp",
+                                         "lib/cuda/bpr/bpr.cu",
+                                         "./3rd/json11/json11.cpp",
+                                         "lib/misc/log.cc"],
+                                language="c++",
+                                extra_compile_args=extra_compile_args,
+                                library_dirs=[CUDA['lib64']],
+                                libraries=['cudart', 'cublas', 'curand'],
+                                include_dirs=["./include", numpy_include_dirs,
+                                              CUDA['include'], "./3rd/json11",
+                                              "./3rd/spdlog/include"]))
 else:
     print("Failed to find CUDA toolkit. Building without GPU acceleration.")
 
@@ -176,6 +188,7 @@ class BuildExtension(build_ext, object):
         ext_files = ['buffalo/algo/_als.pyx',
                      'buffalo/algo/cuda/_als.pyx',
                      'buffalo/algo/_bpr.pyx',
+                     'buffalo/algo/cuda/_bpr.pyx',
                      'buffalo/algo/_w2v.pyx',
                      'buffalo/misc/_log.pyx',
                      'buffalo/algo/_cfr.pyx',

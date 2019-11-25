@@ -92,7 +92,7 @@ class ProgressBar(object):
         if 'iterable' in kwargs:
             try:
                 kwargs['total'] = len(kwargs['iterable'])
-            except:
+            except Exception:
                 pass
             self.iterable = kwargs['iterable']
         if 'total' in kwargs:
@@ -162,9 +162,6 @@ class ProgressBar(object):
     def refresh(self):
         # backward-compatability
         pass
-
-pbar = ProgressBar
-iter_pbar = ProgressBar
 
 
 class supress_log_level(object):
