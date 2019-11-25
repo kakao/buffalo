@@ -87,8 +87,6 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
     def initialize(self):
         super().initialize()
         assert self.data, 'Data is not setted'
-        if self.opt.random_seed:
-            np.random.seed(self.opt.random_seed)
         self.buf = BufferedDataStream()
         self.buf.initialize(self.data)
         self.build_vocab()
@@ -200,7 +198,6 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def train(self):
         self.validation_result = {}
-        self.prepare_evaluation()
         self.obj.launch_workers()
         for i in range(self.opt.num_iters):
             start_t = time.time()

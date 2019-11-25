@@ -81,8 +81,6 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
     def initialize(self):
         super().initialize()
         assert self.data, 'Data is not setted'
-        if self.opt.random_seed:
-            np.random.seed(self.opt.random_seed)
         self.buf = BufferedDataMatrix()
         self.buf.initialize(self.data)
         self.init_factors()
@@ -119,13 +117,15 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
-        Q = self.Q
-        if self.opt.use_bias:
-            p = np.hstack([p, np.ones(shape=(p.shape[0], 1))]).astype("float32")
-            Q = np.hstack([Q, self.Qb]).astype("float32")
+        Qb = self.Qb if self.opt.use_bias else None
 
-        topks = super()._get_topk_recommendation(p, Q, pool, topk, self.opt.num_workers)
+        topks = super()._get_topk_recommendation(
+            p, self.Q,
+            pb=None, Qb=Qb,
+            pool=pool, topk=topk, num_workers=self.opt.num_workers)
+
         return zip(rows, topks)
+
 
     def _get_most_similar_item(self, col, topk, pool):
         return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q, pool)
@@ -133,6 +133,10 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.P[r].dot(self.Q[c]) + self.Qb[c][0] for r, c in row_col_pairs}
         return rets
+
+    def _get_scores(self, row, col):
+        scores = (self.P[row] * self.Q[col]).sum(axis=1) + self.Qb[col][0]
+        return scores
 
     def sampling_loss_samples(self):
         users, positives, negatives = [], [], []
@@ -220,7 +224,6 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def train(self):
         self.validation_result = {}
-        self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
         self.sampling_loss_samples()
         best_loss = 987654321.0

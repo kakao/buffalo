@@ -106,7 +106,10 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
         u = self.U[rows]
-        topks = super()._get_topk_recommendation(u, self.I, pool, topk, self.opt.num_workers)
+        topks = super()._get_topk_recommendation(
+            u, self.I,
+            pb=None, Qb=None,
+            pool=pool, topk=topk, num_workers=self.opt.num_workers)
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk, pool):
@@ -115,6 +118,10 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
     def get_scores(self, row_col_pairs):
         rets = {(r, c): self.U[r].dot(self.I[c]) for r, c in row_col_pairs}
         return rets
+
+    def _get_scores(self, row, col):
+        scores = (self.U[row] * self.I[col]).sum(axis=1)
+        return scores
 
     def _get_buffer(self):
         buf = BufferedDataMatrix()
@@ -186,7 +193,6 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         assert self.is_initialized, "embedding matrix is not initialized"
         buf = self._get_buffer()
         best_loss, self.validation_result = 987654321.0, {}
-        self.prepare_evaluation()
         self.initialize_tensorboard(self.opt.num_iters)
         scale = self.compute_scale()
         for i in range(self.opt.num_iters):
