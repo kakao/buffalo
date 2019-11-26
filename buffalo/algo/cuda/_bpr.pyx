@@ -20,7 +20,7 @@ cdef extern from "buffalo/cuda/bpr/bpr.hpp" namespace "cuda_bpr":
         void initialize_model(float*, int,
                               float*, float*, int, int64_t, bool) nogil except +
         pair[double, double] partial_update(int, int,
-                             int64_t*, int32_t*) nogil except +
+                                            int64_t*, int32_t*) nogil except +
         double compute_loss(int, int32_t*, int32_t*, int32_t*) nogil except +
         int get_vdim() nogil except +
         void synchronize(bool)
