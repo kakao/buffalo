@@ -6,6 +6,6 @@ cython
 psutil
 h5py
 hyperopt
-tensorflow==1.15.0
+tensorflow-cpu==1.15.0
 n2
 pytest
