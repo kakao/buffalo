@@ -28,6 +28,7 @@ matrix:
     - python: 3.7
       before_install:
         - pip3 install --upgrade pip --user
+        - pip3 install -r requirements.txt --user
         - pip3 install --upgrade setuptools --user
         - git submodule update --init
         - git lfs pull
@@ -36,7 +37,6 @@ matrix:
         - cmake --version
         - sudo python3 setup.py install
         - pip3 install pytest --user
-        - pip3 install -r requirements.txt --user
 
 before_script:
   - cd tests
