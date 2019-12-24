@@ -226,8 +226,6 @@ def setup_package():
         'build_ext': BuildExtension
     }
 
-    build_requires = [l.strip() for l in open('requirements.txt')]
-
     metadata = dict(
         name='buffalo',
         maintainer="lucas kwangseob kim",
@@ -250,7 +248,6 @@ def setup_package():
         classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
         platforms=['Linux', 'Mac OSX', 'Unix'],
         ext_modules=extensions,
-        install_requires=build_requires,
         entry_points={
             'console_scripts': [
                 'Buffalo = buffalo.cli:_cli_buffalo',
