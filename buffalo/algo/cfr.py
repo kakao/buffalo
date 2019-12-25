@@ -228,7 +228,10 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         self._optimize_params = params
         for name, value in params.items():
             assert name in self.opt, 'Unexepcted parameter: {}'.format(name)
-            setattr(self.opt, name, value)
+            if isinstance(value, np.generic):
+                setattr(self.opt, name, value.item())
+            else:
+                setattr(self.opt, name, value)
         with open(self._temporary_opt_file, 'w') as fout:
             json.dump(self.opt, fout, indent=2)
         assert self.obj.init(bytes(self._temporary_opt_file, 'utf-8')),\
