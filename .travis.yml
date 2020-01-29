@@ -6,6 +6,12 @@ python:
   - "3.6"
   - "3.7"
 
+jobs:
+  include:
+    - python: '3.6'
+    - python: '3.7'
+
+
 git:
   depth: 1
 
@@ -55,5 +61,5 @@ script:
 notifications:
   email: false
 
-#virtualenv:
-  #system_site_packages: true
+virtualenv:
+  system_site_packages: true
