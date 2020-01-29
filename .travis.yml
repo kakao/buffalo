@@ -32,7 +32,7 @@ matrix:
         - pip3 install pytest --user
         - git submodule update --init
         - git lfs pull
-        - pip3 install numpy cython --user
+        - pip3 install --upgrade numpy cython --user
         - pip3 install n2 --user
         - pip3 install -r requirements.txt --user
         - cmake --version
