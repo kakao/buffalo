@@ -25,7 +25,6 @@ cache:
     - $HOME/.cache/pip
     - ./tests/ext
 
-
 before_install:
   - pip3 install --upgrade pip
   - pip3 install --upgrade setuptools
