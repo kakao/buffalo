@@ -23,20 +23,20 @@ cache:
     - $HOME/.cache/pip
     - ./tests/ext
 
-matrix:
-  include:
-    - python: 3.7
-      before_install:
-        - pip3 install --upgrade pip --user
-        - pip3 install --upgrade setuptools --user
-        - pip3 install pytest --user
-        - git submodule update --init
-        - git lfs pull
-        - pip3 install --upgrade numpy cython --user
-        - pip3 install n2 --user
-        - pip3 install -r requirements.txt --user
-        - cmake --version
-        - sudo python3 setup.py install
+
+before_install:
+  - pip3 install --upgrade pip --user
+  - pip3 install --upgrade setuptools --user
+  - pip3 install pytest --user
+  - git submodule update --init
+  - git lfs pull
+  - pip3 install --upgrade numpy cython --user
+  - pip3 install n2 --user
+  - pip3 install -r requirements.txt --user
+  - cmake --version
+
+install:
+  - sudo python3 setup.py install
 
 before_script:
   - cd tests
