@@ -55,6 +55,3 @@ script:
 
 notifications:
   email: false
-
-#virtualenv:
-#  system_site_packages: true
