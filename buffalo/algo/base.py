@@ -65,7 +65,6 @@ class Algo(abc.ABC):
             topks = np.array([pool[t] for t in topks])
         return topks
 
-
     def topk_recommendation(self, keys, topk=10, pool=None):
         """Return TopK recommendation for each users(keys)
 

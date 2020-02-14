@@ -198,7 +198,7 @@ class Data(object):
     def _create_validation(self, f, **kwargs):
         if not self.opt.data.validation:
             return kwargs['num_nnz']
-        num_users, num_nnz = kwargs['num_users'], kwargs['num_nnz']
+        _, num_nnz = kwargs['num_users'], kwargs['num_nnz']
         method = self.opt.data.validation.name
 
         f.create_group('vali')

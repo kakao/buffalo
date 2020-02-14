@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import math
-
 import numpy as np
 from buffalo.parallel._core import quickselect
 
@@ -14,7 +12,6 @@ class Evaluable(object):
             return
         if hasattr(self.data, 'vali_data') is False:
             self.data._prepare_validation_data()
-
 
     def show_validation_results(self):
         results = self.get_validation_results()
@@ -91,7 +88,6 @@ class Evaluable(object):
 
                 _topk = filter_seen_items(_topk, seen, topk)
                 _gt = gt[row]
-
 
                 # accuracy
                 hit = len(set(_topk) & _gt) / len(_gt)
