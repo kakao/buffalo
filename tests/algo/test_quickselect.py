@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import os
 import time
 from os import environ
 environ["OMP_NUM_THREADS"] = "4"
@@ -18,25 +17,40 @@ from buffalo.evaluate.base import Evaluable
 scores = np.random.uniform(size=(100, 100000)).astype(np.float32)
 topk = 10
 
+
+def time_np_argsort():
+    st = time.time()
+    res = np.argsort(-scores)[:, :topk]
+    el = time.time() - st
+    return res, el
+
+
+def time_np_argpartition():
+    st = time.time()
+    res = np.argpartition(-scores, topk)[:, :topk]
+    res = np.array([sorted(row, key=lambda x:-scores[i, x]) for i, row in enumerate(res)])
+    el = time.time() - st
+    return res, el
+
+
+def time_quickselect():
+    ev = Evaluable()
+    st = time.time()
+    res = ev.get_topk(scores, k=topk, num_threads=4)
+    el = time.time() - st
+    return res, el
+
+
 class TestQuickSelect(TestBase):
-    def test0_np_argsort(self):
-        st = time.time()
-        res = np.argsort(-scores)[:, :topk]
-        el = time.time() - st
-        print(f"res: {res[0]}, el: {el} sec")
+    def test_0_quickselect(self):
+        res_argsort, t_np_argsort = time_np_argsort()
+        res_argpart, t_np_argparttion = time_np_argpartition()
+        res_quickselect, t_quickselect = time_quickselect()
 
-    def test1_np_argpartition(self):
-        st = time.time()
-        res = np.argpartition(-scores, topk)[:, :topk]
-        el = time.time() - st
-        print(f"res: {res[0]}, el: {el} sec")
-
-    def test2_quickselect(self):
-        ev = Evaluable()
-        st = time.time()
-        res = ev.get_topk(scores, k=topk, num_threads=4)
-        el = time.time() - st
-        print(f"res: {res[0]}, el: {el} sec")
+        self.assertTrue(np.all(np.equal(res_argsort, res_argpart)))
+        self.assertTrue(np.all(np.equal(res_argsort, res_quickselect)))
+        self.assertGreaterEqual(t_np_argsort / t_quickselect, 10)
+        self.assertGreaterEqual(t_np_argparttion / t_quickselect, 3)
 
 
 if __name__ == '__main__':
