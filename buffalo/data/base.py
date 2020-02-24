@@ -229,7 +229,7 @@ class Data(object):
         if not validation_data:
             return
         validation_data = [line.strip().split() for line in validation_data]
-        assert len(validation_data) == db['vali'].attrs['num_samples'], 'Mimatched validation data'
+        assert len(validation_data) == db['vali'].attrs['num_samples'], 'Mismatched validation data'
 
         num_users, num_items = db.attrs['num_users'], db.attrs['num_items']
         row = [int(r) - 1 for r, _, _ in validation_data]  # 0-based
