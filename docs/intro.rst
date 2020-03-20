@@ -115,7 +115,7 @@ It is recommend to use the log library of buffalo for consistent log format.
 
 .. code-block:: python
 
-    >>> from aurochs.misc import log
+    >>> from buffalo.misc import log
     >>> print(log.NOTSET, log.WARN, log.INFO, log.DEBUG, log.TRACE)
     (0, 1, 2, 3, 4, 5)
     >>> log.set_log_level(log.WARN)  # this set log-level on Python, C++ both sides.
@@ -123,8 +123,8 @@ It is recommend to use the log library of buffalo for consistent log format.
     1
     >>> 
 
-    >>> from aurochs.misc import log, aux
-    >>> logger = aux.get_logger()
+    >>> from buffalo.misc import log
+    >>> logger = log.get_logger()
     >>> with log.pbar(logger.debug, desc='Test', mininterval=1):
         for(i in range(100)):
             time.sleep(0.1)
