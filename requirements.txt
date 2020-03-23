@@ -2,10 +2,9 @@ setuptools>=1.3.2
 fire
 pathlib
 numpy
-cython
 psutil
 h5py
 hyperopt
-tensorflow==1.14.0
+tensorflow==1.15.2
 n2
 pytest

@@ -1,10 +1,10 @@
 dist: bionic
-sudo: required
-
 langauge: python
-python:
-  - "3.6"
-  - "3.7"
+
+jobs:
+  include:
+    - python: '3.6'
+    - python: '3.7'
 
 git:
   depth: 1
@@ -23,20 +23,19 @@ cache:
     - $HOME/.cache/pip
     - ./tests/ext
 
-matrix:
-  include:
-    - python: 3.7
-      before_install:
-        - pip3 install --upgrade pip --user
-        - pip3 install --upgrade setuptools --user
-        - pip3 install pytest --user
-        - git submodule update --init
-        - git lfs pull
-        - pip3 install numpy cython --user
-        - pip3 install n2 --user
-        - pip3 install -r requirements.txt --user
-        - cmake --version
-        - sudo python3 setup.py install
+before_install:
+  - pip install  --upgrade pip
+  - pip install --upgrade setuptools
+  - pip install pytest
+  - git submodule update
+  - git lfs pull
+  - pip3 install --upgrade numpy cython
+  - pip3 install n2
+  - pip3 install -r requirements.txt
+  - cmake --version
+
+install:
+  - python3 setup.py install
 
 before_script:
   - cd tests
@@ -54,6 +53,3 @@ script:
 
 notifications:
   email: false
-
-virtualenv:
-  system_site_packages: true
