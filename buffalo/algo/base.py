@@ -19,6 +19,8 @@ absl.logging._warn_preinit_stderr = False
 
 from buffalo.misc import aux
 
+EPS = 1e-8
+
 
 class Algo(abc.ABC):
     def __init__(self, *args, **kwargs):
@@ -35,7 +37,7 @@ class Algo(abc.ABC):
         return (aux.Option(opt), opt_path)
 
     def _normalize(self, feat):
-        feat = feat / np.sqrt((feat ** 2).sum(-1) + 1e-8)[..., np.newaxis]
+        feat = feat / np.sqrt((feat ** 2).sum(-1) + EPS)[..., np.newaxis]
         return feat
 
     def initialize(self):
@@ -64,7 +66,6 @@ class Algo(abc.ABC):
         if pool is not None:
             topks = np.array([pool[t] for t in topks])
         return topks
-
 
     def topk_recommendation(self, keys, topk=10, pool=None):
         """Return TopK recommendation for each users(keys)
@@ -132,10 +133,10 @@ class Algo(abc.ABC):
         else:
             if pool is not None:
                 dot = q.dot(Factor[pool].T)
-                dot = dot / (np.linalg.norm(q) * np.linalg.norm(Factor[pool], axis=1))
+                dot = dot / (np.linalg.norm(q) * np.linalg.norm(Factor[pool], axis=1) + EPS)
             else:
                 dot = q.dot(Factor.T)
-                dot = dot / (np.linalg.norm(q) * np.linalg.norm(Factor, axis=1))
+                dot = dot / (np.linalg.norm(q) * np.linalg.norm(Factor, axis=1) + EPS)
             # topks = np.argsort(dot)[-topk:][::-1]
             topks = self.get_topk(dot, k=topk, num_threads=self.opt.num_workers)
         scores = dot[topks]
@@ -209,7 +210,7 @@ class Algo(abc.ABC):
         if len(feat) < min_length:
             return None
         feat = np.array(feat, dtype=np.float64).mean(axis=0)
-        return (feat / np.linalg.norm(feat)).astype(np.float32)
+        return (feat / np.linalg.norm(feat) + EPS).astype(np.float32)
 
     def periodical(self, period, current):
         if not period or (current + 1) % period == 0:

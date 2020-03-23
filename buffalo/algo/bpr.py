@@ -21,7 +21,7 @@ from buffalo.algo.base import Algo, Serializable, TensorboardExtention
 inited_CUBPR = True
 try:
     from buffalo.algo.cuda._bpr import CyBPR as CuBPRMF
-except:
+except ImportError:
     inited_CUBPR = False
 
 
@@ -126,7 +126,6 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
 
         return zip(rows, topks)
 
-
     def _get_most_similar_item(self, col, topk, pool):
         return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q, pool)
 
@@ -205,8 +204,8 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
                 F = getattr(self, attr)
                 if F.shape[1] < vdim:
                     _F = np.empty(shape=(F.shape[0], vdim), dtype=np.float32)
-                    _F[:,:F.shape[1]] = F
-                    _F[:,self.opt.d:] = 0.0
+                    _F[:, :F.shape[1]] = F
+                    _F[:, self.opt.d:] = 0.0
                     setattr(self, attr, _F)
             indptr, _, batch_size = self.buf.get_indptrs()
             self.obj.set_placeholder(indptr, batch_size)
@@ -216,8 +215,8 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
 
     def _finalize_train(self):
         if self.opt.accelerator:
-            self.P = self.P[:,:self.opt.d]
-            self.Q = self.Q[:,:self.opt.d]
+            self.P = self.P[:, :self.opt.d]
+            self.Q = self.Q[:, :self.opt.d]
             return 0.0
         else:
             return self.obj.join()
