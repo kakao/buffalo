@@ -142,7 +142,7 @@ class MatrixMarket(Data):
                     num_lines_on_buffer = buffered.count('\n')
                     # search the position of validation sample and extract
                     # it from training data
-                    while target_index >= 0 and target_index <= (total_lines + num_lines_on_buffer):
+                    while target_index >= 0 and target_index < (total_lines + num_lines_on_buffer):
                         no_line = total_lines
                         new_buffered = ''
                         from_index = 0

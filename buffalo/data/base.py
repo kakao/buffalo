@@ -172,7 +172,7 @@ class Data(object):
 
         f.create_group('rowwise')
         f.create_group('colwise')
-        chunk_size = (min(1024 ** 3, num_nnz),)
+        chunk_size = (min(1024 ** 3 - 1, num_nnz),)
         for g in [f['rowwise'], f['colwise']]:
             g.create_dataset('key', (num_nnz,), dtype='int32', maxshape=(num_nnz,), chunks=chunk_size)
             g.create_dataset('val', (num_nnz,), dtype='float32', maxshape=(num_nnz,), chunks=chunk_size)
@@ -229,7 +229,7 @@ class Data(object):
         if not validation_data:
             return
         validation_data = [line.strip().split() for line in validation_data]
-        assert len(validation_data) == db['vali'].attrs['num_samples'], 'Mimatched validation data'
+        assert len(validation_data) == db['vali'].attrs['num_samples'], 'Mismatched validation data'
 
         num_users, num_items = db.attrs['num_users'], db.attrs['num_items']
         row = [int(r) - 1 for r, _, _ in validation_data]  # 0-based
@@ -392,7 +392,7 @@ class Data(object):
         approximated_data_mb = 0
         with open(working_data_path, 'rb') as fin:
             fin.seek(0, 2)
-            approximated_data_mb = db.attrs['num_nnz'] * 3 / 1024 / 1024
+            approximated_data_mb = db.attrs['num_nnz'] * 3 * 4 / 1024 / 1024
         buffer_mb = int(max(1024, available_mb * 0.75))
         # for each sides
         for group, sep_idx, max_key in [('rowwise', 0, db.attrs['num_users']),
