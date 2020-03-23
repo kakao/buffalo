@@ -330,6 +330,7 @@ void CBPRMF::worker(int worker_id)
     uniform_int_distribution<int64_t> rng1(0, cum_table_[cum_table_size_ - 1] - 1);
     uniform_int_distribution<int64_t> rng2(0, Q_.rows() - 1);
     double sample_power = opt_["sampling_power"].number_value();
+    bool verify_neg = opt_["verify_neg"].bool_value();
     int uniform_sampling = sample_power == 0.0 ? 1 : 0;
 
     bool per_coordinate_normalize = opt_["per_coordinate_normalize"].bool_value();
@@ -350,16 +351,17 @@ void CBPRMF::worker(int worker_id)
                 for(int i=0; i < num_negative_samples; ++i)
                 {
                     int neg = 0;
-                    if (uniform_sampling) {
-                        neg = rng2(RNG);
-                    }
-                    else {
-                        while (true) {
+                    while(true) {
+                        if(uniform_sampling) {
+                            neg = rng2(RNG);
+                        }
+                        else {
                             int64_t r = rng1(RNG);
                             neg = (int)(lower_bound(cum_table_, cum_table_ + cum_table_size_, r) - cum_table_);
-                            if (seen.find(neg) == seen.end())
-                                break;
                         }
+
+                        if (!verify_neg || (seen.find(neg) == seen.end()))
+                            break;
                     }
 
                     float x_uij = (P_.row(u) * (Q_.row(pos) - Q_.row(neg)).transpose())(0, 0);
