@@ -30,7 +30,6 @@ before_install:
   - git submodule update --init
   - git lfs pull
   - pip install --upgrade numpy cython
-  - pip install n2
   - pip install -r requirements.txt
   - cmake --version
 
