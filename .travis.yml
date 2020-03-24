@@ -30,7 +30,6 @@ before_install:
   - git submodule update
   - git lfs pull
   - pip3 install --upgrade numpy cython
-  - pip3 install n2
   - pip3 install -r requirements.txt
   - cmake --version
 
@@ -53,3 +52,4 @@ script:
 
 notifications:
   email: false
+
