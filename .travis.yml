@@ -1,5 +1,5 @@
 dist: bionic
-langauge: python
+language: python
 
 jobs:
   include:
