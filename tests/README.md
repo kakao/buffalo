@@ -2,7 +2,7 @@
 Unit-test was created using python standard unittest library. (don't forget to run preprocessing.py)
 
 ```bash
-buffalo.git/tests $> nosetests ./algo/test_algo.py -v  # see the current directory
+buffalo.git/tests $> nosetests ./algo/test_bese.py -v  # see the current directory
 ```
 
 ## External Resources

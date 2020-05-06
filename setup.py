@@ -26,7 +26,7 @@ n2_shared_object = n2.__file__
 
 MAJOR = 1
 MINOR = 1
-MICRO = 1
+MICRO = 2
 Release = True
 STAGE = {True: '', False: 'b'}.get(Release)
 VERSION = f'{MAJOR}.{MINOR}.{MICRO}{STAGE}'
@@ -107,7 +107,7 @@ extensions = [
     Extension(name="buffalo.parallel._core",
               sources=['buffalo/parallel/_core.cpp'],
               libraries=['gomp'],
-              include_dirs=EXTRA_INCLUDE_DIRS + ['./3rd/n2/include'],
+              include_dirs=EXTRA_INCLUDE_DIRS + ['./3rd/n2/include', './3rd/'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_objects=[n2_shared_object],

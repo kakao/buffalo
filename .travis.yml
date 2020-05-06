@@ -27,11 +27,10 @@ before_install:
   - pip install  --upgrade pip
   - pip install --upgrade setuptools
   - pip install pytest
-  - git submodule update
+  - git submodule update --init
   - git lfs pull
-  - pip3 install --upgrade numpy cython
-  - pip3 install n2
-  - pip3 install -r requirements.txt
+  - pip install --upgrade numpy cython
+  - pip install -r requirements.txt
   - cmake --version
 
 install:
