@@ -80,6 +80,15 @@ class Benchmark(object):
                             'num_workers': kwargs.get('num_workers', 10),
                             'compute_loss_on_training': kwargs.get('compute_loss_on_training', False)})
                 return opt
+            if algo_name == 'warp':
+                from buffalo.algo.options import WARPOption
+                opt = WARPOption().get_default_option()
+                opt.update({'d': kwargs.get('d', 100),
+                            'num_iters': kwargs.get('num_iters', 10),
+                            'max_trials': 100,
+                            'num_workers': kwargs.get('num_workers', 10),
+                            'compute_loss_on_training': kwargs.get('compute_loss_on_training', False)})
+                return opt
         elif lib_name == 'implicit':
             if algo_name == 'als':
                 return {'factors': kwargs.get('d', 100),
@@ -98,6 +107,10 @@ class Benchmark(object):
                         'num_threads': kwargs.get('num_workers', 10)}
         elif lib_name == 'lightfm':
             if algo_name == 'bpr':
+                return {'epochs': kwargs.get('num_iters', 10),
+                        'verbose': True,
+                        'num_threads': kwargs.get('num_workers', 10)}
+            if algo_name == 'warp':
                 return {'epochs': kwargs.get('num_iters', 10),
                         'verbose': True,
                         'num_threads': kwargs.get('num_workers', 10)}
@@ -232,6 +245,18 @@ class BuffaloLib(Benchmark):
         bpr = None
         return elapsed, mem_info
 
+    def warp(self, database, **kwargs):
+        from buffalo.algo.warp import WARP
+        opts = self.get_option('buffalo', 'warp', **kwargs)
+        data_opt = self.get_database(database, **kwargs)
+        warp = WARP(opts, data_opt=data_opt)
+        warp.initialize()
+        if kwargs.get('return_instance_before_train'):
+            return warp
+        elapsed, mem_info = self.run(warp.train)
+        warp = None
+        return elapsed, mem_info
+
     def most_similar(self, keys, **kwargs):
         model = kwargs['model']
         kwargs.pop('model')
@@ -260,6 +285,17 @@ class LightfmLib(Benchmark):
         bpr = LightFM(loss='bpr',
                       no_components=kwargs.get('num_workers'),
                       max_sampled=1)
+        elapsed, mem_info = self.run(bpr.fit, data, data, **opts)
+        bpr = None
+        return elapsed, mem_info
+
+    def warp(self, database, **kwargs):
+        from lightfm import LightFM
+        opts = self.get_option('lightfm', 'warp', **kwargs)
+        data = self.get_database(database, **kwargs)
+        bpr = LightFM(loss='warp',
+                      max_sampled=100,
+                      no_components=kwargs.get('num_workers'))
         elapsed, mem_info = self.run(bpr.fit, data, data, **opts)
         bpr = None
         return elapsed, mem_info

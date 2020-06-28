@@ -23,7 +23,11 @@ def _performance(algo_name, database, lib, gpu):
                'bpr': {'num_workers': 8,
                        'batch_mb': 4098,
                        'compute_loss_on_training': False,
-                       'd': 40}
+                       'd': 40},
+               'warp': {'num_workers': 8,
+                        'batch_mb': 4098,
+                        'compute_loss_on_training': False,
+                        'd': 40}
               }
     opt = options[algo_name]
 
@@ -67,6 +71,10 @@ def _memory(algo_name, database, lib, gpu=False):
                        'compute_loss_on_training': False,
                        'd': 32,
                        'num_iters': 2},
+               'warp': {'num_workers': 16,
+                        'compute_loss_on_training': False,
+                        'd': 32,
+                        'num_iters': 2},
               }
     opt = options[algo_name]
 
@@ -87,7 +95,7 @@ def _memory(algo_name, database, lib, gpu=False):
 
 def performance(algo_name, database, libs=['buffalo', 'implicit', 'lightfm', 'qmf', 'pyspark'], gpu=False):
     assert database in ['ml100k', 'ml20m', 'kakao_reco_730m', 'kakao_brunch_12m']
-    assert algo_name in ['als', 'bpr']
+    assert algo_name in ['als', 'bpr', 'warp']
     if isinstance(libs, str):
         libs = [libs]
     if gpu:
@@ -97,6 +105,8 @@ def performance(algo_name, database, libs=['buffalo', 'implicit', 'lightfm', 'qm
         libs = [l for l in libs if l not in ['lightfm']]
     elif algo_name == 'bpr':
         libs = [l for l in libs if l not in ['pyspark']]
+    elif algo_name == 'warp':
+        libs = [l for l in libs if l not in ['pyspark', 'qmf', 'implicit']]
     R = {'buffalo': BuffaloLib,
          'implicit': ImplicitLib,
          'lightfm': LightfmLib,
@@ -109,7 +119,7 @@ def performance(algo_name, database, libs=['buffalo', 'implicit', 'lightfm', 'qm
 def quick_performance(algo_name, database, libs=['buffalo'], gpu=False):
     global WORKER_SPACE, DIMENSION_SPACE
     assert database in ['ml100k', 'ml20m', 'kakao_reco_730m', 'kakao_brunch_12m']
-    assert algo_name in ['als', 'bpr']
+    assert algo_name in ['als', 'bpr', 'warp']
     WORKER_SPACE = [1, 4, 8]
     DIMENSION_SPACE = [20, 40, 80]
     performance(algo_name, database, libs, gpu)
