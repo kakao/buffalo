@@ -8,6 +8,10 @@ from models import ImplicitLib, BuffaloLib, LightfmLib, QmfLib, PysparkLib
 
 from base import _get_elapsed_time, _print_table
 
+DIMENSION_SPACE = [10, 20, 40, 80, 160]
+WORKER_SPACE = [1, 2, 4, 8, 16]
+BUFFER_BATCH_SPACE = [128, 256, 512, 1024, 2048, 4096]
+
 
 def _performance(algo_name, database, lib, gpu):
     results = {}
@@ -23,7 +27,7 @@ def _performance(algo_name, database, lib, gpu):
               }
     opt = options[algo_name]
 
-    for d in [10, 20, 40, 80, 160]:
+    for d in DIMENSION_SPACE:
         opt['d'] = d
         if gpu:
             opt['gpu'] = True
@@ -38,7 +42,7 @@ def _performance(algo_name, database, lib, gpu):
     if gpu:
         return results
     opt['d'] = 32
-    for num_workers in [1, 2, 4, 8, 16]:
+    for num_workers in WORKER_SPACE:
         opt['num_workers'] = num_workers
         if gpu:
             opt['gpu'] = True
@@ -66,7 +70,7 @@ def _memory(algo_name, database, lib, gpu=False):
               }
     opt = options[algo_name]
 
-    for batch_mb in [128, 256, 512, 1024, 2048, 4096]:
+    for batch_mb in BUFFER_BATCH_SPACE:
         if isinstance(lib, ImplicitLib):  # batch_mb effect to Buffalo only.
             break
         if gpu:
@@ -102,6 +106,15 @@ def performance(algo_name, database, libs=['buffalo', 'implicit', 'lightfm', 'qm
     _print_table(results)
 
 
+def quick_performance(algo_name, database, libs=['buffalo'], gpu=False):
+    global WORKER_SPACE, DIMENSION_SPACE
+    assert database in ['ml100k', 'ml20m', 'kakao_reco_730m', 'kakao_brunch_12m']
+    assert algo_name in ['als', 'bpr']
+    WORKER_SPACE = [1, 4, 8]
+    DIMENSION_SPACE = [20, 40, 80]
+    performance(algo_name, database, libs, gpu)
+
+
 def memory(algo_name, database, libs=['buffalo', 'implicit'], gpu=False):
     assert database in ['ml100k', 'ml20m', 'kakao_reco_730m', 'kakao_brunch_12m']
     assert algo_name in ['als', 'bpr']
@@ -115,4 +128,5 @@ def memory(algo_name, database, libs=['buffalo', 'implicit'], gpu=False):
 
 if __name__ == '__main__':
     fire.Fire({'performance': performance,
+               'quick_performance': quick_performance,
                'memory': memory})

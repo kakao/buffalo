@@ -31,7 +31,7 @@ To download the databases, please see the README.md on ./tests/.
     - https://grouplens.org/datasets/movielens/
 
 
-## Database Statistics
+## 1. Performance Testing
   | # USERS | # ITEMS | # NNZ
 -- | -- | -- | --
 MovieLens20M | 138,000 | 27,000 | 20M
@@ -42,7 +42,8 @@ KakaoReco730M | 21,940,315 | 1,467,298 | 730M
 * NNZ stands for Number of Non-Zero entries.
 
 
-## Alternating Least Square
+## 2. Algorithms
+### 2.1. Alternating Least Square
 
 - Fixed options (used default options except for controlled options)
   - Buffalo
@@ -62,7 +63,7 @@ Note that there is no Python version of QMF. Since we ran benchmark by Python sc
 
 There is a restriction such that the number of the latent dimensions must be multiple of 32 when using GPU in implicit. For example, 80 demensions has been upscaled to 96 but not for 160. Therefore, it is not an accurate comparison between implicit-gpu and buffalo-gpu.
 
-### KakaoBrunch12M
+#### 2.1.1. KakaoBrunch12M
 
 <center><img src="./fig/20190828.buffalo.kakaobrunch12m.d.png" width="1024px"></center>
 <center><img src="./fig/20190828.buffalo.kakaobrunch12m.t.png" width="1024px"></center>
@@ -86,7 +87,7 @@ pyspark | 370.907 | 193.428 | 116.088 | 77.8977 | 55.7786
 - D setted as 20.
 
 
-### Movielens20M
+#### 2.1.2. Movielens20M
 
 <center><img src="./fig/20190828.buffalo.ml20m.d.png" width="1024px"></center>
 <center><img src="./fig/20190828.buffalo.ml20m.t.png" width="1024px"></center>
@@ -109,7 +110,7 @@ qmf | 168.467 | 87.7365 | 46.8157 | 31.0115 | 33.9857
 
 - D setted as 20.
 
-### KakaoReco730M
+#### 2.1.3. KakaoReco730M
 KakaoReco730M, the biggest dataset among our datasets. Within given system resource, only Buffalo and Implicit could manage to train data in reasonable amount of time. Owing to lack of GPU device memory, even implicit does not run on GPU accelerator mode. For buffalo-gpu, the memory management option `batch_mb` works consistently in GPU accelerator mode, allowing it to work with KakaoReco730M that data size does not fit in memory.
 
   | M=4096 | M=8192
@@ -128,7 +129,7 @@ This experiment is about effect of data buffer size. As we can see, buffalo can 
 Training Time | 189.893548647563 | 165.782581965129 | 152.206786870956 | 140.953485012054 | 136.714899778366 | 140.10299817721 | 143.101685285568
 
 
-## Bayesian Personalized Ranking Matrix Factorization
+### 2.2. Bayesian Personalized Ranking Matrix Factorization
 
 - Fixed options (used default options except for controlled options)
   - Buffalo
@@ -142,7 +143,7 @@ Training Time | 189.893548647563 | 165.782581965129 | 152.206786870956 | 140.953
 
 Implicit also provides a GPU accelerator mode for BPRMF, but buffalo doesn't. Implicit-gpu run much faster than buffalo. We plan to add GPU accelerator feature on BPRMF in the near future. The benchmarks will be updated afterwards.
 
-## KakaoBrunch12M
+#### 2.2.1. KakaoBrunch12M
 
 <center><img src="./fig/20190828.buffalo.bpr.kakaobrunch12m.d.png" width="1024px"></center>
 <center><img src="./fig/20190828.buffalo.bpr.kakaobrunch12m.t.png" width="1024px"></center>
@@ -161,9 +162,10 @@ implicit | 90.2548 | 42.4105 | 24.4276 | 15.6033 | 13.4407
 qmf | 85.493298 | 75.46227 | 75.4510053333333 | 79.250403 | 76.7110853333333
 lightfm | 4170.78732784589 | 3468.09006055196 | 3411.35963026683 | 4552.11646389961 | 5788.33071891467
 
-## Movielens20M
+#### 2.2.2. Movielens20M
+tbw.
 
-# Benchmark-Parallel
+## 3. Parallel Feature
 This experiment is done with KakaoBrunch12M dataset to see the performance of Parallel feature.
 
 <center><img src="./fig/20190828.buffalo.parallel.kakaobrunch12m.png" width="1024px"></center>
@@ -175,3 +177,6 @@ method | T=1 | T=2 | T=4
 ParALS - N2 | 0.222992 | 0.147501 | 0.0984209
 ParALS | 63.9272 | 34.0839 | 21.7597
 ALS | 83.6309 | 76.1695 | 74.9105
+
+## 8. Codes
+See `test_performance.py` for the performance testing and `test_paralle.py` for the parallel feature.
