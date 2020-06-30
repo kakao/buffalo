@@ -68,6 +68,7 @@ class Benchmark(object):
                             'optimizer': {True: 'manual_cg', False: 'ldlt'}.get(kwargs.get('use_cg', True)),
                             'num_iters': kwargs.get('num_iters', 10),
                             'num_cg_max_iters': 3,
+                            'validation': kwargs.get('validation'),
                             'accelerator': kwargs.get('gpu', False),
                             'num_workers': kwargs.get('num_workers', 10),
                             'compute_loss_on_training': kwargs.get('compute_loss_on_training', False)})
@@ -76,6 +77,7 @@ class Benchmark(object):
                 from buffalo.algo.options import BPRMFOption
                 opt = BPRMFOption().get_default_option()
                 opt.update({'d': kwargs.get('d', 100),
+                            'validation': kwargs.get('validation'),
                             'num_iters': kwargs.get('num_iters', 10),
                             'num_workers': kwargs.get('num_workers', 10),
                             'compute_loss_on_training': kwargs.get('compute_loss_on_training', False)})
@@ -84,6 +86,7 @@ class Benchmark(object):
                 from buffalo.algo.options import WARPOption
                 opt = WARPOption().get_default_option()
                 opt.update({'d': kwargs.get('d', 100),
+                            'validation': kwargs.get('validation'),
                             'num_iters': kwargs.get('num_iters', 10),
                             'max_trials': 100,
                             'num_workers': kwargs.get('num_workers', 10),
@@ -171,6 +174,8 @@ class ImplicitLib(Benchmark):
             return (model, ratings)
 
         elapsed, mem_info = self.run(model.fit, ratings)
+        if kwargs.get('return_instance'):
+            return model
         model = None
         return elapsed, mem_info
 
@@ -185,6 +190,8 @@ class ImplicitLib(Benchmark):
             return (model, ratings)
 
         elapsed, mem_info = self.run(model.fit, ratings)
+        if kwargs.get('return_instance'):
+            return model
         model = None
         return elapsed, mem_info
 
@@ -202,7 +209,8 @@ class BuffaloLib(Benchmark):
     def get_database(self, name, **kwargs):
         from buffalo.data.mm import MatrixMarketOptions
         data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.validation = None
+        if kwargs.get('validation', None) is None:
+            data_opt.validation = None
         data_opt.data.use_cache = True
         data_opt.data.batch_mb = kwargs.get('batch_mb', 1024)
         if name == 'ml20m':
@@ -230,6 +238,8 @@ class BuffaloLib(Benchmark):
         if kwargs.get('return_instance_before_train'):
             return als
         elapsed, mem_info = self.run(als.train)
+        if kwargs.get('return_instance'):
+            return als
         als = None
         return elapsed, mem_info
 
@@ -242,6 +252,8 @@ class BuffaloLib(Benchmark):
         if kwargs.get('return_instance_before_train'):
             return bpr
         elapsed, mem_info = self.run(bpr.train)
+        if kwargs.get('return_instance'):
+            return bpr
         bpr = None
         return elapsed, mem_info
 
@@ -254,6 +266,8 @@ class BuffaloLib(Benchmark):
         if kwargs.get('return_instance_before_train'):
             return warp
         elapsed, mem_info = self.run(warp.train)
+        if kwargs.get('return_instance'):
+            return warp
         warp = None
         return elapsed, mem_info
 
@@ -286,6 +300,8 @@ class LightfmLib(Benchmark):
                       no_components=kwargs.get('num_workers'),
                       max_sampled=1)
         elapsed, mem_info = self.run(bpr.fit, data, data, **opts)
+        if kwargs.get('return_instance'):
+            return bpr
         bpr = None
         return elapsed, mem_info
 
@@ -294,9 +310,11 @@ class LightfmLib(Benchmark):
         opts = self.get_option('lightfm', 'warp', **kwargs)
         data = self.get_database(database, **kwargs)
         bpr = LightFM(loss='warp',
-                      max_sampled=100,
+                      max_sampled=1,
                       no_components=kwargs.get('num_workers'))
         elapsed, mem_info = self.run(bpr.fit, data, data, **opts)
+        if kwargs.get('return_instance'):
+            return warp
         bpr = None
         return elapsed, mem_info
 
