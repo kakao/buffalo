@@ -11,6 +11,8 @@ import h5py
 import psutil
 import numpy as np
 
+from evaluate import evaluate_ranking_metrics
+
 
 DB = {'kakao_reco_730m': './tmp/kakao_reco_730m.h5py',
       'ml20m': './tmp/ml20m.h5py',
@@ -56,6 +58,14 @@ def db_to_dataframe(db, spark, context):
     return spark.createDataFrame(data.map(lambda p: Row(row=int(p[0]),
                                                         col=int(p[1]),
                                                         data=float(p[2]))))
+
+
+def get_buffalo_db(db):
+    from buffalo.data.mm import MatrixMarket
+    db_opt = BuffaloLib().get_database(db)
+    db = MatrixMarket(db_opt)
+    db.create()
+    return db
 
 
 class Benchmark(object):
@@ -243,6 +253,26 @@ class BuffaloLib(Benchmark):
         als = None
         return elapsed, mem_info
 
+    def validation(self, algo_name, database, **kwargs):
+        inst = getattr(self, algo_name)(database, return_instance=True, **kwargs)
+        ret = inst.get_validation_results()  # same as below
+        for p in ['error', 'rmse']:
+            ret.pop(p)
+        return ret
+        inst.data._prepare_validation_data()
+        K = kwargs.get('validation', {}).get('topk', 10)
+        userids = list(set(inst.data.handle['vali']['row'][::]))
+        itemids = list(range(inst.data.handle['idmap']['cols'].shape[0]))
+        recs = []
+        for user in userids:
+            seen = inst.data.vali_data['validation_seen'].get(user, set())
+            user_str = inst.data.handle['idmap']['rows'][user].decode('utf-8')
+            topn = inst.topk_recommendation(user_str, topk=K + len(seen))
+            topn = [inst._idmanager.itemid_map[t] for t in topn]
+            topn = [t for t in topn if t not in seen][:K]
+            recs.append((user, topn))
+        return evaluate_ranking_metrics(recs, K, inst.data.vali_data, inst.data.header['num_items'])
+
     def bpr(self, database, **kwargs):
         from buffalo.algo.bpr import BPRMF
         opts = self.get_option('buffalo', 'bpr', **kwargs)
@@ -297,22 +327,36 @@ class LightfmLib(Benchmark):
         opts = self.get_option('lightfm', 'bpr', **kwargs)
         data = self.get_database(database, **kwargs)
         bpr = LightFM(loss='bpr',
-                      no_components=kwargs.get('num_workers'),
-                      max_sampled=1)
+                      no_components=kwargs.get('num_workers'))
         elapsed, mem_info = self.run(bpr.fit, data, data, **opts)
         if kwargs.get('return_instance'):
             return bpr
         bpr = None
         return elapsed, mem_info
 
+    def validation(self, algo_name, database, **kwargs):
+        K = kwargs.get('validation', {}).get('topk', 10)
+        inst = getattr(self, algo_name)(database, return_instance=True, **kwargs)
+        db = get_buffalo_db(database)
+        db._prepare_validation_data()
+        userids = list(set(db.handle['vali']['row'][::]))
+        itemids = list(range(db.handle['idmap']['cols'].shape[0]))
+        recs = []
+        for user in userids:
+            topn = np.argsort(-inst.predict(user, itemids))
+            topn = [t for t in topn if t not in db.vali_data['validation_seen'].get(user, set())][:K]
+            recs.append((user, topn))
+        return evaluate_ranking_metrics(recs, K, db.vali_data, db.header['num_items'])
+
     def warp(self, database, **kwargs):
         from lightfm import LightFM
         opts = self.get_option('lightfm', 'warp', **kwargs)
         data = self.get_database(database, **kwargs)
-        bpr = LightFM(loss='warp',
-                      max_sampled=1,
-                      no_components=kwargs.get('num_workers'))
-        elapsed, mem_info = self.run(bpr.fit, data, data, **opts)
+        warp = LightFM(loss='warp',
+                       learning_schedule='adagrad',
+                       no_components=kwargs.get('num_workers'),
+                       max_sampled=100)
+        elapsed, mem_info = self.run(warp.fit, data, data, **opts)
         if kwargs.get('return_instance'):
             return warp
         bpr = None
