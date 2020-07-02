@@ -4,6 +4,7 @@ Buffalo provides the following algorithm implementations:
 
   - Alternating Least Squares
   - Bayesian Personalized Ranking Matrix Factorization
+  - Weighted Approximate-Rank Pairwise
   - Word2Vec
   - CoFactors
 
@@ -77,6 +78,21 @@ Bayesian Personalized Ranking Matrix Factorization
    :exclude-members:
    :show-inheritance:
    :undoc-members:
+
+Weighted Approximate-Rank Pairwise
+--------------------------------------------------
+.. autoclass:: buffalo.algo.warp.WARP
+   :members: 
+   :exclude-members: get_evaluation_metrics, init_factors, set_data, compute_loss, prepare_sampling, sampling_loss_samples, set_data
+   :show-inheritance:
+   :undoc-members:
+
+.. autoclass:: buffalo.algo.options.WARPOption
+   :members: 
+   :exclude-members:
+   :show-inheritance:
+   :undoc-members:
+
 
 CoFactors
 ---------
