@@ -193,7 +193,7 @@ class Algo(abc.ABC):
 
     def get_feature(self, name, group='item'):
         index = self.get_index(name, group=group)
-        if not index:
+        if index is None:
             return None
         return self._get_feature(index, group)
 

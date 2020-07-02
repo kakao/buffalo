@@ -11,6 +11,8 @@ import h5py
 import psutil
 import numpy as np
 
+from evaluate import evaluate_ranking_metrics
+
 
 DB = {'kakao_reco_730m': './tmp/kakao_reco_730m.h5py',
       'ml20m': './tmp/ml20m.h5py',
@@ -58,6 +60,14 @@ def db_to_dataframe(db, spark, context):
                                                         data=float(p[2]))))
 
 
+def get_buffalo_db(db):
+    from buffalo.data.mm import MatrixMarket
+    db_opt = BuffaloLib().get_database(db)
+    db = MatrixMarket(db_opt)
+    db.create()
+    return db
+
+
 class Benchmark(object):
     def get_option(self, lib_name, algo_name, **kwargs):
         if lib_name == 'buffalo':
@@ -68,6 +78,7 @@ class Benchmark(object):
                             'optimizer': {True: 'manual_cg', False: 'ldlt'}.get(kwargs.get('use_cg', True)),
                             'num_iters': kwargs.get('num_iters', 10),
                             'num_cg_max_iters': 3,
+                            'validation': kwargs.get('validation'),
                             'accelerator': kwargs.get('gpu', False),
                             'num_workers': kwargs.get('num_workers', 10),
                             'compute_loss_on_training': kwargs.get('compute_loss_on_training', False)})
@@ -76,7 +87,18 @@ class Benchmark(object):
                 from buffalo.algo.options import BPRMFOption
                 opt = BPRMFOption().get_default_option()
                 opt.update({'d': kwargs.get('d', 100),
+                            'validation': kwargs.get('validation'),
                             'num_iters': kwargs.get('num_iters', 10),
+                            'num_workers': kwargs.get('num_workers', 10),
+                            'compute_loss_on_training': kwargs.get('compute_loss_on_training', False)})
+                return opt
+            if algo_name == 'warp':
+                from buffalo.algo.options import WARPOption
+                opt = WARPOption().get_default_option()
+                opt.update({'d': kwargs.get('d', 100),
+                            'validation': kwargs.get('validation'),
+                            'num_iters': kwargs.get('num_iters', 10),
+                            'max_trials': 100,
                             'num_workers': kwargs.get('num_workers', 10),
                             'compute_loss_on_training': kwargs.get('compute_loss_on_training', False)})
                 return opt
@@ -98,6 +120,10 @@ class Benchmark(object):
                         'num_threads': kwargs.get('num_workers', 10)}
         elif lib_name == 'lightfm':
             if algo_name == 'bpr':
+                return {'epochs': kwargs.get('num_iters', 10),
+                        'verbose': True,
+                        'num_threads': kwargs.get('num_workers', 10)}
+            if algo_name == 'warp':
                 return {'epochs': kwargs.get('num_iters', 10),
                         'verbose': True,
                         'num_threads': kwargs.get('num_workers', 10)}
@@ -158,6 +184,8 @@ class ImplicitLib(Benchmark):
             return (model, ratings)
 
         elapsed, mem_info = self.run(model.fit, ratings)
+        if kwargs.get('return_instance'):
+            return model
         model = None
         return elapsed, mem_info
 
@@ -172,6 +200,8 @@ class ImplicitLib(Benchmark):
             return (model, ratings)
 
         elapsed, mem_info = self.run(model.fit, ratings)
+        if kwargs.get('return_instance'):
+            return model
         model = None
         return elapsed, mem_info
 
@@ -189,7 +219,8 @@ class BuffaloLib(Benchmark):
     def get_database(self, name, **kwargs):
         from buffalo.data.mm import MatrixMarketOptions
         data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.validation = None
+        if kwargs.get('validation', None) is None:
+            data_opt.validation = None
         data_opt.data.use_cache = True
         data_opt.data.batch_mb = kwargs.get('batch_mb', 1024)
         if name == 'ml20m':
@@ -217,8 +248,30 @@ class BuffaloLib(Benchmark):
         if kwargs.get('return_instance_before_train'):
             return als
         elapsed, mem_info = self.run(als.train)
+        if kwargs.get('return_instance'):
+            return als
         als = None
         return elapsed, mem_info
+
+    def validation(self, algo_name, database, **kwargs):
+        inst = getattr(self, algo_name)(database, return_instance=True, **kwargs)
+        ret = inst.get_validation_results()  # same as below
+        for p in ['error', 'rmse']:
+            ret.pop(p)
+        return ret
+        inst.data._prepare_validation_data()
+        K = kwargs.get('validation', {}).get('topk', 10)
+        userids = list(set(inst.data.handle['vali']['row'][::]))
+        itemids = list(range(inst.data.handle['idmap']['cols'].shape[0]))
+        recs = []
+        for user in userids:
+            seen = inst.data.vali_data['validation_seen'].get(user, set())
+            user_str = inst.data.handle['idmap']['rows'][user].decode('utf-8')
+            topn = inst.topk_recommendation(user_str, topk=K + len(seen))
+            topn = [inst._idmanager.itemid_map[t] for t in topn]
+            topn = [t for t in topn if t not in seen][:K]
+            recs.append((user, topn))
+        return evaluate_ranking_metrics(recs, K, inst.data.vali_data, inst.data.header['num_items'])
 
     def bpr(self, database, **kwargs):
         from buffalo.algo.bpr import BPRMF
@@ -229,7 +282,23 @@ class BuffaloLib(Benchmark):
         if kwargs.get('return_instance_before_train'):
             return bpr
         elapsed, mem_info = self.run(bpr.train)
+        if kwargs.get('return_instance'):
+            return bpr
         bpr = None
+        return elapsed, mem_info
+
+    def warp(self, database, **kwargs):
+        from buffalo.algo.warp import WARP
+        opts = self.get_option('buffalo', 'warp', **kwargs)
+        data_opt = self.get_database(database, **kwargs)
+        warp = WARP(opts, data_opt=data_opt)
+        warp.initialize()
+        if kwargs.get('return_instance_before_train'):
+            return warp
+        elapsed, mem_info = self.run(warp.train)
+        if kwargs.get('return_instance'):
+            return warp
+        warp = None
         return elapsed, mem_info
 
     def most_similar(self, keys, **kwargs):
@@ -258,9 +327,38 @@ class LightfmLib(Benchmark):
         opts = self.get_option('lightfm', 'bpr', **kwargs)
         data = self.get_database(database, **kwargs)
         bpr = LightFM(loss='bpr',
-                      no_components=kwargs.get('num_workers'),
-                      max_sampled=1)
+                      no_components=kwargs.get('num_workers'))
         elapsed, mem_info = self.run(bpr.fit, data, data, **opts)
+        if kwargs.get('return_instance'):
+            return bpr
+        bpr = None
+        return elapsed, mem_info
+
+    def validation(self, algo_name, database, **kwargs):
+        K = kwargs.get('validation', {}).get('topk', 10)
+        inst = getattr(self, algo_name)(database, return_instance=True, **kwargs)
+        db = get_buffalo_db(database)
+        db._prepare_validation_data()
+        userids = list(set(db.handle['vali']['row'][::]))
+        itemids = list(range(db.handle['idmap']['cols'].shape[0]))
+        recs = []
+        for user in userids:
+            topn = np.argsort(-inst.predict(user, itemids))
+            topn = [t for t in topn if t not in db.vali_data['validation_seen'].get(user, set())][:K]
+            recs.append((user, topn))
+        return evaluate_ranking_metrics(recs, K, db.vali_data, db.header['num_items'])
+
+    def warp(self, database, **kwargs):
+        from lightfm import LightFM
+        opts = self.get_option('lightfm', 'warp', **kwargs)
+        data = self.get_database(database, **kwargs)
+        warp = LightFM(loss='warp',
+                       learning_schedule='adagrad',
+                       no_components=kwargs.get('num_workers'),
+                       max_sampled=100)
+        elapsed, mem_info = self.run(warp.fit, data, data, **opts)
+        if kwargs.get('return_instance'):
+            return warp
         bpr = None
         return elapsed, mem_info
 

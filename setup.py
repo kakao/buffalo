@@ -25,8 +25,8 @@ numpy_include_dirs = os.path.split(numpy.__file__)[0] + '/core/include'
 n2_shared_object = n2.__file__
 
 MAJOR = 1
-MINOR = 1
-MICRO = 2
+MINOR = 2
+MICRO = 0
 Release = True
 STAGE = {True: '', False: 'b'}.get(Release)
 VERSION = f'{MAJOR}.{MINOR}.{MICRO}{STAGE}'
@@ -81,6 +81,13 @@ extensions = [
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._bpr",
               sources=['buffalo/algo/_bpr.cpp'],
+              include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
+              libraries=['gomp', 'cbuffalo'],
+              library_dirs=LIBRARY_DIRS,
+              runtime_library_dirs=LIBRARY_DIRS,
+              extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
+    Extension(name="buffalo.algo._warp",
+              sources=['buffalo/algo/_warp.cpp'],
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
               library_dirs=LIBRARY_DIRS,
@@ -189,6 +196,7 @@ class BuildExtension(build_ext, object):
                      'buffalo/algo/cuda/_als.pyx',
                      'buffalo/algo/_bpr.pyx',
                      'buffalo/algo/cuda/_bpr.pyx',
+                     'buffalo/algo/_warp.pyx',
                      'buffalo/algo/_w2v.pyx',
                      'buffalo/misc/_log.pyx',
                      'buffalo/algo/_cfr.pyx',

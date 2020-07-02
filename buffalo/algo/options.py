@@ -240,13 +240,12 @@ class BPRMFOption(AlgoOption):
         :ivar float reg_i: The L2 regularization coefficient for positive item embedding matrix. (default: 0.025)
         :ivar float reg_j: The L2 regularization coefficient for negative item embedding matrix. (default: 0.025)
         :ivar float reg_b: The L2 regularization coefficient for bias term. (default: 0.025)
-        :ivar str optimizer: The name of optimizer, should be one of [sgd, adam]. (default: sgd)
+        :ivar str optimizer: The name of optimizer, should be one of [sgd, adagrad, adam]. (default: sgd)
         :ivar float lr: The learning rate.
         :ivar float min_lr: The minimum of learning rate, to prevent going to zero by learning rate decaying. (default: 0.0001)
         :ivar float beta1: The parameter of Adam optimizer. (default: 0.9)
         :ivar float beta2: The parameter of Adam optimizer. (default: 0.999)
         :ivar bool per_coordinate_normalize: This is a bit tricky option for Adam optimizer. Before update factors with graidents, do normalize gradients per class by its number of contributed samples. (default: False)
-        :ivar int num_negative_samples: The number of negaitve samples. (default: 1)
         :ivar float sampling_power: This paramemter control sampling distribution. When it set to 0, it draw negative items from uniform distribution, while to set 1, it draw from the given data popularation. (default: 0.0)
         :ivar bool random_positive: Set True, to draw positive sample uniformly instead of using straight forward positive sample, only implemented in cuda mode, according to the original paper, set True, but we found out False usually produces better results) (default: False)
         :ivar bool verify_neg: Set True, to ensure negative sample does not belong to positive samples. (default True)
@@ -267,7 +266,7 @@ class BPRMFOption(AlgoOption):
             'reg_u': 0.025,
             'reg_i': 0.025,
             'reg_j': 0.025,
-            'reg_b': 1.0,
+            'reg_b': 0.025,
 
             'optimizer': 'sgd',
             'lr': 0.002,
@@ -306,6 +305,87 @@ class BPRMFOption(AlgoOption):
         return Option(opt)
 
 
+class WARPOption(AlgoOption):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def get_default_option(self):
+        """Options for WARP Matrix Factorization.
+
+        :ivar bool accelerator: Set True, to accelerate training using GPU. (default: False)
+        :ivar bool use_bias: Set True, to use bias term for the model.
+        :ivar int evaluation_period: (default: 15)
+        :ivar int num_workers: The number of threads. (default: 1)
+        :ivar int hyper_threads: The number of hyper threads when using cuda cores. (default: 256)
+        :ivar int num_iters: The number of iterations for training. (default: 15)
+        :ivar int d: The number of latent feature dimension. (default: 30)
+        :ivar int max_trials: The maximum number of attempts to find a violating negative sample during training.
+        :ivar bool update_i: Set True, to update positive item feature. (default: True)
+        :ivar bool update_j: Set True, to update negative item feature. (default: True)
+        :ivar float reg_u: The L2 regularization coefficient for user embedding matrix. (default: 0.0)
+        :ivar float reg_i: The L2 regularization coefficient for positive item embedding matrix. (default: 0.0)
+        :ivar float reg_j: The L2 regularization coefficient for negative item embedding matrix. (default: 0.0)
+        :ivar float reg_b: The L2 regularization coefficient for bias term. (default: 0.0)
+        :ivar str optimizer: The name of optimizer, should be one of [adagrad, adam]. (default: adagrad)
+        :ivar float lr: The learning rate. (default: 0.1)
+        :ivar float min_lr: The minimum of learning rate, to prevent going to zero by learning rate decaying. (default: 0.0001)
+        :ivar float beta1: The parameter of Adam optimizer. (default: 0.9)
+        :ivar float beta2: The parameter of Adam optimizer. (default: 0.999)
+        :ivar bool per_coordinate_normalize: This is a bit tricky option for Adam optimizer. Before update factors with graidents, do normalize gradients per class by its number of contributed samples. (default: False)
+        :ivar bool random_positive: Set True, to draw positive sample uniformly instead of using straight forward positive sample, only implemented in cuda mode, according to the original paper, set True, but we found out False usually produces better results) (default: False)
+        :ivar str model_path: Where to save model.
+        :ivar dict data_opt: This options will be used to load data if given.
+        """
+        opt = super().get_default_option()
+        opt.update({
+            'accelerator': False,
+            'use_bias': True,
+            'evaluation_period': 15,
+            'num_workers': 1,
+            'hyper_threads': 256,
+            'num_iters': 20,
+            'd': 20,
+            'threshold': 1.0,
+            'max_trials': 300,
+            'update_i': True,
+            'update_j': True,
+            'reg_u': 0.01,
+            'reg_i': 0.0,
+            'reg_j': 0.0,
+            'reg_b': 0.1,
+            'optimizer': 'adagrad',
+            'lr': 0.05,
+            'min_lr': 0.0001,
+            'beta1': 0.9,
+            'beta2': 0.999,
+            'eps': 1e-10,
+            'per_coordinate_normalize': False,
+            'model_path': '',
+            'data_opt': {}
+        })
+        return Option(opt)
+
+    def get_default_optimize_option(self):
+        """Optimization options for BPRMF.
+        """
+        opt = super().get_default_optimize_option()
+        opt.update({
+            'loss': 'train_loss',
+            'max_trials': 100,
+            'min_trials': 0,
+            'deployment': True,
+            'start_with_default_parameters': True,
+            'space': {
+                'd': ['randint', ['d', 10, 256]],
+                'threshold': ['uniform', ['threshold', 0.5, 5.0]],
+                'reg_u': ['uniform', ['reg_u', 0.01, 1.0]],
+                'reg_i': ['uniform', ['reg_i', 0.0, 0.001]],
+                'reg_j': ['uniform', ['reg_i', 0.0, 0.001]]
+            }
+        })
+        return Option(opt)
+
+
 class W2VOption(AlgoOption):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -321,7 +401,6 @@ class W2VOption(AlgoOption):
         :ivar int min_count: The minimum required frequency of the words to use training vocabulary. (default: 5)
         :ivar float sample: The sampling ratio to downsample the frequent words. (default: 0.001)
         :ivar float lr: The learning rate.
-        :ivar int num_negative_samples: The number of negaitve samples. (default: 5)
         :ivar str model_path: Where to save model.
         :ivar dict data_opt: This options will be used to load data if given.
         """
@@ -338,8 +417,6 @@ class W2VOption(AlgoOption):
 
             'lr': 0.025,
             'min_lr': 0.0001,
-
-            'num_negative_samples': 5,
 
             'model_path': '',
             'data_opt': {}
@@ -360,7 +437,6 @@ class W2VOption(AlgoOption):
             'space': {
                 'd': ['randint', ['d', 10, 30]],
                 'window': ['randint', ['window', 2, 8]],
-                'num_negative_samples': ['randint', ['alpha', 1, 12]]
             }
         })
         return Option(opt)
