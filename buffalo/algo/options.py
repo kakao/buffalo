@@ -418,7 +418,6 @@ class W2VOption(AlgoOption):
             'lr': 0.025,
             'min_lr': 0.0001,
 
-
             'model_path': '',
             'data_opt': {}
         })
