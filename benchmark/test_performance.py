@@ -18,14 +18,17 @@ def _performance(algo_name, database, lib, gpu):
     repeat = 3
     options = {'als': {'num_workers': 8,
                        'compute_loss_on_training': False,
+                       'validation': {},
                        'batch_mb': 4098,
                        'd': 40},
                'bpr': {'num_workers': 8,
                        'batch_mb': 4098,
+                       'validation': {},
                        'compute_loss_on_training': False,
                        'd': 40},
                'warp': {'num_workers': 8,
                         'batch_mb': 4098,
+                        'validation': {},
                         'compute_loss_on_training': False,
                         'd': 40}
               }
