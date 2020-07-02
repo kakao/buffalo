@@ -8,3 +8,4 @@ hyperopt
 tensorflow==1.15.2
 n2==0.1.6
 pytest
+cython
