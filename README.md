@@ -18,7 +18,7 @@ For more information see the [documentation](https://buffalo-recsys.readthedocs.
 
 This software is licensed under the [Apache 2 license](LICENSE), quoted below.
 
-Copyright 2019 Kakao Corp. <http://www.kakaocorp.com>
+Copyright 2020 Kakao Corp. <http://www.kakaocorp.com>
 
 Licensed under the Apache License, Version 2.0 (the "License"); you may not
 use this project except in compliance with the License. You may obtain a copy

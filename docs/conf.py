@@ -17,7 +17,8 @@ import mock
 MOCK_MODULES = ['buffalo.data.fileio', 'buffalo.misc.log',
                 'buffalo.parallel._core',
                 'buffalo.algo._als', 'buffalo.algo._bpr',
-                'buffalo.algo._cfr', 'buffalo.algo._w2v']
+                'buffalo.algo._cfr', 'buffalo.algo._w2v',
+                'buffalo.algo._warp']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
@@ -25,13 +26,13 @@ for mod_name in MOCK_MODULES:
 # -- Project information -----------------------------------------------------
 
 project = 'Buffalo'
-copyright = '2019, Kakao Corp.'
+copyright = '2020, Kakao Corp.'
 author = 'Kakao Recommendation Team'
 
 master_doc = 'index'
 
 # The full version, including alpha/beta/rc tags
-release = '1.1.1'
+release = '1.2.0'
 
 
 # -- General configuration ---------------------------------------------------

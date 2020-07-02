@@ -226,6 +226,7 @@ class BPRMFOption(AlgoOption):
 
     def get_default_option(self):
         """Options for Bayesian Personalized Ranking Matrix Factorization.
+
         :ivar bool accelerator: Set True, to accelerate training using GPU. (default: False)
         :ivar bool use_bias: Set True, to use bias term for the model.
         :ivar int evaluation_period: (default: 100)
@@ -310,6 +311,7 @@ class WARPOption(AlgoOption):
 
     def get_default_option(self):
         """Options for WARP Matrix Factorization.
+
         :ivar bool accelerator: Set True, to accelerate training using GPU. (default: False)
         :ivar bool use_bias: Set True, to use bias term for the model.
         :ivar int evaluation_period: (default: 15)
