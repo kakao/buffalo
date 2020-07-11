@@ -60,7 +60,7 @@ def _get_validation_score(algo_name, lib, database):
                  'lr': 0.2,
                  'batch_mb': 4098,
                  'compute_loss_on_training': False,
-                 'num_iters': 30,
+                 'num_iters': 100,
                  'validation': {'topk': 10},
                  'd': 40}
     }
