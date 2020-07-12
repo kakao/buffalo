@@ -145,22 +145,22 @@ Implicit also provides a GPU accelerator mode for BPRMF, but buffalo doesn't. Im
 
 #### 2.2.1. KakaoBrunch12M
 
-<center><img src="./fig/20190828.buffalo.bpr.kakaobrunch12m.d.png" width="1024px"></center>
-<center><img src="./fig/20190828.buffalo.bpr.kakaobrunch12m.t.png" width="1024px"></center>
+<center><img src="./fig/20200712.buffalo.bpr.kakaobrunch12m.d.png" width="1024px"></center>
+<center><img src="./fig/20200712.buffalo.bpr.kakaobrunch12m.t.png" width="1024px"></center>
 
 method | D=10 | D=20 | D=40 | D=80 | D=160
 -- | -- | -- | -- | -- | --
 buffalo | 17.1951 | 14.6433 | 15.6937 | 16.6561 | 23.426
 implicit | 15.0314 | 16.1355 | 19.3006 | 25.9833 | 39.4239
 qmf | 67.006193 | 76.501249 | 99.842923 | 139.275130666667 | 193.918801
-lightfm | 4480.07857577006 | 4499.68288469315 | 4465.49154909452 | 4491.95924011866 | 4585.76058634122
+lightfm | 58.1398 | 71.8523 | 97.1582 | 143.212 | 231.268 
 
 method | T=1 | T=2 | T=4 | T=8 | T=16
 -- | -- | -- | -- | -- | --
 buffalo | 59.4573 | 36.8466 | 22.5258 | 16.9438 | 26.7515
 implicit | 90.2548 | 42.4105 | 24.4276 | 15.6033 | 13.4407
 qmf | 85.493298 | 75.46227 | 75.4510053333333 | 79.250403 | 76.7110853333333
-lightfm | 4170.78732784589 | 3468.09006055196 | 3411.35963026683 | 4552.11646389961 | 5788.33071891467
+lightfm | 431.583 | 225.155 | 128.233 | 83.8259 | 67.8295
 
 #### 2.2.2. Movielens20M
 tbw.
