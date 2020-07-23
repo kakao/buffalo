@@ -61,7 +61,7 @@ KakaoReco730M | 21,940,315 | 1,467,298 | 730M
 
 Note that there is no Python version of QMF. Since we ran benchmark by Python script, we have to capture printed datetime information from standard output of QMF.
 
-There is a restriction such that the number of the latent dimensions must be multiple of 32 when using GPU in implicit. For example, 80 demensions has been upscaled to 96 but not for 160. Therefore, it is not an accurate comparison between implicit-gpu and buffalo-gpu.
+There is a restriction such that the number of the latent dimensions must be multiple of 32 when using GPU in implicit. For example, 80 dimensions has been upscaled to 96 but not for 160. Therefore, it is not an accurate comparison between implicit-gpu and buffalo-gpu.
 
 #### 2.1.1. KakaoBrunch12M
 
@@ -84,7 +84,7 @@ implicit | 212.646 | 156.561 | 128.528 | 122.587 | 125.323
 qmf | 201.709 | 113.166 | 73.3526 | 124.546 | 144.251
 pyspark | 370.907 | 193.428 | 116.088 | 77.8977 | 55.7786
 
-- D setted as 20.
+- D set to 20.
 
 
 #### 2.1.2. Movielens20M
@@ -108,7 +108,7 @@ implicit | 126.473 | 94.0671 | 72.4117 | 54.702 | 39.5668
 pyspark | 422.733 | 218.339 | 123.377 | 77.7848 | 54.8635
 qmf | 168.467 | 87.7365 | 46.8157 | 31.0115 | 33.9857
 
-- D setted as 20.
+- D set to 20.
 
 #### 2.1.3. KakaoReco730M
 KakaoReco730M, the biggest dataset among our datasets. Within given system resource, only Buffalo and Implicit could manage to train data in reasonable amount of time. Owing to lack of GPU device memory, even implicit does not run on GPU accelerator mode. For buffalo-gpu, the memory management option `batch_mb` works consistently in GPU accelerator mode, allowing it to work with KakaoReco730M that data size does not fit in memory.

@@ -2,5 +2,5 @@
 - sphinx
 - sphinx-rtd-theme
 
-## Compilelation
+## Compilation
 Type `make html`
