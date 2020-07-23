@@ -3,6 +3,9 @@ import os
 import unittest
 import tempfile
 
+import numpy as np
+import scipy.sparse
+
 from buffalo.misc.log import set_log_level
 from buffalo.data.mm import MatrixMarket, MatrixMarketOptions
 
@@ -92,6 +95,36 @@ class TestMatrixMarket(unittest.TestCase):
     def test4_get(self):
         # TODO: implement
         pass
+
+
+class TestMatrixMarketNumpy(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.mm_sparse = scipy.sparse.random(32, 4, density=0.33)
+        cls.mm_dense = np.random.rand(32, 4)
+        cls.temp_files = []
+
+    def test1_sparse(self):
+        opt = MatrixMarketOptions().get_default_option()
+        opt.input.main = self.mm_sparse
+        mm = MatrixMarket(opt)
+        mm.create()
+        self.assertTrue(True)
+
+    def test2_dense(self):
+        opt = MatrixMarketOptions().get_default_option()
+        opt.input.main = self.mm_dense
+        mm = MatrixMarket(opt)
+        mm.create()
+        self.assertTrue(True)
+
+    def test3_list(self):
+        opt = MatrixMarketOptions().get_default_option()
+        opt.input.main = [[10, 123], [1, 2]]
+        mm = MatrixMarket(opt)
+        self.assertRaises(RuntimeError, opt.is_valid_option)
+        self.assertRaises(RuntimeError, mm.create)
+
 
 if __name__ == '__main__':
     unittest.main()

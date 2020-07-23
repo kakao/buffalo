@@ -3,11 +3,13 @@ import os
 import traceback
 
 import h5py
+import scipy.io
 import numpy as np
+import scipy.sparse
 
 from buffalo.data import prepro
 from buffalo.misc import aux, log
-from buffalo.data.base import Data, DataOption
+from buffalo.data.base import Data, DataOption, DataReader
 
 
 class MatrixMarketOptions(DataOption):
@@ -15,7 +17,7 @@ class MatrixMarketOptions(DataOption):
         opt = {
             'type': 'matrix_market',
             'input': {
-                'main': '',
+                'main': '', # str or numpy-kind data
                 'uid': '',  # if not set, row-id is used as userid.
                 'iid': ''  # if not set, col-id is used as itemid.
             },
@@ -40,7 +42,36 @@ class MatrixMarketOptions(DataOption):
             raise RuntimeError('Invalid data type: %s' % opt['type'])
         if opt['data']['internal_data_type'] != 'matrix':
             raise RuntimeError('MatrixMarket only support internal data type(matrix)')
+        main = opt['input']['main']
+        msg = f'Not supported data type for MatrixMarketOption.input.main field: {type(main)}'
+        is_2d_dense = isinstance(main, (np.ndarray,)) and main.ndim == 2
+        is_sparse = scipy.sparse.issparse(main)
+        assert any([isinstance(main, (str,)), is_2d_dense, is_sparse]), msg
         return True
+
+
+class MatrixMarketDataReader(DataReader):
+    def __init__(self, opt, *args, **kwargs):
+        super().__init__(opt, *args, **kwargs)
+
+    def get_main_path(self):
+        main = self.opt.input.main
+        if isinstance(main, (str,)):
+            return main
+
+        if hasattr(self, 'temp_main'):
+            return self.temp_main
+
+        log.get_logger('MatrixMarketDataReader').debug('creating temporary matrix-market data from numpy-kind array')
+        tmp_path = aux.get_temporary_file(self.opt.data.tmp_dir)
+        with open(tmp_path, 'wb') as fout:
+            if isinstance(main, (np.ndarray,)) and main.ndim == 2:
+                main = scipy.sparse.csr_matrix(main)
+            if scipy.sparse.issparse(main):
+                scipy.io.mmwrite(fout, main)
+                self.temp_main = tmp_path
+                return tmp_path
+        raise RuntimeError(f'Unexpected data type for MatrixMarketOption.input.main field: {type(main)}')
 
 
 class MatrixMarket(Data):
@@ -52,6 +83,7 @@ class MatrixMarket(Data):
                       (prepro.SPPMI)):
             raise RuntimeError(f'{self.opt.data.value_prepro.name} does not support MatrixMarket')
         self.data_type = 'matrix'
+        self.reader = MatrixMarketDataReader(self.opt)
 
     def _create(self, data_path, P, H):
         def get_max_column_length(fname):
@@ -179,9 +211,9 @@ class MatrixMarket(Data):
             return w.name, vali_lines
 
     def create(self) -> h5py.File:
-        mm_main_path = self.opt.input.main
-        mm_uid_path = self.opt.input.uid
-        mm_iid_path = self.opt.input.iid
+        mm_main_path = self.reader.get_main_path()
+        mm_uid_path = self.reader.get_uid_path()
+        mm_iid_path = self.reader.get_iid_path()
 
         data_path = self.opt.data.path
         if os.path.isfile(data_path) and self.opt.data.use_cache:

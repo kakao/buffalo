@@ -4,8 +4,10 @@ import abc
 import psutil
 
 import h5py
+import scipy.io
 import numpy as np
 from scipy.sparse import csr_matrix
+
 from buffalo.data import prepro
 from buffalo.misc import aux, log
 from buffalo.data.fileio import chunking_into_bins, sort_and_compressed_binarization
@@ -453,3 +455,17 @@ class DataOption(object):
                 assert hasattr(opt['data']['validation'], 'n'), 'not defined on data.validation.n'
                 assert isinstance(opt['data']['validation']['n'], int), 'invalid type for data.validation.n'
         return True
+
+
+class DataReader(object):
+    def __init__(self, opt):
+        self.opt = opt
+
+    def get_main_path(self):
+        return self.opt.input.main
+
+    def get_uid_path(self):
+        return self.opt.input.uid
+
+    def get_iid_path(self):
+        return self.opt.input.iid
