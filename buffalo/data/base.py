@@ -4,7 +4,6 @@ import abc
 import psutil
 
 import h5py
-import scipy.io
 import numpy as np
 from scipy.sparse import csr_matrix
 
