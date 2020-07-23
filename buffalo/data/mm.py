@@ -17,7 +17,7 @@ class MatrixMarketOptions(DataOption):
         opt = {
             'type': 'matrix_market',
             'input': {
-                'main': '', # str or numpy-kind data
+                'main': '',  # str or numpy-kind data
                 'uid': '',  # if not set, row-id is used as userid.
                 'iid': ''  # if not set, col-id is used as itemid.
             },
