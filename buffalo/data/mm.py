@@ -73,6 +73,22 @@ class MatrixMarketDataReader(DataReader):
                 return tmp_path
         raise RuntimeError(f'Unexpected data type for MatrixMarketOption.input.main field: {type(main)}')
 
+    def get_uid_path(self):
+        uid = self.opt.input.uid
+        if isinstance(uid, (str,)):
+            return uid
+        if uid is not None:
+            return self._get_temporary_id_list_path(uid, 'uid')
+        return uid
+
+    def get_iid_path(self):
+        iid = self.opt.input.iid
+        if isinstance(iid, (str,)):
+            return iid
+        if iid is not None:
+            return self._get_temporary_id_list_path(iid, 'iid')
+        return iid
+
 
 class MatrixMarket(Data):
     def __init__(self, opt, *args, **kwargs):

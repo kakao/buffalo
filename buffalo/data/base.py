@@ -468,3 +468,18 @@ class DataReader(object):
 
     def get_iid_path(self):
         return self.opt.input.iid
+
+    def _get_temporary_id_list_path(self, obj, name):
+        field_name = f'temp_{name}'
+        if hasattr(self, field_name):
+            return getattr(self, field_name)
+        tmp_path = aux.get_temporary_file(self.opt.data.tmp_dir)
+        with open(tmp_path, 'w') as fout:
+            if isinstance(obj, np.ndarray,) and obj.ndim == 1:
+                fout.write('\n'.join(map(str, obj.tolist())))
+            elif isinstance(obj, (list,)):
+                fout.write('\n'.join(map(str, obj)))
+            else:
+                raise RuntimeError(f'Unexpected data type for id list: {type(obj)}')
+        setattr(self, field_name, tmp_path)
+        return tmp_path

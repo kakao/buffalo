@@ -97,7 +97,7 @@ class TestMatrixMarket(unittest.TestCase):
         pass
 
 
-class TestMatrixMarketNumpy(unittest.TestCase):
+class TestMatrixMarketReader(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.mm_sparse = scipy.sparse.random(32, 4, density=0.33)
@@ -125,6 +125,21 @@ class TestMatrixMarketNumpy(unittest.TestCase):
         self.assertRaises(RuntimeError, opt.is_valid_option)
         self.assertRaises(RuntimeError, mm.create)
 
+    def test3_id_list(self):
+        opt = MatrixMarketOptions().get_default_option()
+        opt.input.main = np.array([[1, 2], [1, 2], [2, 1]])
+        opt.input.uid = [1, 2.0, '3']
+        opt.input.iid = np.array(['1', 'a'])
+        mm = MatrixMarket(opt)
+        mm.create()
+        self.assertTrue(True)
+
+    def test3_id_list_except(self):
+        opt = MatrixMarketOptions().get_default_option()
+        opt.input.main = np.array([[1, 2], [1, 2], [2, 1]])
+        opt.input.uid = [1, 2.0]  # size should be 3
+        mm = MatrixMarket(opt)
+        self.assertRaises(TypeError, mm.create)
 
 if __name__ == '__main__':
     unittest.main()
