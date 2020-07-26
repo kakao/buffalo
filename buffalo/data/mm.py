@@ -18,8 +18,8 @@ class MatrixMarketOptions(DataOption):
             'type': 'matrix_market',
             'input': {
                 'main': '',  # str or numpy-kind data
-                'uid': '',  # if not set, row-id is used as userid.
-                'iid': ''  # if not set, col-id is used as itemid.
+                'uid': '',  # if not set, row-id is used as userid. It is okay to pass list or 1d dence array as a id list information.
+                'iid': ''  # if not set, col-id is used as itemid. It is okay to pass list or 1d dence array as a id list information.
             },
             'data': {
                 'internal_data_type': 'matrix',
@@ -42,6 +42,11 @@ class MatrixMarketOptions(DataOption):
             raise RuntimeError('Invalid data type: %s' % opt['type'])
         if opt['data']['internal_data_type'] != 'matrix':
             raise RuntimeError('MatrixMarket only support internal data type(matrix)')
+        for field in ['uid', 'iid']:
+            id_path = opt['input'][field]
+            is_1d_dense = isinstance(id_path, (np.ndarray,)) and id_path.ndim == 2
+            msg = f'Not supported data type for MatrixMarketOption.input.{field}: {type(id_path)}'
+            assert any([isinstance(id_path, (str, list,)), is_1d_dense]), msg
         main = opt['input']['main']
         msg = f'Not supported data type for MatrixMarketOption.input.main field: {type(main)}'
         is_2d_dense = isinstance(main, (np.ndarray,)) and main.ndim == 2
