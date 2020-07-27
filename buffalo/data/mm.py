@@ -44,7 +44,7 @@ class MatrixMarketOptions(DataOption):
             raise RuntimeError('MatrixMarket only support internal data type(matrix)')
         for field in ['uid', 'iid']:
             id_path = opt['input'][field]
-            is_1d_dense = isinstance(id_path, (np.ndarray,)) and id_path.ndim == 2
+            is_1d_dense = isinstance(id_path, (np.ndarray,)) and id_path.ndim == 1
             msg = f'Not supported data type for MatrixMarketOption.input.{field}: {type(id_path)}'
             assert any([isinstance(id_path, (str, list,)), is_1d_dense]), msg
         main = opt['input']['main']
