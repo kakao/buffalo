@@ -12,7 +12,7 @@ class AlgoOption(InputOptions):
         :ivar bool evaluation_on_learning: Set True to do run evaluation on training phrase. (default: True)
         :ivar bool compute_loss_on_training: Set True to calculate loss on training phrase. (default: True)
         :ivar int early_stopping_rounds: The number of exceed epochs after reached minimum loss on training phrase. If set 0, it doesn't work. (default: 0)
-        :ivar bool save_best: Whenver the loss improved, save the model.
+        :ivar bool save_best: Whenever the loss improved, save the model.
         :ivar int evaluation_period: How often will do evaluation in epochs. (default: 1)
         :ivar int save_period: How often will do save_best routine in epochs. (default: 10)
         :ivar int random_seed: Random Seed
@@ -82,9 +82,9 @@ class ALSOption(AlgoOption):
         :ivar float eps: epsilon for numerical stability (default: 1e-10)
         :ivar float cg_tolerance: tolerance of conjugate gradient for early stopping iterations (default: 1e-10)
         :ivar str optimizer: The name of optimizer, should be in [llt, ldlt, manual_cg, eigen_cg, eigen_bicg, eigen_gmres, eigen_dgmres, eigen_minres]. (default: manual_cg)
-        :ivar int num_cg_max_iters: The number of maximum iterations for conjuaget gradient optimizer. (default: 3)
+        :ivar int num_cg_max_iters: The number of maximum iterations for conjugate gradient optimizer. (default: 3)
         :ivar str model_path: Where to save model.
-        :ivar dict data_opt: This options will be used to load data if given.
+        :ivar dict data_opt: This option will be used to load data if given.
         """
 
         opt = super().get_default_option()
@@ -118,7 +118,7 @@ class ALSOption(AlgoOption):
         :ivar int min_trials: The minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
         :ivar bool deployment: Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
         :ivar bool start_with_default_parameters: If set to True, the loss value of the default parameter is used as the starting loss to beat.
-        :ivar dict space: The parameter space definition. For more information, pleases reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Pleases see optimize.py to check how we deal with `randint`.k
+        :ivar dict space: The parameter space definition. For more information, please check reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Please see optimize.py to check how we deal with `randint`.
         """
         opt = super().get_default_optimize_option()
         opt.update({
@@ -156,9 +156,9 @@ class CFROption(AlgoOption):
         :ivar float alpha: The coefficient of giving more weights to losses on positive samples. (default: 8.0)
         :ivar float l: The relative weight of loss on user-item relation over item-context relation. (default: 1.0)
         :ivar str optimizer: The name of optimizer, should be in [llt, ldlt, manual_cg, eigen_cg, eigen_bicg, eigen_gmres, eigen_dgmres, eigen_minres]. (default: manual_cg)
-        :ivar int num_cg_max_iters: The number of maximum iterations for conjuaget gradient optimizer. (default: 3)
+        :ivar int num_cg_max_iters: The number of maximum iterations for conjugate gradient optimizer. (default: 3)
         :ivar str model_path: Where to save model. (default: '')
-        :ivar dict data_opt: This options will be used to load data if given. (default: {})
+        :ivar dict data_opt: This option will be used to load data if given. (default: {})
         """
         opt = super().get_default_option()
         opt.update({
@@ -190,7 +190,7 @@ class CFROption(AlgoOption):
         :ivar int min_trials: Minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
         :ivar bool deployment(: Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
         :ivar bool start_with_default_parameters: If set to True, the loss value of the default parameter is used as the starting loss to beat.
-        :ivar dict space: Parameter space definition. For more information, pleases reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Pleases see optimize.py to check how we deal with `randint`.k
+        :ivar dict space: Parameter space definition. For more information, please check reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Please see optimize.py to check how we deal with `randint`.
         """
         opt = super().get_default_optimize_option()
         opt.update({
@@ -245,12 +245,12 @@ class BPRMFOption(AlgoOption):
         :ivar float min_lr: The minimum of learning rate, to prevent going to zero by learning rate decaying. (default: 0.0001)
         :ivar float beta1: The parameter of Adam optimizer. (default: 0.9)
         :ivar float beta2: The parameter of Adam optimizer. (default: 0.999)
-        :ivar bool per_coordinate_normalize: This is a bit tricky option for Adam optimizer. Before update factors with graidents, do normalize gradients per class by its number of contributed samples. (default: False)
-        :ivar float sampling_power: This paramemter control sampling distribution. When it set to 0, it draw negative items from uniform distribution, while to set 1, it draw from the given data popularation. (default: 0.0)
+        :ivar bool per_coordinate_normalize: This is a bit tricky option for Adam optimizer. Before update factors with gradients, do normalize gradients per class by its number of contributed samples. (default: False)
+        :ivar float sampling_power: This parameter control sampling distribution. When it set to 0, it draw negative items from uniform distribution, while to set 1, it draw from the given data popularation. (default: 0.0)
         :ivar bool random_positive: Set True, to draw positive sample uniformly instead of using straight forward positive sample, only implemented in cuda mode, according to the original paper, set True, but we found out False usually produces better results) (default: False)
         :ivar bool verify_neg: Set True, to ensure negative sample does not belong to positive samples. (default True)
         :ivar str model_path: Where to save model.
-        :ivar dict data_opt: This options will be used to load data if given.
+        :ivar dict data_opt: This option will be used to load data if given.
         """
         opt = super().get_default_option()
         opt.update({
@@ -331,10 +331,10 @@ class WARPOption(AlgoOption):
         :ivar float min_lr: The minimum of learning rate, to prevent going to zero by learning rate decaying. (default: 0.0001)
         :ivar float beta1: The parameter of Adam optimizer. (default: 0.9)
         :ivar float beta2: The parameter of Adam optimizer. (default: 0.999)
-        :ivar bool per_coordinate_normalize: This is a bit tricky option for Adam optimizer. Before update factors with graidents, do normalize gradients per class by its number of contributed samples. (default: False)
+        :ivar bool per_coordinate_normalize: This is a bit tricky option for Adam optimizer. Before update factors with gradients, do normalize gradients per class by its number of contributed samples. (default: False)
         :ivar bool random_positive: Set True, to draw positive sample uniformly instead of using straight forward positive sample, only implemented in cuda mode, according to the original paper, set True, but we found out False usually produces better results) (default: False)
         :ivar str model_path: Where to save model.
-        :ivar dict data_opt: This options will be used to load data if given.
+        :ivar dict data_opt: This option will be used to load data if given.
         """
         opt = super().get_default_option()
         opt.update({
@@ -402,7 +402,7 @@ class W2VOption(AlgoOption):
         :ivar float sample: The sampling ratio to downsample the frequent words. (default: 0.001)
         :ivar float lr: The learning rate.
         :ivar str model_path: Where to save model.
-        :ivar dict data_opt: This options will be used to load data if given.
+        :ivar dict data_opt: This option will be used to load data if given.
         """
         opt = super().get_default_option()
         opt.update({
