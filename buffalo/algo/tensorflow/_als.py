@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import tensorflow as tf
-
 from buffalo.misc import log
-
-
 class TFALS(object):
     def __init__(self, opt, name="tf_als"):
         self.logger = log.get_logger("tf-als")
@@ -22,16 +19,13 @@ class TFALS(object):
                                       dtype=tf.float32)
             self.build_graph()
         self.sess.run(tf.global_variables_initializer())
-
     def get_variable(self, name):
         return self.sess.run(getattr(self, name))
-
     def precompute(self, int_group):
         if int_group == 0:
             self.sess.run(self.precomputeQ)
         else:
             self.sess.run(self.precomputeP)
-
     def build_graph(self):
         self.start_x = tf.placeholder(dtype=tf.int32, name="start_x")
         self.next_x = tf.placeholder(dtype=tf.int32, name="next_x")
@@ -40,10 +34,8 @@ class TFALS(object):
         self.vals = tf.placeholder(dtype=tf.float32, shape=(None, ), name="vals")
         for int_group in [0, 1]:
             self._build_graph(int_group)
-
     def _dot(self, X, Y):
         return tf.reduce_sum(X * Y, axis=1)
-
     def _build_graph(self, int_group):
         if int_group == 0:
             P, Q, reg = self.P, self.Q, self.opt.reg_u
@@ -58,7 +50,6 @@ class TFALS(object):
         ys = tf.scatter_nd(tf.expand_dims(rows, axis=1),
                            Fgtr * tf.expand_dims(coeff + 1, axis=1),
                            shape=(next_x - start_x, self.opt.d))
-
         # prepare cg
         _P = P[start_x:next_x]
         Axs = tf.matmul(_P, self.FF) + reg * _P
@@ -83,25 +74,21 @@ class TFALS(object):
             betas = rss_new / (rss_old + self.opt.eps)
             ps = rs + (tf.expand_dims(betas, axis=1) * ps)
             rss_old = rss_new
-
         if int_group == 1:
             if self.opt.compute_loss_on_training:
                 self.err = tf.reduce_sum(tf.square(vals - dots))
             else:
                 self.err = tf.constant(0.0, dtype=tf.float32)
-
         name = "updateP" if int_group == 0 else "updateQ"
         _update = P[start_x:next_x].assign(_P)
         with self.graph.control_dependencies([_update]):
             update = tf.constant(True)
         setattr(self, name, update)
-
         _FF = tf.assign(self.FF, tf.matmul(P, P, transpose_a=True))
         with self.graph.control_dependencies([_FF]):
             FF = tf.constant(True)
         name = "precomputeP" if int_group == 0 else "precomputeQ"
         setattr(self, name, FF)
-
     def _generate_rows(self, start_x, next_x, indptr):
         ends = indptr[start_x:next_x]
         begs = np.empty(next_x - start_x, dtype=np.int64)
@@ -110,7 +97,6 @@ class TFALS(object):
         ret = np.arange(next_x - start_x, dtype=np.int32)
         ret = np.repeat(ret, ends - begs)
         return ret, len(ret)
-
     def partial_update(self, start_x, next_x, indptr, keys, vals, int_group):
         rows, sz = self._generate_rows(start_x, next_x, indptr)
         feed_dict = {self.start_x: start_x, self.next_x: next_x,
