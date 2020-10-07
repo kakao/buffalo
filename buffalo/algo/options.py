@@ -203,9 +203,9 @@ class CFROption(AlgoOption):
                 'd': ['randint', ['d', 10, 30]],
                 'reg_u': ['uniform', ['reg_u', 0.1, 1]],
                 'reg_i': ['uniform', ['reg_i', 0.1, 1]],
-                'reg_c': ['uniform', ['reg_i', 0.1, 1]],
+                'reg_c': ['uniform', ['reg_c', 0.1, 1]],
                 'alpha': ['randint', ['alpha', 1, 32]],
-                'l': ['randint', ['alpha', 1, 32]]
+                'l': ['randint', ['l', 1, 32]]
             }
         })
         return Option(opt)
@@ -366,7 +366,7 @@ class WARPOption(AlgoOption):
         return Option(opt)
 
     def get_default_optimize_option(self):
-        """Optimization options for BPRMF.
+        """Optimization options for WARP.
         """
         opt = super().get_default_optimize_option()
         opt.update({
@@ -380,7 +380,7 @@ class WARPOption(AlgoOption):
                 'threshold': ['uniform', ['threshold', 0.5, 5.0]],
                 'reg_u': ['uniform', ['reg_u', 0.01, 1.0]],
                 'reg_i': ['uniform', ['reg_i', 0.0, 0.001]],
-                'reg_j': ['uniform', ['reg_i', 0.0, 0.001]]
+                'reg_j': ['uniform', ['reg_j', 0.0, 0.001]]
             }
         })
         return Option(opt)
