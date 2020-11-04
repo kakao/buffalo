@@ -369,10 +369,12 @@ class Data(object):
                     assert data_index + total_records <= num_lines, 'Requests data size(%s) exceed capacity(%s)' % (data_index + total_records, num_lines)
                     db['key'][data_index:data_index + total_records] = I
                     db['val'][data_index:data_index + total_records] = V
-                    indptr = [data_index for j in range(U[0] - prev_key)]
-                    indptr += [data_index + i
-                               for i in range(1, total_records)
-                               for j in range(U[i] - U[i - 1])]
+                    diff = U[1:] - U[:-1]
+                    max_diff = np.amax(diff) if len(diff) else 0
+                    indptr = [data_index for _ in range(U[0] - prev_key)]
+                    for i in range(max_diff):
+                        indptr += (np.where(diff > i)[0] + data_index + 1).tolist()
+                    indptr.sort()
                     db['indptr'][indptr_index:indptr_index + len(indptr)] = indptr
                     assert indptr_index + len(indptr) <= max_key
                     data_index += total_records
