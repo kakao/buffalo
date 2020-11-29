@@ -1,5 +1,5 @@
 ## Dockerfile.dev
-This Dockerfile is provided for development environtmens of buffalo.
+This Dockerfile is provided for development environments of buffalo.
 
 ```
 $> docker build -t buffalo.dev .

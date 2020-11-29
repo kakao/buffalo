@@ -17,7 +17,7 @@ class ALS:
         self.logger.info(f'ALS finished with loss({loss}).')
         if opt.save_factors:
             self.logger.info(f'Saving model to {opt.model_path}.')
-            als.dump(opt.model_path)
+            als.save(opt.model_path)
 
     def optimize(self, opt_path):
         als = _ALS(opt_path)

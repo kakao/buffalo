@@ -20,5 +20,5 @@ Some tests rely on external databases. Before run the tests, please download bel
   - KakaoReco730M: https://arena.kakao.com/datasets?id=2
     - Place it to ./ext/kakao-reco-730m (optional, only for benchmark)
 
-## Preprcessing
+## Preprocessing
 Before run the tests, pre-processing has to be done. Type `python preprocessing.py`.

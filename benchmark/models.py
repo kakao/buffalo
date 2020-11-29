@@ -87,6 +87,7 @@ class Benchmark(object):
                 from buffalo.algo.options import BPRMFOption
                 opt = BPRMFOption().get_default_option()
                 opt.update({'d': kwargs.get('d', 100),
+                            'lr': kwargs.get('lr', 0.05),
                             'validation': kwargs.get('validation'),
                             'num_iters': kwargs.get('num_iters', 10),
                             'num_workers': kwargs.get('num_workers', 10),
@@ -96,6 +97,7 @@ class Benchmark(object):
                 from buffalo.algo.options import WARPOption
                 opt = WARPOption().get_default_option()
                 opt.update({'d': kwargs.get('d', 100),
+                            'lr': kwargs.get('lr', 0.05),
                             'validation': kwargs.get('validation'),
                             'num_iters': kwargs.get('num_iters', 10),
                             'max_trials': 100,
@@ -168,7 +170,7 @@ class ImplicitLib(Benchmark):
 
     def get_database(self, name, **kwargs):
         if name in ['ml20m', 'ml100k', 'kakao_reco_730m', 'kakao_brunch_12m']:
-            db = h5py.File(DB[name])
+            db = h5py.File(DB[name], 'r')
             ratings = db_to_coo(db)
             db.close()
             return ratings
@@ -314,7 +316,7 @@ class LightfmLib(Benchmark):
 
     def get_database(self, name, **kwargs):
         if name in ['ml20m', 'ml100k', 'kakao_reco_730m', 'kakao_brunch_12m']:
-            db = h5py.File(DB[name])
+            db = h5py.File(DB[name], 'r')
             ratings = db_to_coo(db)
             db.close()
             return ratings
@@ -327,8 +329,8 @@ class LightfmLib(Benchmark):
         opts = self.get_option('lightfm', 'bpr', **kwargs)
         data = self.get_database(database, **kwargs)
         bpr = LightFM(loss='bpr',
-                      no_components=kwargs.get('num_workers'))
-        elapsed, mem_info = self.run(bpr.fit, data, data, **opts)
+                      no_components=kwargs.get('d'))
+        elapsed, mem_info = self.run(bpr.fit, data, **opts)
         if kwargs.get('return_instance'):
             return bpr
         bpr = None
@@ -354,12 +356,12 @@ class LightfmLib(Benchmark):
         data = self.get_database(database, **kwargs)
         warp = LightFM(loss='warp',
                        learning_schedule='adagrad',
-                       no_components=kwargs.get('num_workers'),
+                       no_components=kwargs.get('d'),
                        max_sampled=100)
-        elapsed, mem_info = self.run(warp.fit, data, data, **opts)
+        elapsed, mem_info = self.run(warp.fit, data, **opts)
         if kwargs.get('return_instance'):
             return warp
-        bpr = None
+        warp = None
         return elapsed, mem_info
 
 
@@ -482,7 +484,7 @@ class PysparkLib(Benchmark):
 
     def get_database(self, name, **kwargs):
         if name in ['ml20m', 'ml100k', 'kakao_reco_730m', 'kakao_brunch_12m']:
-            db = h5py.File(DB[name])
+            db = h5py.File(DB[name], 'r')
             ratings = db_to_dataframe(db, kwargs.get('spark'), kwargs.get('context'))
             db.close()
             return ratings

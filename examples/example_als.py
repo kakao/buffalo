@@ -58,7 +58,7 @@ def example1():
     best_parameters = optimization_res['best_parameters']
 
     print(json.dumps(optimization_res['best'], indent=2))
-    print(json.dumps({'alpha': best_parameters['alpha'], 'd': best_parameters['d'],
+    print(json.dumps({'alpha': int(best_parameters['alpha']), 'd': int(best_parameters['d']),
                       'reg_u': best_parameters['reg_u'], 'reg_i': best_parameters['reg_i']}, indent=2))
 
 

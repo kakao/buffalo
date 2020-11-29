@@ -6,6 +6,7 @@ import psutil
 import h5py
 import numpy as np
 from scipy.sparse import csr_matrix
+
 from buffalo.data import prepro
 from buffalo.misc import aux, log
 from buffalo.data.fileio import chunking_into_bins, sort_and_compressed_binarization
@@ -368,10 +369,12 @@ class Data(object):
                     assert data_index + total_records <= num_lines, 'Requests data size(%s) exceed capacity(%s)' % (data_index + total_records, num_lines)
                     db['key'][data_index:data_index + total_records] = I
                     db['val'][data_index:data_index + total_records] = V
-                    indptr = [data_index for j in range(U[0] - prev_key)]
-                    indptr += [data_index + i
-                               for i in range(1, total_records)
-                               for j in range(U[i] - U[i - 1])]
+                    diff = U[1:] - U[:-1]
+                    max_diff = np.amax(diff) if len(diff) else 0
+                    indptr = [data_index for _ in range(U[0] - prev_key)]
+                    for i in range(max_diff):
+                        indptr += (np.where(diff > i)[0] + data_index + 1).tolist()
+                    indptr.sort()
                     db['indptr'][indptr_index:indptr_index + len(indptr)] = indptr
                     assert indptr_index + len(indptr) <= max_key
                     data_index += total_records
@@ -453,3 +456,32 @@ class DataOption(object):
                 assert hasattr(opt['data']['validation'], 'n'), 'not defined on data.validation.n'
                 assert isinstance(opt['data']['validation']['n'], int), 'invalid type for data.validation.n'
         return True
+
+
+class DataReader(object):
+    def __init__(self, opt):
+        self.opt = opt
+
+    def get_main_path(self):
+        return self.opt.input.main
+
+    def get_uid_path(self):
+        return self.opt.input.uid
+
+    def get_iid_path(self):
+        return self.opt.input.iid
+
+    def _get_temporary_id_list_path(self, obj, name):
+        field_name = f'temp_{name}'
+        if hasattr(self, field_name):
+            return getattr(self, field_name)
+        tmp_path = aux.get_temporary_file(self.opt.data.tmp_dir)
+        with open(tmp_path, 'w') as fout:
+            if isinstance(obj, np.ndarray,) and obj.ndim == 1:
+                fout.write('\n'.join(map(str, obj.tolist())))
+            elif isinstance(obj, (list,)):
+                fout.write('\n'.join(map(str, obj)))
+            else:
+                raise RuntimeError(f'Unexpected data type for id list: {type(obj)}')
+        setattr(self, field_name, tmp_path)
+        return tmp_path
