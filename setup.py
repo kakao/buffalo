@@ -23,6 +23,8 @@ if sys.version_info[:3] < (3, 6):
 assert platform.system() == 'Linux'  # TODO: MacOS
 numpy_include_dirs = os.path.split(numpy.__file__)[0] + '/core/include'
 n2_shared_object = n2.__file__
+with open("requirements.txt", "r") as fin:
+    INSTALL_REQUIRES = [line.strip() for line in fin]
 
 MAJOR = 1
 MINOR = 2
@@ -252,6 +254,7 @@ def setup_package():
                   'buffalo/parallel/',
                   'buffalo/misc/',
                   'buffalo/'],
+        install_requires=INSTALL_REQUIRES,
         cmdclass=cmdclass,
         classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
         platforms=['Linux', 'Mac OSX', 'Unix'],
