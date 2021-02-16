@@ -5,5 +5,5 @@ numpy
 psutil
 h5py
 hyperopt
-tensorflow==1.15.4
+tensorflow==2.4.0
 pytest
