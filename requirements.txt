@@ -7,5 +7,6 @@ h5py
 hyperopt
 tensorflow==1.15.2
 cython
-n2==0.1.6
+n2==0.1.7
+cmake
 pytest
