@@ -86,7 +86,14 @@ extensions = [
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.algo._warp",
+    Extension(name="buffalo.algo._plsi",
+              sources=['buffalo/algo/_plsi.cpp'],
+              include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
+              libraries=['gomp', 'cbuffalo'],
+              library_dirs=LIBRARY_DIRS,
+              runtime_library_dirs=LIBRARY_DIRS,
+              extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
+   Extension(name="buffalo.algo._warp",
               sources=['buffalo/algo/_warp.cpp'],
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
@@ -200,6 +207,7 @@ class BuildExtension(build_ext, object):
                      'buffalo/algo/_w2v.pyx',
                      'buffalo/misc/_log.pyx',
                      'buffalo/algo/_cfr.pyx',
+                     'buffalo/algo/_plsi.pyx',
                      'buffalo/parallel/_core.pyx',
                      'buffalo/data/fileio.pyx']
         for path in ext_files:

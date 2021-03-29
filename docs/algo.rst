@@ -122,3 +122,18 @@ Word2Vec
    :exclude-members:
    :show-inheritance:
    :undoc-members:
+
+
+pLSI
+--------------------------------------------------
+.. autoclass:: buffalo.algo.plsi.PLSI
+   :members:
+   :exclude-members: get_evaluation_metrics, init_factors, set_data
+   :show-inheritance:
+   :undoc-members:
+
+.. autoclass:: buffalo.algo.options.PLSIOption
+   :members:
+   :exclude-members:
+   :show-inheritance:
+   :undoc-members:

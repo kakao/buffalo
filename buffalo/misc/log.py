@@ -102,7 +102,7 @@ class ProgressBar(object):
         self.s_t = time.time()
         self.t = time.time()
         self.desc = kwargs.get('desc', 'PROGRESS')
-        self.period_secs = kwargs.get('mininteral', 1)
+        self.period_secs = kwargs.get('mininterval', 1)
         self.total = kwargs.get('total', -1)
         self.step = 0
 
