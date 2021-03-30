@@ -31,7 +31,8 @@ class MatrixMarketOptions(DataOption):
                 'batch_mb': 1024,
                 'use_cache': False,
                 'tmp_dir': '/tmp/',
-                'path': './mm.h5py'
+                'path': './mm.h5py',
+                'disk_based': False # use disk based data compressing
             }
         }
         return aux.Option(opt)
