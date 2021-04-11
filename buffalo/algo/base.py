@@ -364,7 +364,10 @@ class TensorboardExtention(object):
             os.makedirs(self.opt.tensorboard.root)
         tb_dir = os.path.join(self.opt.tensorboard.root, self._tb.name)
         self._tb.data_root = tb_dir
-        self._tb.summary_writer = tf.summary.FileWriter(tb_dir)
+        if tf.__version__ < "2.0.0":
+            self._tb.summary_writer = tf.summary.FileWriter(tb_dir)
+        else:
+            self._tb_summary_rwiter = tf.compat.v1.summary.FileWriter(tb_dir)
         if not metrics:
             metrics = self.get_evaluation_metrics()
         for m in metrics:
