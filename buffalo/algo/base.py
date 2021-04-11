@@ -367,7 +367,7 @@ class TensorboardExtention(object):
         if tf.__version__ < "2.0.0":
             self._tb.summary_writer = tf.summary.FileWriter(tb_dir)
         else:
-            self._tb_summary_rwiter = tf.compat.v1.summary.FileWriter(tb_dir)
+            self._tb_summary_rwiter = tf.summary.create_file_writer(tb_dir)
         if not metrics:
             metrics = self.get_evaluation_metrics()
         for m in metrics:
