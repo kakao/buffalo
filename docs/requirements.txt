@@ -7,3 +7,4 @@ h5py
 hyperopt
 tensorflow==1.15.4
 pytest
+networkx>=2.6 # not directly required, pinned by Snyk to avoid a vulnerability
