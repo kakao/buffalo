@@ -10,3 +10,4 @@ cython
 n2==0.1.7
 cmake
 pytest
+networkx>=2.6 # not directly required, pinned by Snyk to avoid a vulnerability
