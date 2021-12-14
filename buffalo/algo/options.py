@@ -400,6 +400,7 @@ class W2VOption(AlgoOption):
         :ivar int window: The window size. (default: 5)
         :ivar int min_count: The minimum required frequency of the words to use training vocabulary. (default: 5)
         :ivar float sample: The sampling ratio to downsample the frequent words. (default: 0.001)
+        :ivar int num_negative_samples: The number of negative noise words. (default: 5)
         :ivar float lr: The learning rate.
         :ivar str model_path: Where to save model.
         :ivar dict data_opt: This option will be used to load data if given.
@@ -414,6 +415,7 @@ class W2VOption(AlgoOption):
             'window': 5,
             'min_count': 5,
             'sample': 0.001,
+            'num_negative_samples': 5,
 
             'lr': 0.025,
             'min_lr': 0.0001,
