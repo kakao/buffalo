@@ -238,7 +238,7 @@ class TestBase(unittest.TestCase):
         ret_a = model.most_similar(q1, pool=pool)
         indexes = model.get_index(pool)
         self.assertEqual(len(indexes), 2)
-        ret_b = model.most_similar(q1, pool=indexes)
+        ret_b = model.most_similar(q1, pool=np.array(indexes))
         self.assertEqual(ret_a, ret_b)
 
         keys = [k[0] for k in model.most_similar(q1, topk=100)]
@@ -255,6 +255,6 @@ class TestBase(unittest.TestCase):
 
         start_t = time.time()
         for i in range(100):
-            model.most_similar(q1, pool=indexes)
+            model.most_similar(q1, pool=np.array(indexes))
         elapsed_b = time.time() - start_t
         self.assertTrue(elapsed_a > elapsed_b)

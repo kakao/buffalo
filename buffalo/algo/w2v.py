@@ -76,7 +76,7 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
         indexes = [None if i is None or self._vocab.index[i] < 1 else self._vocab.index[i] - 1 for i in indexes]
         if not is_many:
             return indexes[0]
-        return np.array(indexes)
+        return indexes
 
     def _get_feature(self, index, group='item'):
         if group == 'item' and index is not None:
