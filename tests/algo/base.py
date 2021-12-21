@@ -255,6 +255,6 @@ class TestBase(unittest.TestCase):
 
         start_t = time.time()
         for i in range(100):
-            model.most_similar(q1, pool=np.array(indexes))
+            model.most_similar(q1, pool=indexes)
         elapsed_b = time.time() - start_t
         self.assertTrue(elapsed_a > elapsed_b)
