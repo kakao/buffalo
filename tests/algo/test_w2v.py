@@ -2,6 +2,8 @@
 import os
 
 import unittest
+import numpy as np
+from tempfile import NamedTemporaryFile
 
 from buffalo.algo.w2v import W2V
 from buffalo.misc.log import set_log_level
@@ -20,9 +22,9 @@ class TestW2V(TestBase):
         set_log_level(3)
         opt = W2VOption().get_default_option()
         opt.num_workers = 12
-        opt.d = 40
+        opt.d = 100
         opt.min_count = 4
-        opt.num_iters = 10
+        opt.num_iters = 20
         opt.model_path = 'text8.w2v.bin'
         data_opt = StreamOptions().get_default_option()
         data_opt.input.main = self.text8 + 'main'
@@ -63,25 +65,7 @@ class TestW2V(TestBase):
 
     def test05_text8_accuracy(self):
         set_log_level(2)
-        opt = W2VOption().get_default_option()
-        opt.num_workers = 12
-        opt.d = 200
-        opt.num_iters = 15
-        opt.min_count = 4
-        data_opt = StreamOptions().get_default_option()
-        data_opt.input.main = self.text8 + 'main'
-        data_opt.data.path = './text8.h5py'
-        data_opt.data.use_cache = True
-        data_opt.data.validation = {}
-
-        model_path = 'text8.accuracy.w2v.bin'
-        w = W2V(opt, data_opt=data_opt)
-        if os.path.isfile(model_path):
-            w.load(model_path)
-        else:
-            w.initialize()
-            w.train()
-            w.build_itemid_map()
+        w = self.load_text8_model()
 
         with open('./ext/text8/questions-words.txt') as fin:
             questions = fin.read().strip().split('\n')
@@ -122,6 +106,31 @@ class TestW2V(TestBase):
         w = self.load_text8_model()
         q1, q2, q3 = 'apple', 'macintosh', 'microsoft'
         self._test_most_similar(w, q1, q2, q3)
+
+    def test07_oov_by_mincut(self):
+        opt = W2VOption().get_default_option()
+        opt.num_iters = 5
+        opt.num_workers = 1
+        opt.d = 10
+        opt.min_count = 2
+        data_opt = StreamOptions().get_default_option()
+        with NamedTemporaryFile('w', delete=False) as fout_main,\
+                NamedTemporaryFile('w', delete=False) as fout_iid:
+            fout_main.write('1 2 1 2 1 2 1 2\n3\n')
+            fout_iid.write('1\n2\n3\n')
+            data_opt.input.main = fout_main.name
+            data_opt.input.iid = fout_iid.name
+        model = W2V(opt, data_opt=data_opt)
+        model.initialize()
+        model.train()
+        for k in ['1', '2', '3']:
+            vec = model.get_feature(k)
+            if k == '3':
+                self.assertIsNone(vec)
+            else:
+                self.assertIsInstance(vec, np.ndarray)
+        os.remove(data_opt.input.main)
+        os.remove(data_opt.input.iid)
 
 
 if __name__ == '__main__':
