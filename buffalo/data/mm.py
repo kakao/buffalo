@@ -272,7 +272,7 @@ class MatrixMarket(Data):
             self.logger.error(traceback.format_exc().splitlines())
             raise
         finally:
-            if hasattr(self, 'path'):
+            if hasattr(self, 'patr'):
                 if os.path.isfile(self.path):
                     os.remove(self.path)
         self.logger.info('DB built on %s' % data_path)
