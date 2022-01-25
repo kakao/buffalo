@@ -68,12 +68,12 @@ class PLSI(Algo, PLSIOption, Evaluable, Serializable, Optimizable, TensorboardEx
                 self.build_userid_map()
             else:
                 self.build_itemid_map()
-            curr_idmap = self._idmanager.userid_map if key == 'user' else self._idmanager.itemid_map  # noqa: E501
-            prev_idmap = prev_model._idmanager.userid_map if key == 'user' else prev_model._idmanager.itemid_map  # noqa: E501
+            curr_idmap = self._idmanager.userid_map if key == 'user' else self._idmanager.itemid_map
+            prev_idmap = prev_model._idmanager.userid_map if key == 'user' else prev_model._idmanager.itemid_map
             curr_obj = self.P if key == 'user' else self.Q
             prev_obj = prev_model.P if key == 'user' else prev_model.Q
             curr_d, prev_d = curr_obj.shape[1], prev_obj.shape[1]
-            assert curr_d == prev_d, f'Dimension mismatch. Current dimension: {curr_d} / Previous dimension: {prev_d}'  # noqa: E501
+            assert curr_d == prev_d, f'Dimension mismatch. Current dimension: {curr_d} / Previous dimension: {prev_d}'
             for key, curr_idx in curr_idmap.items():
                 if key in prev_idmap:
                     prev_idx = prev_idmap[key]
