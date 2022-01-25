@@ -62,12 +62,42 @@ class PLSI(Algo, PLSIOption, Evaluable, Serializable, Optimizable, TensorboardEx
         elif group == 'user':
             self.P /= (np.sum(self.P, axis=1, keepdims=True) + self.opt.eps)
 
+    def _inherit(self):
+        def inherit(key):
+            if key == 'user':
+                self.build_userid_map()
+            else:
+                self.build_itemid_map()
+            curr_idmap = self._idmanager.userid_map if key == 'user' else self._idmanager.itemid_map  # noqa: E501
+            prev_idmap = prev_model._idmanager.userid_map if key == 'user' else prev_model._idmanager.itemid_map  # noqa: E501
+            curr_obj = self.P if key == 'user' else self.Q
+            prev_obj = prev_model.P if key == 'user' else prev_model.Q
+            curr_d, prev_d = curr_obj.shape[1], prev_obj.shape[1]
+            assert curr_d == prev_d, f'Dimension mismatch. Current dimension: {curr_d} / Previous dimension: {prev_d}'  # noqa: E501
+            for key, curr_idx in curr_idmap.items():
+                if key in prev_idmap:
+                    prev_idx = prev_idmap[key]
+                    curr_obj[curr_idx] = prev_obj[prev_idx]
+
+        if not self.opt['inherit_opt']:
+            return
+        inherit_opt = self.opt.inherit_opt
+        prev_model = PLSI.new(inherit_opt.model_path)
+        if inherit_opt.get('inherit_user', False):
+            self.logger.info('Inherit from previous user matrix')
+            inherit('user')
+
+        if inherit_opt.get('inherit_item', False):
+            self.logger.info('Inherit from previous item matrix')
+            inherit('item')
+
     def initialize(self):
         super().initialize()
         self.buf = BufferedDataMatrix()
         self.buf.initialize(self.data)
         self.buf.set_group('rowwise')
         self.init_factors()
+        self._inherit()
 
     def init_factors(self):
         assert self.data, 'Did not set data'
