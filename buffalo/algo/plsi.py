@@ -62,8 +62,8 @@ class PLSI(Algo, PLSIOption, Evaluable, Serializable, Optimizable, TensorboardEx
         elif group == 'user':
             self.P /= (np.sum(self.P, axis=1, keepdims=True) + self.opt.eps)
 
-    def _inherit(self):
-        def inherit(key):
+    def inherit(self):
+        def _inherit(key):
             if key == 'user':
                 self.build_userid_map()
             else:
@@ -85,11 +85,11 @@ class PLSI(Algo, PLSIOption, Evaluable, Serializable, Optimizable, TensorboardEx
         prev_model = PLSI.new(inherit_opt.model_path)
         if inherit_opt.get('inherit_user', False):
             self.logger.info('Inherit from previous user matrix')
-            inherit('user')
+            _inherit('user')
 
         if inherit_opt.get('inherit_item', False):
             self.logger.info('Inherit from previous item matrix')
-            inherit('item')
+            _inherit('item')
 
     def initialize(self):
         super().initialize()
@@ -97,7 +97,7 @@ class PLSI(Algo, PLSIOption, Evaluable, Serializable, Optimizable, TensorboardEx
         self.buf.initialize(self.data)
         self.buf.set_group('rowwise')
         self.init_factors()
-        self._inherit()
+        self.inherit()
 
     def init_factors(self):
         assert self.data, 'Did not set data'
