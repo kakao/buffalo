@@ -15,9 +15,11 @@ _temporary_files = []
 
 class Option(dict):
     def __init__(self, *args, **kwargs):
-        import json
-        args = [arg if isinstance(arg, dict) else json.loads(open(arg).read())
-                for arg in args]
+        def read(fname):
+            with open(fname) as fin:
+                return json.load(fin)
+
+        args = [arg if isinstance(arg, dict) else read(arg) for arg in args]
         super(Option, self).__init__(*args, **kwargs)
         for arg in args:
             if isinstance(arg, dict):
