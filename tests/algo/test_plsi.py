@@ -69,7 +69,6 @@ class TestPLSI(TestBase):
         uid1 = np.arange(0, 100).astype(str)
         iid1 = np.arange(200, 300).astype(str)
         main1 = np.random.binomial(1, 0.1, size=(100, 100))
-
         data_opt1 = MatrixMarketOptions().get_default_option()
         data_opt1.input = aux.Option({'main': main1, 'uid': uid1, 'iid': iid1})
         data1 = buffalo.data.load(data_opt1)
