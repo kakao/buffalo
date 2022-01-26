@@ -471,7 +471,8 @@ class PLSIOption(AlgoOption):
             'eps': 1e-10,
             'model_path': '',
             'save_factors': False,
-            'data_opt': {}
+            'data_opt': {},
+            'inherit_opt': {}
         })
         return Option(opt)
 

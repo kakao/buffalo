@@ -8,3 +8,4 @@ dist/
 *.egg-info/
 Makefile
 !docs/Makefile
+version.py
