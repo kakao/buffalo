@@ -61,7 +61,7 @@ void CPLSI::initialize_model(float* init_P, int P_rows,
 
     #pragma omp parallel for
     for (int k = 0; k < d_; ++k) {
-        _mm_prefetch((char*)Q_.row(k).data(), _MM_HINT_T0);
+        _mm_prefetch((char*)Q_.col(k).data(), _MM_HINT_T0);
         for (int i = 0; i < Q_rows; ++i)
             Q_(i, k) = fabs(dist(RNG));
         Q_.col(k) /= Q_.col(k).sum();
