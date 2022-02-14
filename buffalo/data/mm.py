@@ -266,13 +266,11 @@ class MatrixMarket(Data):
             db.attrs['completed'] = 1
             db.close()
             self.handle = h5py.File(data_path, 'r')
-            self.path = data_path
         except Exception as e:
             self.logger.error('Cannot create db: %s' % (str(e)))
             self.logger.error(traceback.format_exc().splitlines())
-            raise
-        finally:
-            if hasattr(self, 'patr'):
+            if hasattr(self, 'path'):
                 if os.path.isfile(self.path):
                     os.remove(self.path)
+            raise
         self.logger.info('DB built on %s' % data_path)
