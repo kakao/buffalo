@@ -5,7 +5,7 @@ numpy
 psutil
 h5py
 hyperopt
-tensorflow==2.5.3
+tensorflow==2.6.2
 cython
 n2==0.1.6
 pytest

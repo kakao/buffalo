@@ -366,11 +366,12 @@ class TensorboardExtention(object):
     def update_tensorboard_data(self, metrics):
         if not self.opt.tensorboard:
             return
+        values = [(m, metrics.get(m, 0.0)) for m in self._tb.metrics]
         with self._tb.summary_writer.as_default():
-            for m in self._tb.metrics:
-                tf.summary.scalar(m, metrics.get(m, 0.0), step=self._tb.step)
+            for m, v in values:
+                tf.summary.scalar(m, v, step=self._tb.step)
         self._tb.summary_writer.flush()
-        self._tb.pbar.update(self._tb.step, metrics)
+        self._tb.pbar.update(self._tb.step, values)
         self._tb.step += 1
 
     def finalize_tensorboard(self):
