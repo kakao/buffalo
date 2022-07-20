@@ -5,7 +5,6 @@ DOCLINES = __doc__.split("\n")
 
 import os
 import sys
-import pathlib
 import platform
 import sysconfig
 import subprocess
@@ -215,10 +214,8 @@ class BuildExtension(build_ext, object):
             cythonize(path)
 
     def cmake(self, ext):
-        cwd = pathlib.Path().absolute()
-
-        build_temp = pathlib.Path(self.build_temp)
-        build_temp.mkdir(parents=True, exist_ok=True)
+        cwd = os.path.abspath(os.getcwd())
+        os.makedirs(self.build_temp, exist_ok=True)
 
         build_type = 'Debug' if self.debug else 'Release'
 
@@ -229,7 +226,7 @@ class BuildExtension(build_ext, object):
 
         build_args = []
 
-        os.chdir(str(build_temp))
+        os.chdir(self.build_temp)
         self.spawn(['cmake', str(cwd)] + cmake_args)
         if not self.dry_run:
             self.spawn(['cmake', '--build', '.'] + build_args)

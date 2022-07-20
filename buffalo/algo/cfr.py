@@ -14,10 +14,10 @@ from buffalo.evaluate import Evaluable
 from buffalo.algo.options import CFROption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataMatrix
-from buffalo.algo.base import Algo, Serializable, TensorboardExtention
+from buffalo.algo.base import Algo, Serializable, TensorboardExtension
 
 
-class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExtention):
+class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExtension):
     """Python implementation for CoFactor.
 
     Reference: Factorization Meets the Item Embedding:

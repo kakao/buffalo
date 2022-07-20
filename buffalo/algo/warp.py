@@ -13,10 +13,10 @@ from buffalo.evaluate import Evaluable
 from buffalo.algo.options import WARPOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataMatrix
-from buffalo.algo.base import Algo, Serializable, TensorboardExtention
+from buffalo.algo.base import Algo, Serializable, TensorboardExtension
 
 
-class WARP(Algo, WARPOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
+class WARP(Algo, WARPOption, Evaluable, Serializable, Optimizable, TensorboardExtension):
     """Python implementation for C-WARP.
     """
     def __init__(self, opt_path=None, *args, **kwargs):

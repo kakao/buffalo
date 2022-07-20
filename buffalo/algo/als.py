@@ -13,7 +13,7 @@ from buffalo.evaluate import Evaluable
 from buffalo.algo.options import ALSOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataMatrix
-from buffalo.algo.base import Algo, Serializable, TensorboardExtention
+from buffalo.algo.base import Algo, Serializable, TensorboardExtension
 
 inited_CUALS = True
 try:
@@ -22,7 +22,7 @@ except Exception:
     inited_CUALS = False
 
 
-class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
+class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExtension):
     """Python implementation for C-ALS.
 
     Implementation of Collaborative Filtering for Implicit Feedback datasets.

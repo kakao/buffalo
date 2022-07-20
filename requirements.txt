@@ -1,11 +1,10 @@
 setuptools>=1.3.2
 fire
-pathlib
 numpy
 psutil
 h5py
 hyperopt
-tensorflow==2.6.2
 cython
-n2==0.1.6
+n2==0.1.7
 pytest
+tensorboard==2.9.1

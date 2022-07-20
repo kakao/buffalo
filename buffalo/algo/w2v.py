@@ -15,10 +15,10 @@ from buffalo.evaluate import Evaluable
 from buffalo.algo.options import W2VOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataStream
-from buffalo.algo.base import Algo, Serializable, TensorboardExtention
+from buffalo.algo.base import Algo, Serializable, TensorboardExtension
 
 
-class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
+class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExtension):
     """Python implementation for C-W2V
     """
     def __init__(self, opt_path=None, *args, **kwargs):

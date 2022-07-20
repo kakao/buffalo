@@ -15,7 +15,7 @@ from buffalo.evaluate import Evaluable
 from buffalo.algo.options import BPRMFOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataMatrix
-from buffalo.algo.base import Algo, Serializable, TensorboardExtention
+from buffalo.algo.base import Algo, Serializable, TensorboardExtension
 
 # TODO init structure of gpu modules will be abstracted to a higher module
 inited_CUBPR = True
@@ -25,7 +25,7 @@ except ImportError:
     inited_CUBPR = False
 
 
-class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
+class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, TensorboardExtension):
     """Python implementation for C-BPRMF.
     """
     def __init__(self, opt_path=None, *args, **kwargs):
