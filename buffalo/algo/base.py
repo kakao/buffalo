@@ -363,7 +363,8 @@ class TensorboardExtension(object):
     def update_tensorboard_data(self, metrics):
         if not self.opt.tensorboard:
             return
-        for m, v in metrics.items():
+        for m in self._tb.metrics:
+            v = metrics.get(m, 0.0)
             self._tb.summary_writer.add_scalar(m, v, self._tb.step)
         self._tb.summary_writer.flush()
         self._tb.step += 1
