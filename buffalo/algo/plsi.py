@@ -13,10 +13,10 @@ from buffalo.evaluate import Evaluable
 from buffalo.algo.options import PLSIOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataMatrix
-from buffalo.algo.base import Algo, Serializable, TensorboardExtention
+from buffalo.algo.base import Algo, Serializable, TensorboardExtension
 
 
-class PLSI(Algo, PLSIOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
+class PLSI(Algo, PLSIOption, Evaluable, Serializable, Optimizable, TensorboardExtension):
     """Python implementation for pLSI."""
     def __init__(self, opt_path=None, *args, **kwargs):
         Algo.__init__(self, *args, **kwargs)

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import abc
 import json
 import pickle
@@ -9,8 +8,7 @@ import logging
 import datetime
 
 import numpy as np
-import tensorflow as tf
-from tensorflow.keras.utils import Progbar
+import tensorboard as tb
 import absl.logging
 logging.root.removeHandler(absl.logging._absl_handler)
 absl.logging._warn_preinit_stderr = False
@@ -329,7 +327,7 @@ class Serializable(abc.ABC):
         return c
 
 
-class TensorboardExtention(object):
+class TensorboardExtension(object):
     @abc.abstractmethod
     def get_evaluation_metrics(self):
         raise NotImplementedError
@@ -358,20 +356,17 @@ class TensorboardExtention(object):
         os.makedirs(self.opt.tensorboard.root, exist_ok=True)
         tb_dir = os.path.join(self.opt.tensorboard.root, self._tb.name)
         self._tb.data_root = tb_dir
-        self._tb.summary_writer = tf.summary.create_file_writer(tb_dir)
+        self._tb.summary_writer = tb.summary.Writer(tb_dir)
         self._tb.metrics = metrics if metrics is not None else self.get_evaluation_metrics()
-        self._tb.pbar = Progbar(num_steps, stateful_metrics=self._tb.metrics, verbose=0)
         self._tb_setted = True
 
     def update_tensorboard_data(self, metrics):
         if not self.opt.tensorboard:
             return
-        values = [(m, metrics.get(m, 0.0)) for m in self._tb.metrics]
-        with self._tb.summary_writer.as_default():
-            for m, v in values:
-                tf.summary.scalar(m, v, step=self._tb.step)
+        for m in self._tb.metrics:
+            v = metrics.get(m, 0.0)
+            self._tb.summary_writer.add_scalar(m, v, self._tb.step)
         self._tb.summary_writer.flush()
-        self._tb.pbar.update(self._tb.step, values)
         self._tb.step += 1
 
     def finalize_tensorboard(self):

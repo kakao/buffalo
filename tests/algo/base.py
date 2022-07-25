@@ -3,7 +3,6 @@ import os
 import time
 import logging
 import unittest
-logging.getLogger('tensorflow').disabled = True
 
 import numpy as np
 from hyperopt import STATUS_OK
@@ -14,14 +13,14 @@ from buffalo.misc.log import set_log_level
 from buffalo.algo.options import ALSOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.mm import MatrixMarketOptions
-from buffalo.algo.base import TensorboardExtention
+from buffalo.algo.base import TensorboardExtension
 
 
-class MockAlgo(Algo, Optimizable, TensorboardExtention):
+class MockAlgo(Algo, Optimizable, TensorboardExtension):
     def __init__(self, *args, **kwargs):
         Algo.__init__(self, *args, **kwargs)
         Optimizable.__init__(self, *args, **kwargs)
-        TensorboardExtention.__init__(self, *args, **kwargs)
+        TensorboardExtension.__init__(self, *args, **kwargs)
         self.logger = log.get_logger('MockAlgo')
         option = ALSOption().get_default_option()
         optimize_option = ALSOption().get_default_optimize_option()

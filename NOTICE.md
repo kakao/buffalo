@@ -114,16 +114,6 @@ Copyright 2005-2018, NumPy Developers.
 BSD 3-Clause "New" or "Revised" License 
 
 
- **pathlib**
-
-https://bitbucket.org/pitrou/pathlib
-
-Copyright 2012 Antoine Pitrou
-
-
-MIT License 
-
-
  **psutil**
 
 https://github.com/giampaolo/psutil
@@ -164,14 +154,14 @@ Copyright 2007-2019 by the Sphinx team (see AUTHORS file).
 BSD 2-Clause "Simplified" License 
 
 
- **TensorFlow**
+ **Tensorboard**
 
-https://github.com/tensorflow/tensorflow
+https://github.com/tensorflow/tensorboard
 
-Copyright 2019 The TensorFlow Authors.
+Copyright 2017 The TensorFlow Authors.
 
 
-Apache License 2.0 
+Apache License 2.0
 
 
  **tqdm**
