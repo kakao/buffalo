@@ -12,16 +12,12 @@ from setuptools import setup
 from cuda_setup import CUDA, build_ext
 from distutils.extension import Extension
 
-import n2
-import numpy
 
 # TODO: Python3 Support
 if sys.version_info[:3] < (3, 6):
     raise RuntimeError("Python version 3.6 or later required.")
 
 assert platform.system() == 'Linux'  # TODO: MacOS
-numpy_include_dirs = os.path.split(numpy.__file__)[0] + '/core/include'
-n2_shared_object = n2.__file__
 
 MAJOR = 1
 MINOR = 2
@@ -40,12 +36,14 @@ Operating System :: POSIX :: Linux
 Operating System :: Unix
 Operating System :: MacOS
 License :: OSI Approved :: Apache Software License""".format(status=STATUS.get(Release))
+
+CLIB_DIR = os.path.join(sysconfig.get_path('purelib'), 'buffalo')
+numpy_include_dirs = os.path.join(sysconfig.get_path('purelib'), 'numpy', 'core', 'include')
+LIBRARY_DIRS = [CLIB_DIR]
 EXTRA_INCLUDE_DIRS = [numpy_include_dirs,
                       '3rd/json11',
                       '3rd/spdlog/include',
                       '3rd/eigen3']
-CLIB_DIR = os.path.join(sysconfig.get_path('purelib'), 'buffalo')
-LIBRARY_DIRS = [CLIB_DIR]
 
 
 def get_extend_compile_flags():
@@ -65,72 +63,80 @@ extend_compile_flags = get_extend_compile_flags()
 extensions = [
     CMakeExtension(name="cbuffalo"),
     Extension(name="buffalo.algo._als",
-              sources=['buffalo/algo/_als.cpp'],
+              sources=['buffalo/algo/_als.pyx'],
+              language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._cfr",
-              sources=['buffalo/algo/_cfr.cpp'],
+              sources=['buffalo/algo/_cfr.pyx'],
+              language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._bpr",
-              sources=['buffalo/algo/_bpr.cpp'],
+              sources=['buffalo/algo/_bpr.pyx'],
+              language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._plsi",
-              sources=['buffalo/algo/_plsi.cpp'],
+              sources=['buffalo/algo/_plsi.pyx'],
+              language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-   Extension(name="buffalo.algo._warp",
-              sources=['buffalo/algo/_warp.cpp'],
+    Extension(name="buffalo.algo._warp",
+              sources=['buffalo/algo/_warp.pyx'],
+              language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._w2v",
-              sources=['buffalo/algo/_w2v.cpp'],
+              sources=['buffalo/algo/_w2v.pyx'],
+              language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.misc._log",
-              sources=['buffalo/misc/_log.cpp'],
+              sources=['buffalo/misc/_log.pyx'],
+              language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp', 'cbuffalo'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.data.fileio",
-              sources=['buffalo/data/fileio.cpp'],
+              sources=['buffalo/data/fileio.pyx'],
+              language='c++',
               libraries=['gomp'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.parallel._core",
-              sources=['buffalo/parallel/_core.cpp'],
-              libraries=['gomp'],
+              sources=['buffalo/parallel/_core.pyx'],
+              language='c++',
+              libraries=['gomp', 'n2'],
               include_dirs=EXTRA_INCLUDE_DIRS + ['./3rd/n2/include', './3rd/'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
-              extra_objects=[n2_shared_object],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
 ]
 
 if CUDA:
     extra_compile_args = ['-std=c++14', '-ggdb', '-O3'] + extend_compile_flags
     extensions.append(Extension("buffalo.algo.cuda._als",
-                                sources=["buffalo/algo/cuda/_als.cpp",
+                                sources=["buffalo/algo/cuda/_als.pyx",
                                          "lib/cuda/als/als.cu",
                                          "./3rd/json11/json11.cpp",
                                          "lib/misc/log.cc"],
@@ -142,7 +148,7 @@ if CUDA:
                                               CUDA['include'], "./3rd/json11",
                                               "./3rd/spdlog/include"]))
     extensions.append(Extension("buffalo.algo.cuda._bpr",
-                                sources=["buffalo/algo/cuda/_bpr.cpp",
+                                sources=["buffalo/algo/cuda/_bpr.pyx",
                                          "lib/cuda/bpr/bpr.cu",
                                          "./3rd/json11/json11.cpp",
                                          "lib/misc/log.cc"],
@@ -194,24 +200,7 @@ class BuildExtension(build_ext, object):
         for ext in self.extensions:
             if hasattr(ext, 'extension_type') and ext.extension_type == 'cmake':
                 self.cmake(ext)
-        self.cythonize()
         super(BuildExtension, self).run()
-
-    def cythonize(self):
-        ext_files = ['buffalo/algo/_als.pyx',
-                     'buffalo/algo/cuda/_als.pyx',
-                     'buffalo/algo/_bpr.pyx',
-                     'buffalo/algo/cuda/_bpr.pyx',
-                     'buffalo/algo/_warp.pyx',
-                     'buffalo/algo/_w2v.pyx',
-                     'buffalo/misc/_log.pyx',
-                     'buffalo/algo/_cfr.pyx',
-                     'buffalo/algo/_plsi.pyx',
-                     'buffalo/parallel/_core.pyx',
-                     'buffalo/data/fileio.pyx']
-        for path in ext_files:
-            from Cython.Build import cythonize
-            cythonize(path)
 
     def cmake(self, ext):
         cwd = os.path.abspath(os.getcwd())
@@ -238,6 +227,9 @@ def setup_package():
     cmdclass = {
         'build_ext': BuildExtension
     }
+
+    with open('requirements.txt', 'r') as fin:
+        install_requires = [line.strip() for line in fin]
 
     metadata = dict(
         name='buffalo',
@@ -266,6 +258,7 @@ def setup_package():
             ]
         },
         python_requires='>=3.6',
+        install_requires=install_requires,
     )
 
     metadata['version'] = VERSION
