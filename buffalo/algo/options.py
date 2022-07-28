@@ -346,7 +346,7 @@ class WARPOption(AlgoOption):
             'num_iters': 20,
             'd': 20,
             'threshold': 1.0,
-            'max_trials': 300,
+            'max_trials': 500,
             'update_i': True,
             'update_j': True,
             'reg_u': 0.01,

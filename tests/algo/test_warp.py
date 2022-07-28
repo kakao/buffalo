@@ -71,14 +71,12 @@ class TestWARP(TestBase):
     def test09_compact_serialization(self):
         opt = WARPOption().get_default_option()
         opt.d = 10
-        opt.max_trials = 500
         opt.validation = aux.Option({'topk': 10})
         self._test9_compact_serialization(WARP, opt)
 
     def test10_fast_most_similar(self):
         opt = WARPOption().get_default_option()
         opt.d = 10
-        opt.max_trials = 500
         opt.validation = aux.Option({'topk': 10})
         self._test10_fast_most_similar(WARP, opt)
 

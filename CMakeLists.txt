@@ -48,6 +48,7 @@ target_link_libraries(n2 PRIVATE pthread)
 target_include_directories(n2
 PRIVATE
     ${N2_DIR}/include/
+    ${N2_DIR}/third_party/eigen/
     ${N2_DIR}/third_party/spdlog/include/
     ${N2_DIR}/third_party/boost/mpl/include/
     ${N2_DIR}/third_party/boost/bind/include/
