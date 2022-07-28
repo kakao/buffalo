@@ -168,6 +168,9 @@ class Data(object):
 
     def _create_database(self, path, **kwargs):
         # Create database structure
+        if os.path.exists(path):
+            self.logger.info(f'File {path} exists. To build new database, existing file {path} will be deleted.')
+            os.remove(path)
         f = h5py.File(path, 'w')
         self.path = path
         num_users, num_items, num_nnz = kwargs['num_users'], kwargs['num_items'], kwargs['num_nnz']
