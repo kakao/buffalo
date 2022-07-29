@@ -1,9 +1,6 @@
-setuptools>=1.3.2
 fire
 numpy
 psutil
 h5py
 hyperopt
-cython
-pytest
 tensorboard==2.9.1
