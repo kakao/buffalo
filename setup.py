@@ -250,7 +250,6 @@ def setup_package():
                   'buffalo/parallel/',
                   'buffalo/misc/',
                   'buffalo/'],
-        install_requires=INSTALL_REQUIRES,
         cmdclass=cmdclass,
         classifiers=[_f for _f in CLASSIFIERS.split('\n') if _f],
         platforms=['Linux', 'Mac OSX', 'Unix'],
