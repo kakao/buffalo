@@ -15,7 +15,7 @@ from buffalo.evaluate import Evaluable
 from buffalo.algo.options import BPRMFOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.buffered_data import BufferedDataMatrix
-from buffalo.algo.base import Algo, Serializable, TensorboardExtention
+from buffalo.algo.base import Algo, Serializable, TensorboardExtension
 
 # TODO init structure of gpu modules will be abstracted to a higher module
 inited_CUBPR = True
@@ -25,7 +25,7 @@ except ImportError:
     inited_CUBPR = False
 
 
-class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, TensorboardExtention):
+class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, TensorboardExtension):
     """Python implementation for C-BPRMF.
     """
     def __init__(self, opt_path=None, *args, **kwargs):
@@ -41,7 +41,7 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
         self.opt, self.opt_path = self.get_option(opt_path)
 
         if self.opt.accelerator and not inited_CUBPR:
-            self.logger.error(f"ImportError CuBPRMF, no cuda library exists.")
+            self.logger.error('ImportError CuBPRMF, no cuda library exists.')
             raise RuntimeError()
         self.obj = CuBPRMF() if self.opt.accelerator else CyBPRMF()
 
@@ -92,11 +92,11 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
         for attr_name in ['P', 'Q', 'Qb']:
             setattr(self, attr_name, None)
         self.P = np.abs(np.random.normal(scale=1.0 / (self.opt.d ** 2),
-                                         size=(header['num_users'], self.opt.d)).astype("float32"), order='C')
+                                         size=(header['num_users'], self.opt.d)).astype('float32'), order='C')
         self.Q = np.abs(np.random.normal(scale=1.0 / (self.opt.d ** 2),
-                                         size=(header['num_items'], self.opt.d)).astype("float32"), order='C')
+                                         size=(header['num_items'], self.opt.d)).astype('float32'), order='C')
         self.Qb = np.abs(np.random.normal(scale=1.0 / (self.opt.d ** 2),
-                                          size=(header['num_items'], 1)).astype("float32"), order='C')
+                                          size=(header['num_items'], 1)).astype('float32'), order='C')
         if not self.opt.use_bias:
             self.Qb *= 0
         self.obj.initialize_model(self.P, self.Q, self.Qb, self.num_nnz)
@@ -200,7 +200,7 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, Tensorboard
     def _prepare_train(self):
         if self.opt.accelerator:
             vdim = self.obj.get_vdim()
-            for attr in ["P", "Q"]:
+            for attr in ['P', 'Q']:
                 F = getattr(self, attr)
                 if F.shape[1] < vdim:
                     _F = np.empty(shape=(F.shape[0], vdim), dtype=np.float32)

@@ -104,6 +104,11 @@ class TestMatrixMarketReader(unittest.TestCase):
         cls.mm_dense = np.random.rand(32, 4)
         cls.temp_files = []
 
+    @classmethod
+    def tearDownClass(cls):
+        for path in cls.temp_files:
+            os.remove(path)
+
     def test1_sparse(self):
         opt = MatrixMarketOptions().get_default_option()
         opt.input.main = self.mm_sparse
@@ -122,8 +127,10 @@ class TestMatrixMarketReader(unittest.TestCase):
         opt = MatrixMarketOptions().get_default_option()
         opt.input.main = [[10, 123], [1, 2]]
         mm = MatrixMarket(opt)
-        self.assertRaises(RuntimeError, opt.is_valid_option)
-        self.assertRaises(RuntimeError, mm.create)
+        with self.assertRaises((AssertionError, RuntimeError)):
+            MatrixMarketOptions().is_valid_option(opt)
+        with self.assertRaises((RuntimeError, TypeError)):
+            mm.create()
 
     def test3_id_list(self):
         opt = MatrixMarketOptions().get_default_option()
@@ -132,6 +139,7 @@ class TestMatrixMarketReader(unittest.TestCase):
         opt.input.iid = np.array(['1', 'a'])
         mm = MatrixMarket(opt)
         mm.create()
+        self.temp_files.append(opt.data.path)
         self.assertTrue(True)
 
     def test3_id_list_except(self):
@@ -139,7 +147,9 @@ class TestMatrixMarketReader(unittest.TestCase):
         opt.input.main = np.array([[1, 2], [1, 2], [2, 1]])
         opt.input.uid = [1, 2.0]  # size should be 3
         mm = MatrixMarket(opt)
-        self.assertRaises(TypeError, mm.create)
+        with self.assertRaises(TypeError):
+            mm.create()
+
 
 if __name__ == '__main__':
     unittest.main()

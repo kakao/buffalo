@@ -346,7 +346,7 @@ class WARPOption(AlgoOption):
             'num_iters': 20,
             'd': 20,
             'threshold': 1.0,
-            'max_trials': 300,
+            'max_trials': 500,
             'update_i': True,
             'update_j': True,
             'reg_u': 0.01,
@@ -400,6 +400,7 @@ class W2VOption(AlgoOption):
         :ivar int window: The window size. (default: 5)
         :ivar int min_count: The minimum required frequency of the words to use training vocabulary. (default: 5)
         :ivar float sample: The sampling ratio to downsample the frequent words. (default: 0.001)
+        :ivar int num_negative_samples: The number of negative noise words. (default: 5)
         :ivar float lr: The learning rate.
         :ivar str model_path: Where to save model.
         :ivar dict data_opt: This option will be used to load data if given.
@@ -414,6 +415,7 @@ class W2VOption(AlgoOption):
             'window': 5,
             'min_count': 5,
             'sample': 0.001,
+            'num_negative_samples': 5,
 
             'lr': 0.025,
             'min_lr': 0.0001,
@@ -437,6 +439,64 @@ class W2VOption(AlgoOption):
             'space': {
                 'd': ['randint', ['d', 10, 30]],
                 'window': ['randint', ['window', 2, 8]],
+            }
+        })
+        return Option(opt)
+
+
+class PLSIOption(AlgoOption):
+    def __init__(self, *args, **kwargs):
+        super(PLSIOption, self).__init__(*args, **kwargs)
+
+    def get_default_option(self):
+        """ Basic Options for pLSI.
+
+        :ivar int d: The number of latent feature dimension. (default: 20)
+        :ivar int num_iters: The number of iterations for training. (default: 10)
+        :ivar int num_workers: The number of threads. (default: 1)
+        :ivar float alpha1: The coefficient of regularization term for clustering assignment. (default: 1.0)
+        :ivar float alpha2: The coefficient of regularization term for item preference in each cluster. (default: 1.0)
+        :ivar float eps: epsilon for numerical stability (default: 1e-10)
+        :ivar str model_path: Where to save model. (default: '')
+        :ivar bool save_factors: Set True, to save models. (default: False)
+        :ivar dict data_opt: This option will be used to load data if given. (default: {})
+        """
+        opt = super().get_default_option()
+        opt.update({
+            'd': 20,
+            'num_iters': 10,
+            'num_workers': 1,
+            'alpha1': 1.0,
+            'alpha2': 1.0,
+            'eps': 1e-10,
+            'model_path': '',
+            'save_factors': False,
+            'data_opt': {},
+            'inherit_opt': {}
+        })
+        return Option(opt)
+
+    def get_default_optimize_option(self):
+        """Optimization options for pLSI.
+
+        :ivar str loss: Target loss to optimize.
+        :ivar int max_trials: Maximum experiments for optimization. If not given, run forever.
+        :ivar int min_trials: Minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
+        :ivar bool deployment: Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
+        :ivar bool start_with_default_parameters: If set to True, the loss value of the default parameter is used as the starting loss to beat.
+        :ivar dict space: Parameter space definition. For more information, please check reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Please see optimize.py to check how we deal with `randint`.
+        """
+        opt = super().get_default_optimize_option()
+        opt.update({
+            'loss': 'train_loss',
+            'max_trials': 100,
+            'min_trials': 0,
+            'deployment': True,
+            'start_with_default_parameters': True,
+            'space': {
+                'd': ['randint', ['d', 10, 30]],
+                'alpha1': ['uniform', ['alpha1', 0.1, 1.2]],
+                'alpha2': ['uniform', ['alpha2', 0.1, 1.2]]
             }
         })
         return Option(opt)

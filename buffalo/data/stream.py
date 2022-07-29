@@ -26,6 +26,8 @@ class StreamOptions(DataOption):
             validation: See validation section.
             batch_mb: Internal batch size. Generally, the larger size, faster.
             use_cache: Set True to use already built data, otherwise building new one every time.
+            disk_based: Set True to use disk based data compressing with low memory usage.
+              Otherwise, base on approximated data size system will decided on its own.
             tmp_dir: Where temporary files goes on.
             path: Output path of Stream.
             internal_data_type: "stream" or "matrix"
@@ -58,7 +60,8 @@ class StreamOptions(DataOption):
                 'use_cache': False,
                 'tmp_dir': '/tmp/',
                 'path': './stream.h5py',
-                'internal_data_type': 'stream'  # if set to 'matrix', internal data stored as like matrix market format
+                'internal_data_type': 'stream',  # if set to 'matrix', internal data stored as like matrix market format
+                'disk_based': False
             }
         }
         return aux.Option(opt)
@@ -299,13 +302,11 @@ class Stream(Data):
             db.attrs['completed'] = 1
             db.close()
             self.handle = h5py.File(data_path, 'r')
-            self.path = data_path
         except Exception as e:
             self.logger.error('Cannot create db: %s' % (str(e)))
             self.logger.error(traceback.format_exc())
-            raise
-        finally:
-            if hasattr(self, 'patr'):
+            if hasattr(self, 'path'):
                 if os.path.isfile(self.path):
                     os.remove(self.path)
+            raise
         self.logger.info('DB built on %s' % data_path)

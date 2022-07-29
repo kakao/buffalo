@@ -63,6 +63,7 @@ class TestWARP(TestBase):
     def test08_serialization(self):
         opt = WARPOption().get_default_option()
         opt.d = 10
+        opt.max_trials = 500
         opt.validation = aux.Option({'topk': 10})
 
         self._test8_serialization(WARP, opt)

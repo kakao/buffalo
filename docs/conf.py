@@ -18,7 +18,7 @@ MOCK_MODULES = ['buffalo.data.fileio', 'buffalo.misc.log',
                 'buffalo.parallel._core',
                 'buffalo.algo._als', 'buffalo.algo._bpr',
                 'buffalo.algo._cfr', 'buffalo.algo._w2v',
-                'buffalo.algo._warp']
+                'buffalo.algo._warp', 'buffalo.algo._plsi']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 

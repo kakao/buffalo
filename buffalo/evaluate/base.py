@@ -94,7 +94,7 @@ class Evaluable(object):
                 HIT += hit
 
                 # ndcg, map
-                idcg = idcgs[min(len(_gt), len(_topk)) - 1]
+                idcg = idcgs[min(len(_gt), topk) - 1]
                 dcg = 0.0
                 hit, miss, ap = 0.0, 0.0, 0.0
 
@@ -116,7 +116,7 @@ class Evaluable(object):
 
                 ndcg = dcg / idcg
                 NDCG += ndcg
-                ap /= min(len(_gt), len(_topk))
+                ap /= min(len(_gt), topk)
                 AP += ap
                 N += 1.0
                 AUC += auc

@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import abc
 import json
 import pickle
@@ -9,10 +8,7 @@ import logging
 import datetime
 
 import numpy as np
-import tensorflow as tf
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-from tensorflow.keras.utils import Progbar
-# what the...
+import tensorboard as tb
 import absl.logging
 logging.root.removeHandler(absl.logging._absl_handler)
 absl.logging._warn_preinit_stderr = False
@@ -331,7 +327,7 @@ class Serializable(abc.ABC):
         return c
 
 
-class TensorboardExtention(object):
+class TensorboardExtension(object):
     @abc.abstractmethod
     def get_evaluation_metrics(self):
         raise NotImplementedError
@@ -339,10 +335,7 @@ class TensorboardExtention(object):
     def _get_initial_tensorboard_data(self):
         tb = aux.Option({'summary_writer': None,
                          'name': None,
-                         'metrics': {},
-                         'feed_dict': {},
-                         'merged_summary_op': None,
-                         'session': None,
+                         'metrics': [],
                          'pbar': None,
                          'data_root': None,
                          'step': 1})
@@ -352,7 +345,7 @@ class TensorboardExtention(object):
         if not self.opt.tensorboard:
             if not hasattr(self, '_tb_setted'):
                 self.logger.debug('Cannot find tensorboard configuration.')
-            self.tb_setted = False
+            self._tb_setted = False
             return
         name = self.opt.tensorboard.name
         name = name_prefix + name + name_postfix
@@ -360,33 +353,20 @@ class TensorboardExtention(object):
         template = self.opt.tensorboard.get('name_template', '{name}.{dtm}')
         self._tb = self._get_initial_tensorboard_data()
         self._tb.name = template.format(name=name, dtm=dtm)
-        if not os.path.isdir(self.opt.tensorboard.root):
-            os.makedirs(self.opt.tensorboard.root)
+        os.makedirs(self.opt.tensorboard.root, exist_ok=True)
         tb_dir = os.path.join(self.opt.tensorboard.root, self._tb.name)
         self._tb.data_root = tb_dir
-        self._tb.summary_writer = tf.summary.FileWriter(tb_dir)
-        if not metrics:
-            metrics = self.get_evaluation_metrics()
-        for m in metrics:
-            self._tb.metrics[m] = tf.placeholder(tf.float32)
-            tf.summary.scalar(m, self._tb.metrics[m])
-            self._tb.feed_dict[self._tb.metrics[m]] = 0.0
-        self._tb.merged_summary_op = tf.summary.merge_all()
-        self._tb.session = tf.Session()
-        self._tb.pbar = Progbar(num_steps, stateful_metrics=self._tb.metrics, verbose=0)
+        self._tb.summary_writer = tb.summary.Writer(tb_dir)
+        self._tb.metrics = metrics if metrics is not None else self.get_evaluation_metrics()
         self._tb_setted = True
 
     def update_tensorboard_data(self, metrics):
         if not self.opt.tensorboard:
             return
-        metrics = [(m, np.float32(metrics.get(m, 0.0)))
-                   for m in self._tb.metrics.keys()]
-        self._tb.feed_dict = {self._tb.metrics[k]: v
-                              for k, v in metrics}
-        summary = self._tb.session.run(self._tb.merged_summary_op,
-                                       feed_dict=self._tb.feed_dict)
-        self._tb.summary_writer.add_summary(summary, self._tb.step)
-        self._tb.pbar.update(self._tb.step, metrics)
+        for m in self._tb.metrics:
+            v = metrics.get(m, 0.0)
+            self._tb.summary_writer.add_scalar(m, v, self._tb.step)
+        self._tb.summary_writer.flush()
         self._tb.step += 1
 
     def finalize_tensorboard(self):
@@ -395,6 +375,4 @@ class TensorboardExtention(object):
         with open(os.path.join(self._tb.data_root, 'opt.json'), 'w') as fout:
             fout.write(json.dumps(self.opt, indent=2))
         self._tb.summary_writer.close()
-        self._tb.session.close()
         self._tb = None
-        tf.reset_default_graph()
