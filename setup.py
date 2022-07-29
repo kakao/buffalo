@@ -8,9 +8,11 @@ import sys
 import platform
 import sysconfig
 import subprocess
-from setuptools import setup
+
+import numpy as np
+from setuptools import setup, Extension
+
 from cuda_setup import CUDA, build_ext
-from distutils.extension import Extension
 
 
 # TODO: Python3 Support
@@ -38,7 +40,7 @@ Operating System :: MacOS
 License :: OSI Approved :: Apache Software License""".format(status=STATUS.get(Release))
 
 CLIB_DIR = os.path.join(sysconfig.get_path('purelib'), 'buffalo')
-numpy_include_dirs = os.path.join(sysconfig.get_path('purelib'), 'numpy', 'core', 'include')
+numpy_include_dirs = np.get_include()
 LIBRARY_DIRS = [CLIB_DIR]
 EXTRA_INCLUDE_DIRS = [numpy_include_dirs,
                       '3rd/json11',
@@ -258,7 +260,8 @@ def setup_package():
             ]
         },
         python_requires='>=3.6',
-        install_requires=install_requires,
+        setup_requires=['numpy', 'cython'],
+        install_requires=['fire', 'h5py', 'numpy', 'psutil', 'hyperopt', 'tensorboard==2.9.1'],
     )
 
     metadata['version'] = VERSION
