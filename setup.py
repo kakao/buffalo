@@ -260,8 +260,7 @@ def setup_package():
             ]
         },
         python_requires='>=3.6',
-        setup_requires=['numpy', 'cython'],
-        install_requires=['fire', 'h5py', 'numpy', 'psutil', 'hyperopt', 'tensorboard==2.9.1'],
+        install_requires=install_requires,
     )
 
     metadata['version'] = VERSION
