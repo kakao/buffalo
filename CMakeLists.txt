@@ -1,5 +1,6 @@
 cmake_minimum_required (VERSION 2.8.8)
 project (cbuffalo)
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fPIC -Wall -Wextra -fopenmp -O3 -ggdb -march=native")
 
 include(GNUInstallDirs)
@@ -67,3 +68,4 @@ PRIVATE
     ${N2_DIR}/third_party/boost/static_assert/include/
     ${N2_DIR}/third_party/boost/throw_exception/include/
 )
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

@@ -18,6 +18,7 @@ cdef extern from "buffalo/algo_impl/als/als.hpp" namespace "als":
         void initialize_model(float*, int,
                               float*, int) nogil except +
         void precompute(int) nogil except +
+
         pair[double, double] partial_update(int,
                                             int,
                                             int64_t*,

@@ -81,7 +81,8 @@ class ALSOption(AlgoOption):
         :ivar float alpha: The coefficient of giving more weights to losses on positive samples. (default: 8)
         :ivar float eps: epsilon for numerical stability (default: 1e-10)
         :ivar float cg_tolerance: tolerance of conjugate gradient for early stopping iterations (default: 1e-10)
-        :ivar str optimizer: The name of optimizer, should be in [llt, ldlt, manual_cg, eigen_cg, eigen_bicg, eigen_gmres, eigen_dgmres, eigen_minres]. (default: manual_cg)
+        :ivar int block_size: block size for ialspp optimizer. Only enabled with "ialspp" optimizer.
+        :ivar str optimizer: The name of optimizer, should be in [llt, ldlt, manual_cg, eigen_cg, eigen_bicg, eigen_gmres, eigen_dgmres, eigen_minres, ialspp]. (default: manual_cg)
         :ivar int num_cg_max_iters: The number of maximum iterations for conjugate gradient optimizer. (default: 3)
         :ivar str model_path: Where to save model.
         :ivar dict data_opt: This option will be used to load data if given.
@@ -92,7 +93,6 @@ class ALSOption(AlgoOption):
             'adaptive_reg': False,
             'save_factors': False,
             'accelerator': False,
-
             'd': 20,
             'num_iters': 10,
             'num_workers': 1,
@@ -103,12 +103,21 @@ class ALSOption(AlgoOption):
             'alpha': 8,
             'optimizer': 'manual_cg',
             'cg_tolerance': 1e-10,
+            'block_size': 32,
             'eps': 1e-10,
-
             'model_path': '',
             'data_opt': {}
         })
         return Option(opt)
+
+    def is_valid_option(self, opt):
+        b = super().is_valid_option(opt)
+        possible_optimizers = ["llt", "ldlt", "manual_cg", "eigen_cg", "eigen_bicg",
+                               "eigen_gmres", "eigen_dgmres", "eigen_minres", "ialspp"]
+        if opt.optimizer not in possible_optimizers:
+            msg = f"optimizer ({opt.optimizer}) should be in {possible_optimizers}"
+            raise RuntimeError(msg)
+        return b
 
     def get_default_optimize_option(self):
         """Optimization Options for ALS.

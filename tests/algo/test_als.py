@@ -4,6 +4,7 @@ import unittest
 from buffalo.misc import aux
 from buffalo.misc.log import set_log_level
 from buffalo.algo.options import ALSOption
+from buffalo.data.mm import MatrixMarketOptions
 from buffalo.algo.als import ALS, inited_CUALS
 
 from .base import TestBase
@@ -88,6 +89,27 @@ class TestALS(TestBase):
         opt.num_cg_max_iters = 3
         self._test7_train_ml_20m(ALS, opt)
 
+    def test12_train_using_ialspp(self):
+        opt = ALSOption().get_default_option()
+        opt.num_workers = 4
+        opt.d = 100
+        opt.block_size = 7
+        opt.validation = aux.Option({'topk': 10})
+        opt.compute_loss_on_training = True
+        opt["optimizer"] = "ialspp"
+        opt.compute_loss_on_training= True
+        self._test5_validation(ALS, opt)
+
+    def test13_train_using_ialspp_dim_256(self):
+        opt = ALSOption().get_default_option()
+        opt.num_workers = 4
+        opt.d = 256
+        opt.num_cg_max_iters = 3
+        opt.block_size = 7
+        opt.validation = aux.Option({'topk': 10})
+        opt.compute_loss_on_training = True
+        opt.compute_loss_on_training= False
+        self._test5_validation(ALS, opt)
 
 if __name__ == '__main__':
     unittest.main()

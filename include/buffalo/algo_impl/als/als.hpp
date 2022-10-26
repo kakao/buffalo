@@ -14,6 +14,7 @@ using namespace Eigen;
 namespace als {
 
 
+
 class CALS : public Algorithm {
 public:
     CALS();
@@ -33,11 +34,23 @@ public:
                                         int32_t* keys,
                                         float* vals,
                                         int axis);
-
+    pair<double, double> _partial_update(int start_x,
+                                         int next_x,
+                                         int64_t* indptr,
+                                         int32_t* keys,
+                                         float* vals,
+                                         int axis);
+    pair<double, double> _partial_update_ialspp(int start_x,
+                                                int next_x,
+                                                int64_t* indptr,
+                                                int32_t* keys,
+                                                float* vals,
+                                                int axis);
 private:
     Json opt_;
     FactorType FF_;
     Map<FactorTypeRowMajor> P_, Q_;
+    bool use_ialspp_ = false;
 };
 
 }
