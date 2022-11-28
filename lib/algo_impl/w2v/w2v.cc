@@ -1,10 +1,11 @@
+#include <sys/time.h>
+
 #include <set>
 #include <map>
 #include <thread>
 #include <vector>
 #include <random>
 #include <iterator>
-#include <sys/time.h>
 #include <unordered_map>
 
 #include "json11.hpp"
@@ -145,7 +146,7 @@ void CW2V::add_jobs(
         int64_t* indptr,
         int32_t* sequences)
 {
-    if( (next_x - start_x) == 0) {
+    if ((next_x - start_x) == 0) {
         WARN0("No data to process");
         return;
     }
@@ -171,7 +172,7 @@ void CW2V::add_jobs(
             continue;
         }
 
-        for (int64_t it = beg; it < end; ++ it)
+        for (int64_t it=beg; it < end; ++it)
             W.push_back(sequences[it - shifted]);
 
         if (data_size + job_size <= batch_size) {
@@ -204,18 +205,19 @@ void CW2V::worker(int worker_id)
     vector<int> N;
     vector<int> W;
     Array<float, 1, Dynamic, RowMajor> work;
-    work.resize(L0_.cols()); work.setZero();
+    work.resize(L0_.cols());
+    work.setZero();
 
     mt19937 RNG(random_seed + worker_id);
     uniform_int_distribution<unsigned int> rng1(0, 0xFFFFFFFF);
     uniform_int_distribution<unsigned int> rng2(0, window_size - 1);
     uniform_int_distribution<int> rng3(0, dist_[vocab_size - 1] - 1);
 
-    while(true)
+    while (true)
     {
         job_t job = job_queue_.pop();
         int processed_words = 0, total_words = job.size;
-        if(job.size == -1)
+        if (job.size == -1)
             break;
 
         double loss = 0.0;
@@ -283,7 +285,7 @@ double CW2V::update_parameter(
     double loss = 0.0;
 
     float label = 1.0; // first index always target word index
-    for(int i=0; i < num_negatives; ++i){
+    for (int i=0; i < num_negatives; ++i) {
         const int neg_word_idx = negatives[i];
         const auto& row = L1_.row(neg_word_idx);
         float f = row * l0;
@@ -291,11 +293,9 @@ double CW2V::update_parameter(
 
         if (MAX_EXP < f) {
             g = (label - 1.0);
-        }
-        else if (f < -MAX_EXP) {
+        } else if (f < -MAX_EXP) {
             g = label;
-        }
-        else {
+        } else {
             // get 1.0 - logit(f)
             f = exp_table_[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))];
             g = (label - f);
@@ -331,10 +331,10 @@ void CW2V::progress_manager()
 
     long long total_processed_words = 0;
     long long processed_words = 0;
-    while(true)
+    while (true)
     {
         progress_t p = progress_queue_.pop();
-        if(p.num_sents == -1 && p.num_processed_words == -1)
+        if (p.num_sents == -1 && p.num_processed_words == -1)
             break;
 
         total_processed_words += p.num_total_words;

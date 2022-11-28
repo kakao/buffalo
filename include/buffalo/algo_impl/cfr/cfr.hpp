@@ -17,7 +17,7 @@ namespace cfr {
 
 
 class CCFR : public Algorithm {
-public:
+ public:
     CCFR();
     ~CCFR();
 
@@ -33,7 +33,7 @@ public:
     double partial_update_context(int start_x, int next_x,
                                   int64_t* indptrs, int32_t* keys, float* vals);
 
-private:
+ private:
     Json opt_;
     int dim_, num_threads_;
     float alpha_, l_, reg_u_, reg_i_, reg_c_;

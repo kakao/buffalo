@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 #define SPDLOG_EOL ""
 #define SPDLOG_TRACE_ON
 #include "spdlog/spdlog.h"
@@ -21,13 +23,13 @@
 
 class BuffaloLogger
 {
-public:
+ public:
     BuffaloLogger();
     std::shared_ptr<spdlog::logger>& get_logger();
     void set_log_level(int level);
     int get_log_level();
 
-private:
+ private:
     static int global_logging_level_;
     std::shared_ptr<spdlog::logger> logger_;
 };

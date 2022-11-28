@@ -1,7 +1,8 @@
+#include <sys/time.h>
+
 #include <string>
 #include <fstream>
 #include <streambuf>
-#include <sys/time.h>
 
 #include "buffalo/algo.hpp"
 
@@ -18,7 +19,7 @@ Algorithm::Algorithm()
 bool Algorithm::parse_option(string opt_path, Json& j)
 {
     ifstream in(opt_path.c_str());
-    if (not in.is_open()) {
+    if (!in.is_open()) {
         INFO("File not exists: {}", opt_path);
         return false;
     }
@@ -27,7 +28,7 @@ bool Algorithm::parse_option(string opt_path, Json& j)
                std::istreambuf_iterator<char>());
     string err_cmt;
     auto _j = Json::parse(str, err_cmt);
-    if (not err_cmt.empty()) {
+    if (!err_cmt.empty()) {
         INFO("Failed to parse: {}", err_cmt);
         return false;
     }
@@ -61,11 +62,12 @@ void Algorithm::_leastsquare(Map<MatrixType>& X, int idx, MatrixType& A, VectorT
             r = y - X.row(idx) * A;
             // in case that current vector is nearer to solution than zero vector, no zero initialization
             if (y.dot(y) < r.dot(r)){
-                X.row(idx).setZero(); r = y;
+                X.row(idx).setZero();
+                r = y;
             }
             p = r;
             rs_old = r.dot(r);
-            for (int it=0; it<num_cg_max_iters_; ++it){
+            for (int it = 0; it < num_cg_max_iters_; ++it) {
                 alpha = rs_old / ((p * A).dot(p) + eps_);
                 X.row(idx).noalias() += alpha * p;
                 r.noalias() -= alpha * (p * A);
@@ -132,9 +134,11 @@ SGDAlgorithm::SGDAlgorithm() :
     P_(nullptr, 0, 0),
     Q_(nullptr, 0, 0),
     Qb_(nullptr, 0, 0)
-{
+{ }
 
-}
+
+// SGDAlgorithm::SGDAlgorithm()
+// { }
 
 SGDAlgorithm::~SGDAlgorithm()
 {
@@ -160,8 +164,7 @@ void SGDAlgorithm::initialize_model(
 
     if (optimizer_ != "sgd") {
         initialize_adam_optimizer();
-    }
-    else {
+    } else {
         initialize_sgd_optimizer();
     }
     DEBUG("Optimizer({}).", optimizer_);
@@ -174,7 +177,6 @@ void SGDAlgorithm::initialize_model(
 
 void SGDAlgorithm::release()
 {
-
     gradP_.resize(0, 0);
     gradQ_.resize(0, 0);
     gradQb_.resize(0, 0);
@@ -200,7 +202,7 @@ bool SGDAlgorithm::init(string opt_path) {
     if (ok) {
         int num_workers = opt_["num_workers"].int_value();
         omp_set_num_threads(num_workers);
-		optimizer_ = opt_["optimizer"].string_value();
+        optimizer_ = opt_["optimizer"].string_value();
     }
     return ok;
 }
@@ -269,10 +271,10 @@ void SGDAlgorithm::progress_manager()
     long long total_processed_samples = 0;
     long long processed_samples = 0;
     const double every_secs = 5.0;
-    while(true)
+    while (true)
     {
         progress_t p = progress_queue_.pop();
-        if(p.num_sents == -1 && p.num_processed_samples == -1)
+        if (p.num_sents == -1 && p.num_processed_samples == -1)
             break;
 
         total_processed_samples += p.num_total_samples;
@@ -292,8 +294,7 @@ void SGDAlgorithm::progress_manager()
             if (optimizer_ == "adam") {
                 INFO("Progress({:0.2f}{}): TrainingLoss({}) {} samples/s",
                     progress * 100.0, "%", loss, sps);
-            }
-            else {
+            } else {
                 INFO("Progress({:0.2f}{}): TrainingLoss({}) Decayed learning rate {:0.6f}, {} samples/s",
                     progress * 100.0, "%", loss, lr_, sps);
             }
@@ -310,7 +311,7 @@ void SGDAlgorithm::add_jobs(
         int64_t* indptr,
         int32_t* positives)
 {
-    if( (next_x - start_x) == 0) {
+    if ((next_x - start_x) == 0) {
         WARN0("No data to process");
         return;
     }
@@ -352,7 +353,7 @@ void SGDAlgorithm::add_jobs(
             job_size = (int)S.size();
         }
         S.clear();
-	}
+    }
 
     if (job.size) {
         job.alpha = lr_;
@@ -373,8 +374,7 @@ void SGDAlgorithm::update_adam(
     grad.row(i).array() = m_hat.array() / (v_hat.array().sqrt() + FEPS);
 }
 
-void SGDAlgorithm::update_adagrad(FactorTypeRowMajor& grad,
-        FactorTypeRowMajor& velocity, int i){
+void SGDAlgorithm::update_adagrad(FactorTypeRowMajor& grad, FactorTypeRowMajor& velocity, int i){
     velocity.row(i).array() = velocity.row(i).array() + grad.row(i).array().pow(2.0);
     grad.row(i).array() = grad.row(i).array() / (velocity.row(i).array().sqrt() + FEPS);
 }
@@ -396,7 +396,7 @@ void SGDAlgorithm::update_parameters()
         double beta2 = opt_["beta1"].number_value();
 
         #pragma omp parallel for schedule(static)
-        for(int u=0; u < P_.rows(); ++u){
+        for (int u=0; u < P_.rows(); ++u) {
             if (per_coordinate_normalize && P_samples_per_coordinates_[u]) {
                 gradP_.row(u) /= P_samples_per_coordinates_[u];
             }
@@ -425,10 +425,10 @@ void SGDAlgorithm::update_parameters()
             P_samples_per_coordinates_.assign(P_.rows(), 0);
             Q_samples_per_coordinates_.assign(Q_.rows(), 0);
         }
-    } else if(optimizer_ == "adagrad"){
+    } else if (optimizer_ == "adagrad"){
         double lr = opt_["lr"].number_value();
         #pragma omp parallel for schedule(static)
-        for(int u=0; u < P_.rows(); ++u){
+        for (int u=0; u < P_.rows(); ++u){
             if (per_coordinate_normalize && P_samples_per_coordinates_[u]) {
                 gradP_.row(u) /= P_samples_per_coordinates_[u];
             }
@@ -474,12 +474,12 @@ void SGDAlgorithm::wait_until_done()
 double SGDAlgorithm::join()
 {
     int num_workers = opt_["num_workers"].int_value();
+
     for (int i=0; i < num_workers; ++i) {
         job_t job;
         job.size = -1;
         job_queue_.push(job);
     }
-
     for (auto& t : workers_) {
         t.join();
     }

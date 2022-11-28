@@ -23,7 +23,7 @@ struct progress_t;
 
 
 class CW2V : public Algorithm {
-public:
+ public:
     CW2V();
     ~CW2V();
 
@@ -58,11 +58,11 @@ public:
                             bool comtpue_loss);
 
     void progress_manager();
-    
+
     double join();
 
 
-private:
+ private:
     Json opt_;
     Map<FactorTypeRowMajor> L0_;
     uint32_t *scale_;

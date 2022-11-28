@@ -51,6 +51,8 @@ class WARP(Algo, WARPOption, Evaluable, Serializable, Optimizable, TensorboardEx
         if self.data:
             self.logger.info(self.data.show_info())
             assert self.data.data_type in ['matrix']
+        if isinstance(self.opt.score_func, str):
+            self.opt.score_func = self.opt.score_func.lower()
 
     @staticmethod
     def new(path, data_fields=[]):
@@ -61,6 +63,8 @@ class WARP(Algo, WARPOption, Evaluable, Serializable, Optimizable, TensorboardEx
         self.data = data
 
     def normalize(self, group='item'):
+        if self.opt["score_func"] == "L2":
+            self.logger.warning("Normalization will harm performance if score func is L2")
         if group == 'item' and not self.opt._nrz_Q:
             self.Q = self._normalize(self.Q)
             self.opt._nrz_Q = True
@@ -92,24 +96,60 @@ class WARP(Algo, WARPOption, Evaluable, Serializable, Optimizable, TensorboardEx
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
-        Qb = self.Qb if self.opt.use_bias else None
-
-        topks = super()._get_topk_recommendation(
-            p, self.Q,
-            pb=None, Qb=Qb,
-            pool=pool, topk=topk, num_workers=self.opt.num_workers)
-
+        if self.opt.score_func == "L2":
+            p_ = p.reshape(p.shape[0], -1, p.shape[1])
+            q_ = self.Q.reshape(-1, self.Q.shape[0], self.Q.shape[1])
+            scores = -((p_ - q_) ** 2).sum(-1)
+            topks = super().get_topk(scores, topk, num_threads=self.opt.num_workers)
+            if pool is not None:
+                topks = np.array([pool[t] for t in topks])
+        else:
+            topks = super()._get_topk_recommendation(
+                p, self.Q, pb=None, Qb=None,
+                pool=pool, topk=topk, num_workers=self.opt.num_workers)
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk, pool):
-        return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q, pool)
+        if self.opt.score_func == 'L2':
+            return self._get_most_similar_L2(col, topk, pool)
+        else:
+            return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q, pool)
+
+    def _get_most_similar_L2(self, key, topk, pool):
+        if isinstance(key, np.ndarray):
+            if (key.ndim != 1):
+                raise ValueError("query vector must be a 1d numpy array")
+            q = key
+        else:
+            topk += 1
+            q = self.Q[key]
+
+        use_pool = False
+        if pool is None:
+            scores = -((self.Q - q) ** 2).sum(-1)
+        else:
+            scores = -((self.Q[pool] - q) ** 2).sum(-1)
+            use_pool = True
+
+        topks = super().get_topk(scores, topk, num_threads=self.opt.num_workers)
+        scores = -scores[topks]
+        if use_pool:
+            topks = pool[topks]
+
+        return topks, scores
 
     def get_scores(self, row_col_pairs):
-        rets = {(r, c): self.P[r].dot(self.Q[c]) + self.Qb[c][0] for r, c in row_col_pairs}
+        if self.opt.score_func == "L2":
+            rets = {(r, c): -((self.P[r] - self.Q[c]) ** 2).sum() for r, c in row_col_pairs}
+        else:
+            rets = {(r, c): self.P[r].dot(self.Q[c]) + self.Qb[c][0] for r, c in row_col_pairs}
         return rets
 
     def _get_scores(self, row, col):
-        scores = (self.P[row] * self.Q[col]).sum(axis=1) + self.Qb[col][0]
+        if self.opt.score_func == "L2":
+            scores = 1.0 - ((self.P[row] - self.Q[col]) ** 2).sum(-1)
+        else:
+            scores = (self.P[row] * self.Q[col]).sum(axis=1) + self.Qb[col][0]
         return scores
 
     def sampling_loss_samples(self):
@@ -226,8 +266,7 @@ class WARP(Algo, WARPOption, Evaluable, Serializable, Optimizable, TensorboardEx
                 break
         # reshape factor if using accelerator else join workers
         ret = {'train_loss': self._finalize_train()}
-        ret.update({'val_%s' % k: v
-                    for k, v in self.validation_result.items()})
+        ret.update({'val_%s' % k: v for k, v in self.validation_result.items()})
         self.finalize_tensorboard()
         return ret
 

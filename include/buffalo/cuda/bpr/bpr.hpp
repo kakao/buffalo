@@ -1,6 +1,8 @@
 #pragma once
 #include <fstream>
 #include <utility>
+#include <memory>
+#include <string>
 
 #include <thrust/copy.h>
 #include <thrust/fill.h>
@@ -20,21 +22,21 @@ using namespace json11;
 using namespace thrust;
 
 class CuBPR{
-public:
+ public:
     CuBPR();
     ~CuBPR();
 
-    bool init(std::string opt_path); 
+    bool init(std::string opt_path);
     bool parse_option(std::string opt_path, Json& j);
-    
+
     void initialize_model(
             float* P, int P_rows,
-            float* Q, float* Qb, int Q_rows, 
+            float* Q, float* Qb, int Q_rows,
             int64_t num_nnz, bool set_gpu);
     void set_placeholder(int64_t* indptr, size_t batch_size);
     void set_cumulative_table(int64_t* sampling_table);
     int get_vdim();
-    std::pair<double, double> partial_update(int start_x, 
+    std::pair<double, double> partial_update(int start_x,
             int next_x,
             int64_t* indptr,
             int* keys);
@@ -42,12 +44,12 @@ public:
             int* users, int* positives, int* negatives);
     void synchronize(bool device_to_host);
 
-public:
+ public:
     Json opt_;
-   
+
     // feed data place holder
     device_vector<int64_t> indptr_;
-    device_vector<int> rows_, keys_; 
+    device_vector<int> rows_, keys_;
 
     float *hostP_, *hostQ_, *hostQb_;
     device_vector<float> devP_, devQ_, devQb_;
@@ -67,9 +69,7 @@ public:
     // sampling option
     bool uniform_dist_, verify_neg_;
     int num_neg_samples_;
-
     std::shared_ptr<spdlog::logger> logger_;
-
 };
 
 } // namespace cuda_bpr

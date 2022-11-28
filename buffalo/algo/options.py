@@ -322,19 +322,18 @@ class WARPOption(AlgoOption):
         """Options for WARP Matrix Factorization.
 
         :ivar bool accelerator: Set True, to accelerate training using GPU. (default: False)
-        :ivar bool use_bias: Set True, to use bias term for the model.
         :ivar int evaluation_period: (default: 15)
         :ivar int num_workers: The number of threads. (default: 1)
         :ivar int hyper_threads: The number of hyper threads when using cuda cores. (default: 256)
         :ivar int num_iters: The number of iterations for training. (default: 15)
         :ivar int d: The number of latent feature dimension. (default: 30)
         :ivar int max_trials: The maximum number of attempts to find a violating negative sample during training.
+        :ivar str score_func: score function to use: either ['dot', 'l2']
         :ivar bool update_i: Set True, to update positive item feature. (default: True)
         :ivar bool update_j: Set True, to update negative item feature. (default: True)
         :ivar float reg_u: The L2 regularization coefficient for user embedding matrix. (default: 0.0)
         :ivar float reg_i: The L2 regularization coefficient for positive item embedding matrix. (default: 0.0)
         :ivar float reg_j: The L2 regularization coefficient for negative item embedding matrix. (default: 0.0)
-        :ivar float reg_b: The L2 regularization coefficient for bias term. (default: 0.0)
         :ivar str optimizer: The name of optimizer, should be one of [adagrad, adam]. (default: adagrad)
         :ivar float lr: The learning rate. (default: 0.1)
         :ivar float min_lr: The minimum of learning rate, to prevent going to zero by learning rate decaying. (default: 0.0001)
@@ -348,20 +347,19 @@ class WARPOption(AlgoOption):
         opt = super().get_default_option()
         opt.update({
             'accelerator': False,
-            'use_bias': True,
-            'evaluation_period': 15,
+            'evaluation_period': 5,
             'num_workers': 1,
             'hyper_threads': 256,
-            'num_iters': 20,
-            'd': 20,
+            'num_iters': 40,
+            'd': 64,
             'threshold': 1.0,
+            'score_func': "dot",
             'max_trials': 500,
             'update_i': True,
             'update_j': True,
-            'reg_u': 0.01,
+            'reg_u': 0.0,
             'reg_i': 0.0,
             'reg_j': 0.0,
-            'reg_b': 0.1,
             'optimizer': 'adagrad',
             'lr': 0.05,
             'min_lr': 0.0001,

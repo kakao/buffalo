@@ -28,8 +28,7 @@ CCFR::~CCFR()
 // implementation of inherited virtual functions
 bool CCFR::init(string opt_path){
     bool ok = parse_option(opt_path);
-    if (ok){
-
+    if (ok) {
         // int parameters
         dim_ = opt_["d"].int_value();
         num_threads_ = opt_["num_workers"].int_value();
@@ -93,7 +92,7 @@ void CCFR::precompute(string obj_type)
 double CCFR::partial_update_user(int start_x, int next_x,
         int64_t* indptr, int32_t* keys, float* vals)
 {
-    if( (next_x - start_x) == 0) {
+    if ((next_x - start_x) == 0) {
         WARN0("No data to process");
         return 0.0;
     }
@@ -107,7 +106,7 @@ double CCFR::partial_update_user(int start_x, int next_x,
     {
         int _thread = omp_get_thread_num();
         #pragma omp for schedule(dynamic, 4)
-        for (int i=0; i<end_loop; ++i)
+        for (int i=0; i < end_loop; ++i)
         {
             const int x = start_x + i;
             // assume that shifted index can be represented by size_t
@@ -154,7 +153,7 @@ double CCFR::partial_update_item(int start_x, int next_x,
         int64_t* indptr_u, int32_t* keys_u, float* vals_u,
         int64_t* indptr_c, int32_t* keys_c, float* vals_c)
 {
-    if( (next_x - start_x) == 0) {
+    if ((next_x - start_x) == 0) {
         WARN0("No data to process");
         return 0.0;
     }
@@ -168,7 +167,7 @@ double CCFR::partial_update_item(int start_x, int next_x,
     {
         int _thread = omp_get_thread_num();
         #pragma omp for schedule(dynamic, 4)
-        for (int i=0; i<end_loop; ++i)
+        for (int i=0; i < end_loop; ++i)
         {
             const int x = start_x + i;
 
@@ -182,7 +181,7 @@ double CCFR::partial_update_item(int start_x, int next_x,
             const size_t beg_c = x == 0? 0: indptr_c[x - 1] - shifted_c;
             const size_t end_c = indptr_c[x] - shifted_c;
             const size_t data_size_c = end_c - beg_c;
-            if (data_size_u == 0 and data_size_c == 0) {
+            if (data_size_u == 0 && data_size_c == 0) {
                 TRACE("No data exists for {}", x);
                 continue;
             }
@@ -256,7 +255,7 @@ double CCFR::partial_update_item(int start_x, int next_x,
 double CCFR::partial_update_context(int start_x, int next_x,
         int64_t* indptr, int32_t* keys, float* vals)
 {
-    if( (next_x - start_x) == 0) {
+    if ((next_x - start_x) == 0) {
         WARN0("No data to process");
         return 0.0;
     }
@@ -268,7 +267,7 @@ double CCFR::partial_update_context(int start_x, int next_x,
     {
         int _thread = omp_get_thread_num();
         #pragma omp for schedule(dynamic, 4)
-        for (int i=0; i<end_loop; ++i)
+        for (int i=0; i < end_loop; ++i)
         {
             const int x = start_x + i;
 
@@ -309,7 +308,6 @@ double CCFR::partial_update_context(int start_x, int next_x,
                 b += (v - C_.row(x).dot(I_.row(c)) - Ib_(c));
             }
             Cb_(x) = b / (data_size + 1e-10);
-
         }
     }
     return reg_c_ * accumulate(losses.begin(), losses.end(), 0.0);

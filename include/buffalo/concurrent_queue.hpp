@@ -9,11 +9,11 @@ using namespace std;
 template <typename T>
 class Queue
 {
-public:
-    T pop() 
+ public:
+    T pop()
     {
         unique_lock<mutex> mlock(mutex_);
-        while(queue_.empty())
+        while (queue_.empty())
         {
             cond_.wait(mlock);
         }
@@ -41,7 +41,7 @@ public:
     int push(const T& item)
     {
         unique_lock<mutex> mlock(mutex_);
-        while(max_size_ != -1 && max_size_ <= queue_size_)
+        while (max_size_ != -1 && max_size_ <= queue_size_)
         {
             cond2_.wait(mlock);
         }
@@ -71,7 +71,7 @@ public:
     Queue(const Queue&) = delete;
     Queue& operator=(const Queue&) = delete;
 
-private:
+ private:
     queue<T> queue_;
     mutex mutex_;
     condition_variable cond_, cond2_;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <memory>
 #include <bits/stdc++.h>
 
 #include "log.h"
@@ -12,10 +13,10 @@ double time_diff(timespec beg, timespec end){
     return end.tv_sec - beg.tv_sec + (end.tv_nsec - beg.tv_nsec) / 1e+9;
 }
 
-class ProgressBar 
+class ProgressBar
 {
-public:
-    ProgressBar(size_t total) :
+ public:
+    explicit ProgressBar(size_t total) :
         ProgressBar(total, "")
     {
         level_ = spdlog::level::info;
@@ -57,21 +58,20 @@ public:
         sink(false);
     }
 
-private:
-
-    void sink(bool without_eol=true) {
+ private:
+    void sink(bool without_eol = true) {
         timespec now;
         clock_gettime(CLOCK_REALTIME, &now);
         double progress = (double)current_ / (double)total_;
 
         string msg;
-        if (not prefix_.empty())
+        if (!prefix_.empty())
             msg += prefix_ + ": ";
         msg += "[";
 
         int pos = (int)(bar_width_ * progress);
-        for(int i=0; i < bar_width_; ++i) {
-            if (i <= pos) 
+        for (int i=0; i < bar_width_; ++i) {
+            if (i <= pos)
                 msg += "=";
             else
                 msg += " ";
@@ -82,13 +82,12 @@ private:
         double eta = (passed / progress) * (1.0 - progress);
         if ( without_eol ) {
             logger_->log(level_, "{} {:6.2f} secs remains\r", msg, eta);
-        }
-        else {
+        } else {
             logger_->log(level_, "{} {:6.2f} secs elapsed\n", msg, passed);
         }
     }
 
-private:
+ private:
     size_t total_;
     timespec start_t_;
     string prefix_;

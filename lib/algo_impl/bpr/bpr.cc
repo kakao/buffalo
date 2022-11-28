@@ -1,9 +1,10 @@
+#include <sys/time.h>
+
 #include <string>
 #include <numeric>
 #include <fstream>
 #include <iostream>
 #include <streambuf>
-#include <sys/time.h>
 
 #include "json11.hpp"
 #include "buffalo/misc/log.hpp"
@@ -36,7 +37,7 @@ bool CBPRMF::parse_option(string opt_path) {
 
 bool CBPRMF::init(string opt_path){
     bool ok = parse_option(opt_path);
-    if(ok) {
+    if (ok) {
         int num_workers = opt_["num_workers"].int_value();
         omp_set_num_threads(num_workers);
         optimizer_ = opt_["optimizer"].string_value();
@@ -88,11 +89,11 @@ void CBPRMF::worker(int worker_id)
     int uniform_sampling = sample_power == 0.0 ? 1 : 0;
 
     bool per_coordinate_normalize = opt_["per_coordinate_normalize"].bool_value();
-    while(true)
+    while (true)
     {
         job_t job = job_queue_.pop();
         int processed_samples = 0, total_samples = job.size;
-        if(job.size == -1)
+        if (job.size == -1)
             break;
 
         double alpha = job.alpha;
@@ -100,16 +101,13 @@ void CBPRMF::worker(int worker_id)
         {
             const int u = _seen[0];
             unordered_set<int> seen(_seen.begin() + 1, _seen.end());
-            for(const auto pos : seen)
-            {
-                for(int i=0; i < num_negative_samples; ++i)
-                {
+            for (const auto pos : seen) {
+                for (int i=0; i < num_negative_samples; ++i) {
                     int neg = 0;
-                    while(true) {
-                        if(uniform_sampling) {
+                    while (true) {
+                        if (uniform_sampling) {
                             neg = rng2(RNG);
-                        }
-                        else {
+                        } else {
                             int64_t r = rng1(RNG);
                             neg = (int)(lower_bound(cum_table_, cum_table_ + cum_table_size_, r) - cum_table_);
                         }
@@ -125,17 +123,15 @@ void CBPRMF::worker(int worker_id)
                     float logit = 0.0;
                     if (MAX_EXP < x_uij) {
                         logit = 0.0;
-                    }
-                    else if (x_uij < -MAX_EXP) {
+                    } else if (x_uij < -MAX_EXP) {
                         logit = 1.0;
-                    }
-                    else {
+                    } else {
                         // get 1.0 - logit(f)
                         logit = exp_table_[(int)((x_uij + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))];
                     }
 
                     FactorTypeRowMajor item_deriv;
-                    if (update_i or update_j)
+                    if (update_i || update_j)
                         item_deriv = logit * P_.row(u);
 
                     // TODO: change to enum class
@@ -176,7 +172,7 @@ void CBPRMF::worker(int worker_id)
                     }
                 }
 
-                if (optimizer_ != "sgd" and per_coordinate_normalize) {
+                if (optimizer_ != "sgd" && per_coordinate_normalize) {
                     P_samples_per_coordinates_[u] += 1;
                     {
                         #pragma omp atomic
@@ -188,7 +184,7 @@ void CBPRMF::worker(int worker_id)
         }
         progress_queue_.push(
                 progress_t((int)job.samples.size(), processed_samples, total_samples, 0.0));
-	}
+    }
 }
 
 

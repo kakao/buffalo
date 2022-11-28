@@ -14,6 +14,7 @@ from buffalo.algo.options import ALSOption
 from buffalo.algo.optimize import Optimizable
 from buffalo.data.mm import MatrixMarketOptions
 from buffalo.algo.base import TensorboardExtension
+from buffalo.algo.warp import WARP
 
 
 class MockAlgo(Algo, Optimizable, TensorboardExtension):
@@ -127,17 +128,19 @@ class TestBase(unittest.TestCase):
         data_opt.input.uid = self.ml_100k + 'uid'
         data_opt.input.iid = self.ml_100k + 'iid'
         data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
-
         c = cls(opt, data_opt=data_opt)
         c.initialize()
         c.train()
         self.assertTrue(len(c.topk_recommendation('1', 10)), 10)
         ret_a = [x for x, _ in c.most_similar('180.Return_of_the_Jedi_(1983)', topk=100)]
         self.assertIn('49.Star_Wars_(1977)', ret_a)
-        c.normalize()
-        ret_b = [x for x, _ in c.most_similar('180.Return_of_the_Jedi_(1983)', topk=100)]
-        self.assertIn('49.Star_Wars_(1977)', ret_b)
-        self.assertEqual(ret_a[:10], ret_b[:10])
+
+        # Iggy.ll: For CML model (L2 loss, two sets should be different)
+        if not isinstance(c, WARP):
+            c.normalize()
+            ret_b = [x for x, _ in c.most_similar('180.Return_of_the_Jedi_(1983)', topk=100)]
+            self.assertIn('49.Star_Wars_(1977)', ret_b)
+            self.assertEqual(ret_a[:10], ret_b[:10])
 
     def _test7_train_ml_20m(self, cls, opt):
         set_log_level(3)
@@ -228,7 +231,6 @@ class TestBase(unittest.TestCase):
 
     def _test_most_similar(self, model, q1, q2, q3):
         self.assertEqual(len(model.most_similar(q1, pool=[q2])), 1)
-
         index = model.get_index(q2)
         ret = model.most_similar(q1, pool=np.array([index]))
         self.assertEqual(ret[0][0], q2)

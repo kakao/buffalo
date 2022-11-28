@@ -3,6 +3,7 @@
 #include <string>
 #include <random>
 #include <unordered_set>
+#include <functional>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -18,7 +19,7 @@ static const int EXP_TABLE_SIZE = 1000;
 
 namespace warp {
 class CWARP : public SGDAlgorithm {
-public:
+ public:
     CWARP();
     ~CWARP();
 
@@ -53,12 +54,16 @@ public:
 
     double distance(size_t p, size_t q);
 
-private:
+ private:
     int max_trial_;
     int64_t* cum_table_;
     int cum_table_size_;
     vector<float> warp_loss_table;
-
+    bool use_l2 = false;
+    std::function<float(const FactorTypeRowMajor, const FactorTypeRowMajor)> score_f_;
+    std::function<void(const float,
+                        const FactorTypeRowMajor&, const FactorTypeRowMajor&, const FactorTypeRowMajor&,
+                        FactorTypeRowMajor&, FactorTypeRowMajor&, FactorTypeRowMajor&)> get_deriv_;
 };
 
 }

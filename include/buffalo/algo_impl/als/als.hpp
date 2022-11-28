@@ -16,7 +16,7 @@ namespace als {
 
 
 class CALS : public Algorithm {
-public:
+ public:
     CALS();
     ~CALS();
 
@@ -46,7 +46,6 @@ public:
                                                 int32_t* keys,
                                                 float* vals,
                                                 int axis);
-private:
     Json opt_;
     FactorType FF_;
     Map<FactorTypeRowMajor> P_, Q_;

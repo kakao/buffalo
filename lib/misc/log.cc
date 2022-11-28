@@ -2,7 +2,7 @@
 
 int BuffaloLogger::global_logging_level_ = 2;
 
-BuffaloLogger::BuffaloLogger() 
+BuffaloLogger::BuffaloLogger()
 {
     spdlog::set_pattern("[%^%-8l%$] %Y-%m-%d %H:%M:%S %v");
     logger_ = spdlog::default_logger();
@@ -14,7 +14,7 @@ std::shared_ptr<spdlog::logger>& BuffaloLogger::get_logger() {
 
 void BuffaloLogger::set_log_level(int level) {
     global_logging_level_ = level;
-    switch(level) {
+    switch (level) {
         case 0: spdlog::set_level(spdlog::level::off); break;
         case 1: spdlog::set_level(spdlog::level::warn); break;
         case 2: spdlog::set_level(spdlog::level::info); break;

@@ -19,7 +19,7 @@ static const int EXP_TABLE_SIZE = 1000;
 namespace bpr {
 
 class CBPRMF : public SGDAlgorithm {
-public:
+ public:
     CBPRMF();
     ~CBPRMF();
 
@@ -51,8 +51,7 @@ public:
 
     double distance(size_t p, size_t q);
 
-
-private:
+ private:
     int64_t* cum_table_;
     int cum_table_size_;
     float exp_table_[EXP_TABLE_SIZE];

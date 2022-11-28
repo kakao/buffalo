@@ -14,9 +14,7 @@
 namespace als {
 CALS::CALS() :
     P_(nullptr, 0, 0), Q_(nullptr, 0, 0)
-{
-
-}
+{ }
 
 CALS::~CALS()
 {
@@ -58,8 +56,6 @@ bool CALS::init(string opt_path) {
             use_ialspp_ = true;
             optimizer_code_ = 8;
         }
-
-
     }
     return ok;
 }
@@ -121,8 +117,7 @@ pair<double, double> CALS::_partial_update(
 
     if (axis == 0) {
         reg = opt_["reg_u"].number_value();
-    }
-    else { // if (axis == 1) {
+    } else { // if (axis == 1) {
         reg = opt_["reg_i"].number_value();
         swap(P_rows, Q_rows);
         swap(P_cols, Q_cols);
@@ -158,8 +153,10 @@ pair<double, double> CALS::_partial_update(
                 continue;
             }
 
-            FactorTypeRowMajor FiF(D, D); FiF.setZero();
-            FactorTypeRowMajor m(D, D); m.setZero();
+            FactorTypeRowMajor FiF(D, D);
+            FactorTypeRowMajor m(D, D);
+            FiF.setZero();
+            m.setZero();
             FactorTypeRowMajor Fs(data_size, D);
             FactorTypeRowMajor Fs2(data_size, D);
 

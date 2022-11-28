@@ -17,17 +17,17 @@ public:
     CuALS();
     ~CuALS();
 
-    bool init(std::string opt_path); 
+    bool init(std::string opt_path);
     bool parse_option(std::string opt_path, Json& j);
-    
+
     void initialize_model(
             float* P, int P_rows,
             float* Q, int Q_rows);
     void set_placeholder(int64_t* lindptr, int64_t* rindptr, size_t batch_size);
-    
+
     void precompute(int axis);
     int get_vdim();
-    std::pair<double, double> partial_update(int start_x, 
+    std::pair<double, double> partial_update(int start_x,
             int next_x,
             int64_t* indptr,
             int* keys,
@@ -36,10 +36,10 @@ public:
 
 public:
     Json opt_;
-    
+
     // left indptr, right indptr
     int64_t *lindptr_, *rindptr_;
-    int* keys_; 
+    int* keys_;
     float* vals_;
     size_t batch_size_;
 

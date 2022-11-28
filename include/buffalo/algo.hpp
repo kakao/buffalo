@@ -1,6 +1,9 @@
 #pragma once
 #include <omp.h>
+
 #include <string>
+#include <vector>
+#include <memory>
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -69,7 +72,7 @@ struct progress_t
 
 class Algorithm  // Algorithm? Logic? Learner?
 {
-public:
+ public:
     Algorithm();
 
     virtual ~Algorithm() {}
@@ -79,7 +82,7 @@ public:
     bool parse_option(string opt_path, Json& j);
     void _leastsquare(Map<MatrixType>& X, int idx, MatrixType& A, VectorType& y);
 
-public:
+ public:
     char optimizer_code_ = 0;
     int num_cg_max_iters_ = 3;
     float cg_tolerance_ = 1e-10;
@@ -89,13 +92,13 @@ public:
 
 class SGDAlgorithm : public Algorithm
 {
-public:
+ public:
     SGDAlgorithm();
     ~SGDAlgorithm();
 
     bool init(string opt_path);
 
-public:
+ public:
     void release();
     void initialize_model(
         float* P, int32_t P_rows,
@@ -123,7 +126,7 @@ public:
     void wait_until_done();
     double join();
 
-public:
+ public:
     virtual void worker(int worker_id) = 0;
     Json opt_;
     Map<FactorTypeRowMajor> P_, Q_, Qb_;
@@ -142,5 +145,4 @@ public:
     thread* progress_manager_;
     Queue<job_t> job_queue_;
     Queue<progress_t> progress_queue_;
-
 };
