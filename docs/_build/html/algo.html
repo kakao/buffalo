@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Algorithms &mdash; Buffalo 1.2.2 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Parallels" href="parallels.html" />
+    <link rel="prev" title="Introduction" href="intro.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> Buffalo
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="intro.html"> Introduction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#"> Algorithms</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#algo">Algo</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#buffalo.algo.base.Algo"><code class="docutils literal notranslate"><span class="pre">Algo</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.base.Algo.build_itemid_map"><code class="docutils literal notranslate"><span class="pre">Algo.build_itemid_map()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.base.Algo.build_userid_map"><code class="docutils literal notranslate"><span class="pre">Algo.build_userid_map()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.base.Algo.get_feature"><code class="docutils literal notranslate"><span class="pre">Algo.get_feature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.base.Algo.get_index"><code class="docutils literal notranslate"><span class="pre">Algo.get_index()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.base.Algo.get_index_pool"><code class="docutils literal notranslate"><span class="pre">Algo.get_index_pool()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.base.Algo.get_weighted_feature"><code class="docutils literal notranslate"><span class="pre">Algo.get_weighted_feature()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.base.Algo.initialize"><code class="docutils literal notranslate"><span class="pre">Algo.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.base.Algo.most_similar"><code class="docutils literal notranslate"><span class="pre">Algo.most_similar()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.base.Algo.normalize"><code class="docutils literal notranslate"><span class="pre">Algo.normalize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.base.Algo.topk_recommendation"><code class="docutils literal notranslate"><span class="pre">Algo.topk_recommendation()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#serializable">Serializable</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.base.Serializable"><code class="docutils literal notranslate"><span class="pre">Serializable</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#tensorboardextension">TensorboardExtension</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.base.TensorboardExtension"><code class="docutils literal notranslate"><span class="pre">TensorboardExtension</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#optimizable">Optimizable</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.optimize.Optimizable"><code class="docutils literal notranslate"><span class="pre">Optimizable</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#evaluable">Evaluable</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.evaluate.base.Evaluable"><code class="docutils literal notranslate"><span class="pre">Evaluable</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#alternating-least-squares">Alternating Least Squares</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#buffalo.algo.als.ALS"><code class="docutils literal notranslate"><span class="pre">ALS</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.als.ALS.get_scores"><code class="docutils literal notranslate"><span class="pre">ALS.get_scores()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.als.ALS.initialize"><code class="docutils literal notranslate"><span class="pre">ALS.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.als.ALS.new"><code class="docutils literal notranslate"><span class="pre">ALS.new()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.als.ALS.normalize"><code class="docutils literal notranslate"><span class="pre">ALS.normalize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.als.ALS.train"><code class="docutils literal notranslate"><span class="pre">ALS.train()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buffalo.algo.options.ALSOption"><code class="docutils literal notranslate"><span class="pre">ALSOption</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.ALSOption.get_default_optimize_option"><code class="docutils literal notranslate"><span class="pre">ALSOption.get_default_optimize_option()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.ALSOption.get_default_option"><code class="docutils literal notranslate"><span class="pre">ALSOption.get_default_option()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.ALSOption.is_valid_option"><code class="docutils literal notranslate"><span class="pre">ALSOption.is_valid_option()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#bayesian-personalized-ranking-matrix-factorization">Bayesian Personalized Ranking Matrix Factorization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#buffalo.algo.bpr.BPRMF"><code class="docutils literal notranslate"><span class="pre">BPRMF</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.bpr.BPRMF.get_scores"><code class="docutils literal notranslate"><span class="pre">BPRMF.get_scores()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.bpr.BPRMF.initialize"><code class="docutils literal notranslate"><span class="pre">BPRMF.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.bpr.BPRMF.new"><code class="docutils literal notranslate"><span class="pre">BPRMF.new()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.bpr.BPRMF.normalize"><code class="docutils literal notranslate"><span class="pre">BPRMF.normalize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.bpr.BPRMF.train"><code class="docutils literal notranslate"><span class="pre">BPRMF.train()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buffalo.algo.options.BPRMFOption"><code class="docutils literal notranslate"><span class="pre">BPRMFOption</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.BPRMFOption.get_default_optimize_option"><code class="docutils literal notranslate"><span class="pre">BPRMFOption.get_default_optimize_option()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.BPRMFOption.get_default_option"><code class="docutils literal notranslate"><span class="pre">BPRMFOption.get_default_option()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#weighted-approximate-rank-pairwise">Weighted Approximate-Rank Pairwise</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#buffalo.algo.warp.WARP"><code class="docutils literal notranslate"><span class="pre">WARP</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.warp.WARP.get_scores"><code class="docutils literal notranslate"><span class="pre">WARP.get_scores()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.warp.WARP.initialize"><code class="docutils literal notranslate"><span class="pre">WARP.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.warp.WARP.new"><code class="docutils literal notranslate"><span class="pre">WARP.new()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.warp.WARP.normalize"><code class="docutils literal notranslate"><span class="pre">WARP.normalize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.warp.WARP.train"><code class="docutils literal notranslate"><span class="pre">WARP.train()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buffalo.algo.options.WARPOption"><code class="docutils literal notranslate"><span class="pre">WARPOption</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.WARPOption.get_default_optimize_option"><code class="docutils literal notranslate"><span class="pre">WARPOption.get_default_optimize_option()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.WARPOption.get_default_option"><code class="docutils literal notranslate"><span class="pre">WARPOption.get_default_option()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#cofactors">CoFactors</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#buffalo.algo.cfr.CFR"><code class="docutils literal notranslate"><span class="pre">CFR</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.cfr.CFR.get_scores"><code class="docutils literal notranslate"><span class="pre">CFR.get_scores()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.cfr.CFR.initialize"><code class="docutils literal notranslate"><span class="pre">CFR.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.cfr.CFR.new"><code class="docutils literal notranslate"><span class="pre">CFR.new()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.cfr.CFR.normalize"><code class="docutils literal notranslate"><span class="pre">CFR.normalize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.cfr.CFR.train"><code class="docutils literal notranslate"><span class="pre">CFR.train()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buffalo.algo.options.CFROption"><code class="docutils literal notranslate"><span class="pre">CFROption</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.CFROption.get_default_optimize_option"><code class="docutils literal notranslate"><span class="pre">CFROption.get_default_optimize_option()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.CFROption.get_default_option"><code class="docutils literal notranslate"><span class="pre">CFROption.get_default_option()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.CFROption.is_valid_option"><code class="docutils literal notranslate"><span class="pre">CFROption.is_valid_option()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#word2vec">Word2Vec</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#buffalo.algo.w2v.W2V"><code class="docutils literal notranslate"><span class="pre">W2V</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.w2v.W2V.get_index"><code class="docutils literal notranslate"><span class="pre">W2V.get_index()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.w2v.W2V.get_scores"><code class="docutils literal notranslate"><span class="pre">W2V.get_scores()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.w2v.W2V.initialize"><code class="docutils literal notranslate"><span class="pre">W2V.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.w2v.W2V.new"><code class="docutils literal notranslate"><span class="pre">W2V.new()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.w2v.W2V.normalize"><code class="docutils literal notranslate"><span class="pre">W2V.normalize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.w2v.W2V.train"><code class="docutils literal notranslate"><span class="pre">W2V.train()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buffalo.algo.options.W2VOption"><code class="docutils literal notranslate"><span class="pre">W2VOption</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.W2VOption.get_default_optimize_option"><code class="docutils literal notranslate"><span class="pre">W2VOption.get_default_optimize_option()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.W2VOption.get_default_option"><code class="docutils literal notranslate"><span class="pre">W2VOption.get_default_option()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#plsi">pLSI</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#buffalo.algo.plsi.PLSI"><code class="docutils literal notranslate"><span class="pre">PLSI</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.plsi.PLSI.get_scores"><code class="docutils literal notranslate"><span class="pre">PLSI.get_scores()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.plsi.PLSI.inherit"><code class="docutils literal notranslate"><span class="pre">PLSI.inherit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.plsi.PLSI.initialize"><code class="docutils literal notranslate"><span class="pre">PLSI.initialize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.plsi.PLSI.new"><code class="docutils literal notranslate"><span class="pre">PLSI.new()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.plsi.PLSI.normalize"><code class="docutils literal notranslate"><span class="pre">PLSI.normalize()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.plsi.PLSI.train"><code class="docutils literal notranslate"><span class="pre">PLSI.train()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#buffalo.algo.options.PLSIOption"><code class="docutils literal notranslate"><span class="pre">PLSIOption</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.PLSIOption.get_default_optimize_option"><code class="docutils literal notranslate"><span class="pre">PLSIOption.get_default_optimize_option()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buffalo.algo.options.PLSIOption.get_default_option"><code class="docutils literal notranslate"><span class="pre">PLSIOption.get_default_option()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="parallels.html"> Parallels</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/kakao/buffalo/tree/master/benchmark"> Benchmarks</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Buffalo</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a></li>
+      <li class="breadcrumb-item active">Algorithms</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/algo.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="algorithms">
+<h1>Algorithms<a class="headerlink" href="#algorithms" title="Permalink to this heading"></a></h1>
+<p>Buffalo provides the following algorithm implementations:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Alternating Least Squares</p></li>
+<li><p>Bayesian Personalized Ranking Matrix Factorization</p></li>
+<li><p>Weighted Approximate-Rank Pairwise</p></li>
+<li><p>Word2Vec</p></li>
+<li><p>CoFactors</p></li>
+</ul>
+</div></blockquote>
+<p>All algorithms inherit common parent classes such as Algo, Serializable, TensorboardExtension, Optimizable, Evaluable.</p>
+<section id="algo">
+<h2>Algo<a class="headerlink" href="#algo" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.base.Algo">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.base.</span></span><span class="sig-name descname"><span class="pre">Algo</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Algo" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.Algo.build_itemid_map">
+<span class="sig-name descname"><span class="pre">build_itemid_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Algo.build_itemid_map" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.Algo.build_userid_map">
+<span class="sig-name descname"><span class="pre">build_userid_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Algo.build_userid_map" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.Algo.get_feature">
+<span class="sig-name descname"><span class="pre">get_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'item'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Algo.get_feature" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.Algo.get_index">
+<span class="sig-name descname"><span class="pre">get_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'item'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Algo.get_index" title="Permalink to this definition"></a></dt>
+<dd><p>Get index list of given item keys.
+If there is no index for such key, return None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>keys</strong> (<em>str</em><em> or </em><em>list</em>) – Query key(s)</p></li>
+<li><p><strong>group</strong> (<em>str</em>) – Data group where to find (default: item)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>int or list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.Algo.get_index_pool">
+<span class="sig-name descname"><span class="pre">get_index_pool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'item'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Algo.get_index_pool" title="Permalink to this definition"></a></dt>
+<dd><p>Simple wrapper of get_index.
+For np.ndarray pool, it returns asis with nothing. But list, it perform get_index with keys in pool.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pool</strong> – The list of keys.</p></li>
+<li><p><strong>group</strong> (<em>str</em>) – Data group where to find (default: item)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.Algo.get_weighted_feature">
+<span class="sig-name descname"><span class="pre">get_weighted_feature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weights</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'item'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Algo.get_weighted_feature" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.Algo.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Algo.initialize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.Algo.most_similar">
+<span class="sig-name descname"><span class="pre">most_similar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topk</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'item'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pool</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Algo.most_similar" title="Permalink to this definition"></a></dt>
+<dd><p>Return top-k most similar items</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em>) – Query key</p></li>
+<li><p><strong>topk</strong> (<em>int</em>) – The number of results (default: 10)</p></li>
+<li><p><strong>group</strong> (<em>str</em>) – Data group where to find (default: item)</p></li>
+<li><p><strong>pool</strong> (<em>list</em><em> or </em><em>numpy.ndarray</em>) – The list of item keys to find for.
+If it is a numpy.ndarray instance then it treat as index of items and it would be helpful for calculation speed. (default: None)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Top-k most similar items for given query.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.Algo.normalize">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'item'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Algo.normalize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.Algo.topk_recommendation">
+<span class="sig-name descname"><span class="pre">topk_recommendation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">keys</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">topk</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pool</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Algo.topk_recommendation" title="Permalink to this definition"></a></dt>
+<dd><p>Return TopK recommendation for each users(keys)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>keys</strong> (<em>list</em><em> or </em><em>str</em>) – Query key(s)</p></li>
+<li><p><strong>topk</strong> (<em>int</em>) – Number of recommendation</p></li>
+<li><p><strong>pool</strong> – See the pool parameter of <cite>most_similar</cite></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict or list</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<section id="serializable">
+<h3>Serializable<a class="headerlink" href="#serializable" title="Permalink to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.base.Serializable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.base.</span></span><span class="sig-name descname"><span class="pre">Serializable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Serializable" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.Serializable.instantiate">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">instantiate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cls_opt</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fields</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Serializable.instantiate" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.Serializable.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Serializable.load" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.Serializable.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_itemid_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_userid_map</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.Serializable.save" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="tensorboardextension">
+<h3>TensorboardExtension<a class="headerlink" href="#tensorboardextension" title="Permalink to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.base.TensorboardExtension">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.base.</span></span><span class="sig-name descname"><span class="pre">TensorboardExtension</span></span><a class="headerlink" href="#buffalo.algo.base.TensorboardExtension" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.TensorboardExtension.finalize_tensorboard">
+<span class="sig-name descname"><span class="pre">finalize_tensorboard</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.TensorboardExtension.finalize_tensorboard" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.TensorboardExtension.get_evaluation_metrics">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_evaluation_metrics</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.TensorboardExtension.get_evaluation_metrics" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.TensorboardExtension.initialize_tensorboard">
+<span class="sig-name descname"><span class="pre">initialize_tensorboard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num_steps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name_prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name_postfix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.TensorboardExtension.initialize_tensorboard" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.base.TensorboardExtension.update_tensorboard_data">
+<span class="sig-name descname"><span class="pre">update_tensorboard_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metrics</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.base.TensorboardExtension.update_tensorboard_data" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="optimizable">
+<h3>Optimizable<a class="headerlink" href="#optimizable" title="Permalink to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.optimize.Optimizable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.optimize.</span></span><span class="sig-name descname"><span class="pre">Optimizable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.optimize.Optimizable" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.optimize.Optimizable.get_optimization_data">
+<span class="sig-name descname"><span class="pre">get_optimization_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.optimize.Optimizable.get_optimization_data" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.optimize.Optimizable.optimize">
+<span class="sig-name descname"><span class="pre">optimize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.optimize.Optimizable.optimize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="evaluable">
+<h3>Evaluable<a class="headerlink" href="#evaluable" title="Permalink to this heading"></a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.evaluate.base.Evaluable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.evaluate.base.</span></span><span class="sig-name descname"><span class="pre">Evaluable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.evaluate.base.Evaluable" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.evaluate.base.Evaluable.get_topk">
+<span class="sig-name descname"><span class="pre">get_topk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scores</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sorted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_threads</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.evaluate.base.Evaluable.get_topk" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.evaluate.base.Evaluable.get_validation_results">
+<span class="sig-name descname"><span class="pre">get_validation_results</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.evaluate.base.Evaluable.get_validation_results" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.evaluate.base.Evaluable.prepare_evaluation">
+<span class="sig-name descname"><span class="pre">prepare_evaluation</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.evaluate.base.Evaluable.prepare_evaluation" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.evaluate.base.Evaluable.show_validation_results">
+<span class="sig-name descname"><span class="pre">show_validation_results</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.evaluate.base.Evaluable.show_validation_results" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+<section id="alternating-least-squares">
+<h2>Alternating Least Squares<a class="headerlink" href="#alternating-least-squares" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.als.ALS">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.als.</span></span><span class="sig-name descname"><span class="pre">ALS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">opt_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.als.ALS" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#buffalo.algo.base.Algo" title="buffalo.algo.base.Algo"><code class="xref py py-class docutils literal notranslate"><span class="pre">Algo</span></code></a>, <a class="reference internal" href="#buffalo.algo.options.ALSOption" title="buffalo.algo.options.ALSOption"><code class="xref py py-class docutils literal notranslate"><span class="pre">ALSOption</span></code></a>, <a class="reference internal" href="#buffalo.evaluate.base.Evaluable" title="buffalo.evaluate.base.Evaluable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Evaluable</span></code></a>, <a class="reference internal" href="#buffalo.algo.base.Serializable" title="buffalo.algo.base.Serializable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Serializable</span></code></a>, <a class="reference internal" href="#buffalo.algo.optimize.Optimizable" title="buffalo.algo.optimize.Optimizable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizable</span></code></a>, <a class="reference internal" href="#buffalo.algo.base.TensorboardExtension" title="buffalo.algo.base.TensorboardExtension"><code class="xref py py-class docutils literal notranslate"><span class="pre">TensorboardExtension</span></code></a></p>
+<p>Python implementation for C-ALS.</p>
+<p>Implementation of Collaborative Filtering for Implicit Feedback datasets.</p>
+<p>Reference: <a class="reference external" href="http://yifanhu.net/PUB/cf.pdf">http://yifanhu.net/PUB/cf.pdf</a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.als.ALS.get_scores">
+<span class="sig-name descname"><span class="pre">get_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row_col_pairs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.als.ALS.get_scores" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.als.ALS.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.als.ALS.initialize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.als.ALS.new">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.als.ALS.new" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.als.ALS.normalize">
+<span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'item'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.als.ALS.normalize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.als.ALS.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.als.ALS.train" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.options.ALSOption">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.options.</span></span><span class="sig-name descname"><span class="pre">ALSOption</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.ALSOption" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">AlgoOption</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.ALSOption.get_default_optimize_option">
+<span class="sig-name descname"><span class="pre">get_default_optimize_option</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.ALSOption.get_default_optimize_option" title="Permalink to this definition"></a></dt>
+<dd><p>Optimization Options for ALS.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loss</strong> (<em>str</em>) – Target loss to optimize.</p></li>
+<li><p><strong>max_trials</strong> (<em>int</em>) – The maximum experiments for optimization. If not given, run forever.</p></li>
+<li><p><strong>min_trials</strong> (<em>int</em>) – The minimum experiments before deploying model. (Since the best parameter may not be found after <cite>min_trials</cite>, the first best parameter is always deployed)</p></li>
+<li><p><strong>deployment</strong> (<em>bool</em>) – Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.</p></li>
+<li><p><strong>start_with_default_parameters</strong> (<em>bool</em>) – If set to True, the loss value of the default parameter is used as the starting loss to beat.</p></li>
+<li><p><strong>space</strong> (<em>dict</em>) – The parameter space definition. For more information, please check reference hyperopt’s express. Note) Due to hyperopt’s <cite>randint</cite> does not provide lower value, we had to implement it a bait tricky. Please see optimize.py to check how we deal with <cite>randint</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.ALSOption.get_default_option">
+<span class="sig-name descname"><span class="pre">get_default_option</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.ALSOption.get_default_option" title="Permalink to this definition"></a></dt>
+<dd><p>Options for Alternating Least Squares.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>adaptive_reg</strong> (<em>bool</em>) – Set True, for adaptive regularization. (default: False)</p></li>
+<li><p><strong>save_factors</strong> (<em>bool</em>) – Set True, to save models. (default: False)</p></li>
+<li><p><strong>accelerator</strong> (<em>bool</em>) – Set True, to accelerate training using GPU. (default: False)</p></li>
+<li><p><strong>d</strong> (<em>int</em>) – The number of latent feature dimension. (default: 20)</p></li>
+<li><p><strong>num_iters</strong> (<em>int</em>) – The number of iterations for training. (default: 10)</p></li>
+<li><p><strong>num_workers</strong> (<em>int</em>) – The number of threads. (default: 1)</p></li>
+<li><p><strong>hyper_threads</strong> (<em>int</em>) – The number of hyper threads when using cuda cores. (default: 256)</p></li>
+<li><p><strong>reg_u</strong> (<em>float</em>) – The L2 regularization coefficient for user embedding matrix. (default: 0.1)</p></li>
+<li><p><strong>reg_i</strong> (<em>float</em>) – The L2 regularization coefficient for item embedding matrix. (default: 0.1)</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – The coefficient of giving more weights to losses on positive samples. (default: 8)</p></li>
+<li><p><strong>eps</strong> (<em>float</em>) – epsilon for numerical stability (default: 1e-10)</p></li>
+<li><p><strong>cg_tolerance</strong> (<em>float</em>) – tolerance of conjugate gradient for early stopping iterations (default: 1e-10)</p></li>
+<li><p><strong>block_size</strong> (<em>int</em>) – block size for ialspp optimizer. Only enabled with “ialspp” optimizer.</p></li>
+<li><p><strong>optimizer</strong> (<em>str</em>) – The name of optimizer, should be in [llt, ldlt, manual_cg, eigen_cg, eigen_bicg, eigen_gmres, eigen_dgmres, eigen_minres, ialspp]. (default: manual_cg)</p></li>
+<li><p><strong>num_cg_max_iters</strong> (<em>int</em>) – The number of maximum iterations for conjugate gradient optimizer. (default: 3)</p></li>
+<li><p><strong>model_path</strong> (<em>str</em>) – Where to save model.</p></li>
+<li><p><strong>data_opt</strong> (<em>dict</em>) – This option will be used to load data if given.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.ALSOption.is_valid_option">
+<span class="sig-name descname"><span class="pre">is_valid_option</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">opt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.ALSOption.is_valid_option" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="bayesian-personalized-ranking-matrix-factorization">
+<h2>Bayesian Personalized Ranking Matrix Factorization<a class="headerlink" href="#bayesian-personalized-ranking-matrix-factorization" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.bpr.BPRMF">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.bpr.</span></span><span class="sig-name descname"><span class="pre">BPRMF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">opt_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.bpr.BPRMF" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#buffalo.algo.base.Algo" title="buffalo.algo.base.Algo"><code class="xref py py-class docutils literal notranslate"><span class="pre">Algo</span></code></a>, <a class="reference internal" href="#buffalo.algo.options.BPRMFOption" title="buffalo.algo.options.BPRMFOption"><code class="xref py py-class docutils literal notranslate"><span class="pre">BPRMFOption</span></code></a>, <a class="reference internal" href="#buffalo.evaluate.base.Evaluable" title="buffalo.evaluate.base.Evaluable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Evaluable</span></code></a>, <a class="reference internal" href="#buffalo.algo.base.Serializable" title="buffalo.algo.base.Serializable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Serializable</span></code></a>, <a class="reference internal" href="#buffalo.algo.optimize.Optimizable" title="buffalo.algo.optimize.Optimizable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizable</span></code></a>, <a class="reference internal" href="#buffalo.algo.base.TensorboardExtension" title="buffalo.algo.base.TensorboardExtension"><code class="xref py py-class docutils literal notranslate"><span class="pre">TensorboardExtension</span></code></a></p>
+<p>Python implementation for C-BPRMF.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.bpr.BPRMF.get_scores">
+<span class="sig-name descname"><span class="pre">get_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row_col_pairs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.bpr.BPRMF.get_scores" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.bpr.BPRMF.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.bpr.BPRMF.initialize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.bpr.BPRMF.new">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.bpr.BPRMF.new" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.bpr.BPRMF.normalize">
+<span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'item'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.bpr.BPRMF.normalize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.bpr.BPRMF.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.bpr.BPRMF.train" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.options.BPRMFOption">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.options.</span></span><span class="sig-name descname"><span class="pre">BPRMFOption</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.BPRMFOption" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">AlgoOption</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.BPRMFOption.get_default_optimize_option">
+<span class="sig-name descname"><span class="pre">get_default_optimize_option</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.BPRMFOption.get_default_optimize_option" title="Permalink to this definition"></a></dt>
+<dd><p>Optimization options for BPRMF.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.BPRMFOption.get_default_option">
+<span class="sig-name descname"><span class="pre">get_default_option</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.BPRMFOption.get_default_option" title="Permalink to this definition"></a></dt>
+<dd><p>Options for Bayesian Personalized Ranking Matrix Factorization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>accelerator</strong> (<em>bool</em>) – Set True, to accelerate training using GPU. (default: False)</p></li>
+<li><p><strong>use_bias</strong> (<em>bool</em>) – Set True, to use bias term for the model.</p></li>
+<li><p><strong>evaluation_period</strong> (<em>int</em>) – (default: 100)</p></li>
+<li><p><strong>num_workers</strong> (<em>int</em>) – The number of threads. (default: 1)</p></li>
+<li><p><strong>hyper_threads</strong> (<em>int</em>) – The number of hyper threads when using cuda cores. (default: 256)</p></li>
+<li><p><strong>num_iters</strong> (<em>int</em>) – The number of iterations for training. (default: 100)</p></li>
+<li><p><strong>d</strong> (<em>int</em>) – The number of latent feature dimension. (default: 20)</p></li>
+<li><p><strong>update_i</strong> (<em>bool</em>) – Set True, to update positive item feature. (default: True)</p></li>
+<li><p><strong>update_j</strong> (<em>bool</em>) – Set True, to update negative item feature. (default: True)</p></li>
+<li><p><strong>reg_u</strong> (<em>float</em>) – The L2 regularization coefficient for user embedding matrix. (default: 0.025)</p></li>
+<li><p><strong>reg_i</strong> (<em>float</em>) – The L2 regularization coefficient for positive item embedding matrix. (default: 0.025)</p></li>
+<li><p><strong>reg_j</strong> (<em>float</em>) – The L2 regularization coefficient for negative item embedding matrix. (default: 0.025)</p></li>
+<li><p><strong>reg_b</strong> (<em>float</em>) – The L2 regularization coefficient for bias term. (default: 0.025)</p></li>
+<li><p><strong>optimizer</strong> (<em>str</em>) – The name of optimizer, should be one of [sgd, adagrad, adam]. (default: sgd)</p></li>
+<li><p><strong>lr</strong> (<em>float</em>) – The learning rate.</p></li>
+<li><p><strong>min_lr</strong> (<em>float</em>) – The minimum of learning rate, to prevent going to zero by learning rate decaying. (default: 0.0001)</p></li>
+<li><p><strong>beta1</strong> (<em>float</em>) – The parameter of Adam optimizer. (default: 0.9)</p></li>
+<li><p><strong>beta2</strong> (<em>float</em>) – The parameter of Adam optimizer. (default: 0.999)</p></li>
+<li><p><strong>per_coordinate_normalize</strong> (<em>bool</em>) – This is a bit tricky option for Adam optimizer. Before update factors with gradients, do normalize gradients per class by its number of contributed samples. (default: False)</p></li>
+<li><p><strong>sampling_power</strong> (<em>float</em>) – This parameter control sampling distribution. When it set to 0, it draw negative items from uniform distribution, while to set 1, it draw from the given data popularation. (default: 0.0)</p></li>
+<li><p><strong>random_positive</strong> (<em>bool</em>) – Set True, to draw positive sample uniformly instead of using straight forward positive sample, only implemented in cuda mode, according to the original paper, set True, but we found out False usually produces better results) (default: False)</p></li>
+<li><p><strong>verify_neg</strong> (<em>bool</em>) – Set True, to ensure negative sample does not belong to positive samples. (default True)</p></li>
+<li><p><strong>model_path</strong> (<em>str</em>) – Where to save model.</p></li>
+<li><p><strong>data_opt</strong> (<em>dict</em>) – This option will be used to load data if given.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="weighted-approximate-rank-pairwise">
+<h2>Weighted Approximate-Rank Pairwise<a class="headerlink" href="#weighted-approximate-rank-pairwise" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.warp.WARP">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.warp.</span></span><span class="sig-name descname"><span class="pre">WARP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">opt_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.warp.WARP" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#buffalo.algo.base.Algo" title="buffalo.algo.base.Algo"><code class="xref py py-class docutils literal notranslate"><span class="pre">Algo</span></code></a>, <a class="reference internal" href="#buffalo.algo.options.WARPOption" title="buffalo.algo.options.WARPOption"><code class="xref py py-class docutils literal notranslate"><span class="pre">WARPOption</span></code></a>, <a class="reference internal" href="#buffalo.evaluate.base.Evaluable" title="buffalo.evaluate.base.Evaluable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Evaluable</span></code></a>, <a class="reference internal" href="#buffalo.algo.base.Serializable" title="buffalo.algo.base.Serializable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Serializable</span></code></a>, <a class="reference internal" href="#buffalo.algo.optimize.Optimizable" title="buffalo.algo.optimize.Optimizable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizable</span></code></a>, <a class="reference internal" href="#buffalo.algo.base.TensorboardExtension" title="buffalo.algo.base.TensorboardExtension"><code class="xref py py-class docutils literal notranslate"><span class="pre">TensorboardExtension</span></code></a></p>
+<p>Python implementation for C-WARP.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.warp.WARP.get_scores">
+<span class="sig-name descname"><span class="pre">get_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row_col_pairs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.warp.WARP.get_scores" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.warp.WARP.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.warp.WARP.initialize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.warp.WARP.new">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.warp.WARP.new" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.warp.WARP.normalize">
+<span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'item'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.warp.WARP.normalize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.warp.WARP.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.warp.WARP.train" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.options.WARPOption">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.options.</span></span><span class="sig-name descname"><span class="pre">WARPOption</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.WARPOption" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">AlgoOption</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.WARPOption.get_default_optimize_option">
+<span class="sig-name descname"><span class="pre">get_default_optimize_option</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.WARPOption.get_default_optimize_option" title="Permalink to this definition"></a></dt>
+<dd><p>Optimization options for WARP.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.WARPOption.get_default_option">
+<span class="sig-name descname"><span class="pre">get_default_option</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.WARPOption.get_default_option" title="Permalink to this definition"></a></dt>
+<dd><p>Options for WARP Matrix Factorization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>accelerator</strong> (<em>bool</em>) – Set True, to accelerate training using GPU. (default: False)</p></li>
+<li><p><strong>evaluation_period</strong> (<em>int</em>) – (default: 15)</p></li>
+<li><p><strong>num_workers</strong> (<em>int</em>) – The number of threads. (default: 1)</p></li>
+<li><p><strong>hyper_threads</strong> (<em>int</em>) – The number of hyper threads when using cuda cores. (default: 256)</p></li>
+<li><p><strong>num_iters</strong> (<em>int</em>) – The number of iterations for training. (default: 15)</p></li>
+<li><p><strong>d</strong> (<em>int</em>) – The number of latent feature dimension. (default: 30)</p></li>
+<li><p><strong>max_trials</strong> (<em>int</em>) – The maximum number of attempts to find a violating negative sample during training.</p></li>
+<li><p><strong>score_func</strong> (<em>str</em>) – score function to use: either [‘dot’, ‘l2’]</p></li>
+<li><p><strong>update_i</strong> (<em>bool</em>) – Set True, to update positive item feature. (default: True)</p></li>
+<li><p><strong>update_j</strong> (<em>bool</em>) – Set True, to update negative item feature. (default: True)</p></li>
+<li><p><strong>reg_u</strong> (<em>float</em>) – The L2 regularization coefficient for user embedding matrix. (default: 0.0)</p></li>
+<li><p><strong>reg_i</strong> (<em>float</em>) – The L2 regularization coefficient for positive item embedding matrix. (default: 0.0)</p></li>
+<li><p><strong>reg_j</strong> (<em>float</em>) – The L2 regularization coefficient for negative item embedding matrix. (default: 0.0)</p></li>
+<li><p><strong>optimizer</strong> (<em>str</em>) – The name of optimizer, should be one of [adagrad, adam]. (default: adagrad)</p></li>
+<li><p><strong>lr</strong> (<em>float</em>) – The learning rate. (default: 0.1)</p></li>
+<li><p><strong>min_lr</strong> (<em>float</em>) – The minimum of learning rate, to prevent going to zero by learning rate decaying. (default: 0.0001)</p></li>
+<li><p><strong>beta1</strong> (<em>float</em>) – The parameter of Adam optimizer. (default: 0.9)</p></li>
+<li><p><strong>beta2</strong> (<em>float</em>) – The parameter of Adam optimizer. (default: 0.999)</p></li>
+<li><p><strong>per_coordinate_normalize</strong> (<em>bool</em>) – This is a bit tricky option for Adam optimizer. Before update factors with gradients, do normalize gradients per class by its number of contributed samples. (default: False)</p></li>
+<li><p><strong>random_positive</strong> (<em>bool</em>) – Set True, to draw positive sample uniformly instead of using straight forward positive sample, only implemented in cuda mode, according to the original paper, set True, but we found out False usually produces better results) (default: False)</p></li>
+<li><p><strong>model_path</strong> (<em>str</em>) – Where to save model.</p></li>
+<li><p><strong>data_opt</strong> (<em>dict</em>) – This option will be used to load data if given.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="cofactors">
+<h2>CoFactors<a class="headerlink" href="#cofactors" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.cfr.CFR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.cfr.</span></span><span class="sig-name descname"><span class="pre">CFR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">opt_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.cfr.CFR" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#buffalo.algo.base.Algo" title="buffalo.algo.base.Algo"><code class="xref py py-class docutils literal notranslate"><span class="pre">Algo</span></code></a>, <a class="reference internal" href="#buffalo.algo.options.CFROption" title="buffalo.algo.options.CFROption"><code class="xref py py-class docutils literal notranslate"><span class="pre">CFROption</span></code></a>, <a class="reference internal" href="#buffalo.evaluate.base.Evaluable" title="buffalo.evaluate.base.Evaluable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Evaluable</span></code></a>, <a class="reference internal" href="#buffalo.algo.base.Serializable" title="buffalo.algo.base.Serializable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Serializable</span></code></a>, <a class="reference internal" href="#buffalo.algo.optimize.Optimizable" title="buffalo.algo.optimize.Optimizable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizable</span></code></a>, <a class="reference internal" href="#buffalo.algo.base.TensorboardExtension" title="buffalo.algo.base.TensorboardExtension"><code class="xref py py-class docutils literal notranslate"><span class="pre">TensorboardExtension</span></code></a></p>
+<p>Python implementation for CoFactor.</p>
+<dl class="simple">
+<dt>Reference: Factorization Meets the Item Embedding:</dt><dd><p>Regularizing Matrix Factorization with Item Co-occurrence</p>
+</dd>
+</dl>
+<p>Paper link: <a class="reference external" href="http://dawenl.github.io/publications/LiangACB16-cofactor.pdf">http://dawenl.github.io/publications/LiangACB16-cofactor.pdf</a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.cfr.CFR.get_scores">
+<span class="sig-name descname"><span class="pre">get_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row_col_pairs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.cfr.CFR.get_scores" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.cfr.CFR.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.cfr.CFR.initialize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.cfr.CFR.new">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.cfr.CFR.new" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.cfr.CFR.normalize">
+<span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'item'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.cfr.CFR.normalize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.cfr.CFR.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.cfr.CFR.train" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.options.CFROption">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.options.</span></span><span class="sig-name descname"><span class="pre">CFROption</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.CFROption" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">AlgoOption</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.CFROption.get_default_optimize_option">
+<span class="sig-name descname"><span class="pre">get_default_optimize_option</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.CFROption.get_default_optimize_option" title="Permalink to this definition"></a></dt>
+<dd><p>Optimization options for CoFactor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loss</strong> (<em>str</em>) – Target loss to optimize.</p></li>
+<li><p><strong>max_trials</strong> (<em>int</em>) – Maximum experiments for optimization. If not given, run forever.</p></li>
+<li><p><strong>min_trials</strong> (<em>int</em>) – Minimum experiments before deploying model. (Since the best parameter may not be found after <cite>min_trials</cite>, the first best parameter is always deployed)</p></li>
+<li><p><strong>deployment</strong><strong>(</strong> (<em>bool</em>) – Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.</p></li>
+<li><p><strong>start_with_default_parameters</strong> (<em>bool</em>) – If set to True, the loss value of the default parameter is used as the starting loss to beat.</p></li>
+<li><p><strong>space</strong> (<em>dict</em>) – Parameter space definition. For more information, please check reference hyperopt’s express. Note) Due to hyperopt’s <cite>randint</cite> does not provide lower value, we had to implement it a bait tricky. Please see optimize.py to check how we deal with <cite>randint</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.CFROption.get_default_option">
+<span class="sig-name descname"><span class="pre">get_default_option</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.CFROption.get_default_option" title="Permalink to this definition"></a></dt>
+<dd><p>Basic Options for CoFactor.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d</strong> (<em>int</em>) – The number of latent feature dimension. (default: 20)</p></li>
+<li><p><strong>num_iters</strong> (<em>int</em>) – The number of iterations for training. (default: 10)</p></li>
+<li><p><strong>num_workers</strong> (<em>int</em>) – The number of threads. (default: 1)</p></li>
+<li><p><strong>reg_u</strong> (<em>float</em>) – The L2 regularization coefficient for user embedding matrix. (default: 0.1)</p></li>
+<li><p><strong>reg_i</strong> (<em>float</em>) – The L2 regularization coefficient for item embedding matrix. (default: 0.1)</p></li>
+<li><p><strong>reg_c</strong> (<em>float</em>) – The L2 regularization coefficient for context embedding matrix. (default: 0.1)</p></li>
+<li><p><strong>eps</strong> (<em>float</em>) – epsilon for numerical stability (default: 1e-10)</p></li>
+<li><p><strong>cg_tolerance</strong> (<em>float</em>) – The tolerance for early stopping conjugate gradient optimizer. (default: 1e-10)</p></li>
+<li><p><strong>alpha</strong> (<em>float</em>) – The coefficient of giving more weights to losses on positive samples. (default: 8.0)</p></li>
+<li><p><strong>l</strong> (<em>float</em>) – The relative weight of loss on user-item relation over item-context relation. (default: 1.0)</p></li>
+<li><p><strong>optimizer</strong> (<em>str</em>) – The name of optimizer, should be in [llt, ldlt, manual_cg, eigen_cg, eigen_bicg, eigen_gmres, eigen_dgmres, eigen_minres]. (default: manual_cg)</p></li>
+<li><p><strong>num_cg_max_iters</strong> (<em>int</em>) – The number of maximum iterations for conjugate gradient optimizer. (default: 3)</p></li>
+<li><p><strong>model_path</strong> (<em>str</em>) – Where to save model. (default: ‘’)</p></li>
+<li><p><strong>data_opt</strong> (<em>dict</em>) – This option will be used to load data if given. (default: {})</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.CFROption.is_valid_option">
+<span class="sig-name descname"><span class="pre">is_valid_option</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">opt</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.CFROption.is_valid_option" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="word2vec">
+<h2>Word2Vec<a class="headerlink" href="#word2vec" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.w2v.W2V">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.w2v.</span></span><span class="sig-name descname"><span class="pre">W2V</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">opt_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.w2v.W2V" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#buffalo.algo.base.Algo" title="buffalo.algo.base.Algo"><code class="xref py py-class docutils literal notranslate"><span class="pre">Algo</span></code></a>, <a class="reference internal" href="#buffalo.algo.options.W2VOption" title="buffalo.algo.options.W2VOption"><code class="xref py py-class docutils literal notranslate"><span class="pre">W2VOption</span></code></a>, <a class="reference internal" href="#buffalo.evaluate.base.Evaluable" title="buffalo.evaluate.base.Evaluable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Evaluable</span></code></a>, <a class="reference internal" href="#buffalo.algo.base.Serializable" title="buffalo.algo.base.Serializable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Serializable</span></code></a>, <a class="reference internal" href="#buffalo.algo.optimize.Optimizable" title="buffalo.algo.optimize.Optimizable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizable</span></code></a>, <a class="reference internal" href="#buffalo.algo.base.TensorboardExtension" title="buffalo.algo.base.TensorboardExtension"><code class="xref py py-class docutils literal notranslate"><span class="pre">TensorboardExtension</span></code></a></p>
+<p>Python implementation for C-W2V</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.w2v.W2V.get_index">
+<span class="sig-name descname"><span class="pre">get_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'item'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.w2v.W2V.get_index" title="Permalink to this definition"></a></dt>
+<dd><p>Get index list of given item keys.
+If there is no index for such key, return None.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>keys</strong> (<em>str</em><em> or </em><em>list</em>) – Query key(s)</p></li>
+<li><p><strong>group</strong> (<em>str</em>) – Data group where to find (default: item)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>int or list</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.w2v.W2V.get_scores">
+<span class="sig-name descname"><span class="pre">get_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row_col_pairs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.w2v.W2V.get_scores" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.w2v.W2V.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.w2v.W2V.initialize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.w2v.W2V.new">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.w2v.W2V.new" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.w2v.W2V.normalize">
+<span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'item'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.w2v.W2V.normalize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.w2v.W2V.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.w2v.W2V.train" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.options.W2VOption">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.options.</span></span><span class="sig-name descname"><span class="pre">W2VOption</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.W2VOption" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">AlgoOption</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.W2VOption.get_default_optimize_option">
+<span class="sig-name descname"><span class="pre">get_default_optimize_option</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.W2VOption.get_default_optimize_option" title="Permalink to this definition"></a></dt>
+<dd><p>Optimization options for W2V</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.W2VOption.get_default_option">
+<span class="sig-name descname"><span class="pre">get_default_option</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.W2VOption.get_default_option" title="Permalink to this definition"></a></dt>
+<dd><p>Options for Word2Vec.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>evaluation_on_learning</strong> (<em>bool</em>) – Set True to do run evaluation on training phrase. (default: False)</p></li>
+<li><p><strong>num_workers</strong> (<em>int</em>) – The number of threads. (default: 1)</p></li>
+<li><p><strong>num_iters</strong> (<em>int</em>) – The number of iterations for training. (default: 100)</p></li>
+<li><p><strong>d</strong> (<em>int</em>) – The number of latent feature dimension. (default: 20)</p></li>
+<li><p><strong>window</strong> (<em>int</em>) – The window size. (default: 5)</p></li>
+<li><p><strong>min_count</strong> (<em>int</em>) – The minimum required frequency of the words to use training vocabulary. (default: 5)</p></li>
+<li><p><strong>sample</strong> (<em>float</em>) – The sampling ratio to downsample the frequent words. (default: 0.001)</p></li>
+<li><p><strong>num_negative_samples</strong> (<em>int</em>) – The number of negative noise words. (default: 5)</p></li>
+<li><p><strong>lr</strong> (<em>float</em>) – The learning rate.</p></li>
+<li><p><strong>model_path</strong> (<em>str</em>) – Where to save model.</p></li>
+<li><p><strong>data_opt</strong> (<em>dict</em>) – This option will be used to load data if given.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="plsi">
+<h2>pLSI<a class="headerlink" href="#plsi" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.plsi.PLSI">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.plsi.</span></span><span class="sig-name descname"><span class="pre">PLSI</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">opt_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.plsi.PLSI" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#buffalo.algo.base.Algo" title="buffalo.algo.base.Algo"><code class="xref py py-class docutils literal notranslate"><span class="pre">Algo</span></code></a>, <a class="reference internal" href="#buffalo.algo.options.PLSIOption" title="buffalo.algo.options.PLSIOption"><code class="xref py py-class docutils literal notranslate"><span class="pre">PLSIOption</span></code></a>, <a class="reference internal" href="#buffalo.evaluate.base.Evaluable" title="buffalo.evaluate.base.Evaluable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Evaluable</span></code></a>, <a class="reference internal" href="#buffalo.algo.base.Serializable" title="buffalo.algo.base.Serializable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Serializable</span></code></a>, <a class="reference internal" href="#buffalo.algo.optimize.Optimizable" title="buffalo.algo.optimize.Optimizable"><code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizable</span></code></a>, <a class="reference internal" href="#buffalo.algo.base.TensorboardExtension" title="buffalo.algo.base.TensorboardExtension"><code class="xref py py-class docutils literal notranslate"><span class="pre">TensorboardExtension</span></code></a></p>
+<p>Python implementation for pLSI.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.plsi.PLSI.get_scores">
+<span class="sig-name descname"><span class="pre">get_scores</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row_col_pairs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.plsi.PLSI.get_scores" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.plsi.PLSI.inherit">
+<span class="sig-name descname"><span class="pre">inherit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.plsi.PLSI.inherit" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.plsi.PLSI.initialize">
+<span class="sig-name descname"><span class="pre">initialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.plsi.PLSI.initialize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.plsi.PLSI.new">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">new</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_fields</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.plsi.PLSI.new" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.plsi.PLSI.normalize">
+<span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">group</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'item'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.plsi.PLSI.normalize" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.plsi.PLSI.train">
+<span class="sig-name descname"><span class="pre">train</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.plsi.PLSI.train" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="buffalo.algo.options.PLSIOption">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">buffalo.algo.options.</span></span><span class="sig-name descname"><span class="pre">PLSIOption</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.PLSIOption" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">AlgoOption</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.PLSIOption.get_default_optimize_option">
+<span class="sig-name descname"><span class="pre">get_default_optimize_option</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.PLSIOption.get_default_optimize_option" title="Permalink to this definition"></a></dt>
+<dd><p>Optimization options for pLSI.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loss</strong> (<em>str</em>) – Target loss to optimize.</p></li>
+<li><p><strong>max_trials</strong> (<em>int</em>) – Maximum experiments for optimization. If not given, run forever.</p></li>
+<li><p><strong>min_trials</strong> (<em>int</em>) – Minimum experiments before deploying model. (Since the best parameter may not be found after <cite>min_trials</cite>, the first best parameter is always deployed)</p></li>
+<li><p><strong>deployment</strong> (<em>bool</em>) – Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.</p></li>
+<li><p><strong>start_with_default_parameters</strong> (<em>bool</em>) – If set to True, the loss value of the default parameter is used as the starting loss to beat.</p></li>
+<li><p><strong>space</strong> (<em>dict</em>) – Parameter space definition. For more information, please check reference hyperopt’s express. Note) Due to hyperopt’s <cite>randint</cite> does not provide lower value, we had to implement it a bait tricky. Please see optimize.py to check how we deal with <cite>randint</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="buffalo.algo.options.PLSIOption.get_default_option">
+<span class="sig-name descname"><span class="pre">get_default_option</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#buffalo.algo.options.PLSIOption.get_default_option" title="Permalink to this definition"></a></dt>
+<dd><p>Basic Options for pLSI.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Variables</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d</strong> (<em>int</em>) – The number of latent feature dimension. (default: 20)</p></li>
+<li><p><strong>num_iters</strong> (<em>int</em>) – The number of iterations for training. (default: 10)</p></li>
+<li><p><strong>num_workers</strong> (<em>int</em>) – The number of threads. (default: 1)</p></li>
+<li><p><strong>alpha1</strong> (<em>float</em>) – The coefficient of regularization term for clustering assignment. (default: 1.0)</p></li>
+<li><p><strong>alpha2</strong> (<em>float</em>) – The coefficient of regularization term for item preference in each cluster. (default: 1.0)</p></li>
+<li><p><strong>eps</strong> (<em>float</em>) – epsilon for numerical stability (default: 1e-10)</p></li>
+<li><p><strong>model_path</strong> (<em>str</em>) – Where to save model. (default: ‘’)</p></li>
+<li><p><strong>save_factors</strong> (<em>bool</em>) – Set True, to save models. (default: False)</p></li>
+<li><p><strong>data_opt</strong> (<em>dict</em>) – This option will be used to load data if given. (default: {})</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="intro.html" class="btn btn-neutral float-left" title="Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="parallels.html" class="btn btn-neutral float-right" title="Parallels" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2020, Kakao Corp..</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
