@@ -1,13 +1,12 @@
-cmake_minimum_required (VERSION 2.8.8)
+cmake_minimum_required (VERSION 3.17.0)
 project (cbuffalo)
+set(CMAKE_CXX_STANDARD 14)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -fPIC -Wall -Wextra -fopenmp -O3 -ggdb -march=native")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -Wall -Wextra -fopenmp -O3 -ggdb -march=native")
 
 include(GNUInstallDirs)
 
-set(SOURCES
-    "./3rd/json11/json11.cpp"
-)
+set(SOURCES "./3rd/json11/json11.cpp")
 file(GLOB ALGO_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/lib/*.cc)
 file(GLOB MISC_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/lib/misc/*.cc)
 file(GLOB ALS_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/lib/algo_impl/als/*.cc)

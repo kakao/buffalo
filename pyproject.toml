@@ -1,2 +1,75 @@
+[tool.poetry]
+name = "buffalo"
+version = "1.2.2"
+description = ""
+authors = ["recoteam <recoteam@kakaocorp.com>"]
+license = "Apache2"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8.1"
+numpy = "^1.21.6"
+h5py = "^3.7.0"
+hyperopt = "^0.2.7"
+psutil = "^5.9.4"
+tensorboard = "^2.11.0"
+fire = "^0.4.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.2.0"
+n2 = "^0.1.7"
+poethepoet = "^0.16.5"
+isort = "^5.10.1"
+black = "^22.12.0"
+flake8 = "^6.0.0"
+cpplint = "^1.6.1"
+codespell = "^2.2.2"
+
+[tool.poetry.scripts]
+Buffalo = "buffalo.cli:_cli_buffalo"
+
+[tool.poetry.build]
+script = "build.py"
+
+
+[tool.poe.tasks]
+
+  [tool.poe.tasks.isort]
+  help = "Run isort on the code base"
+  cmd  = "isort --check-only --profile black . --skip=.3rd"
+
+  [tool.poe.tasks.black]
+  help = "Run black on the code base"
+  cmd  = "black . --exclude=3rd/ --check"
+
+  [tool.poe.tasks.format]
+  help = "Run formating tools on the code base"
+  sequence  = ["isort", "black"]
+
+  [tool.poe.tasks.flake8-py]
+  help = "Run flake8 on the code base"
+  cmd = "flake8 ./ --filename='*.py' --ignore=E402,E501,E731,E741 --exclude=__init__.py --exclude=3rd/"
+
+  [tool.poe.tasks.flake8-pyx]
+  help = "Run flake8 on the code base"
+  cmd = "flake8 buffalo --filename='*.pyx' --ignore=E225,E226,E227,E402,E501,E741,E901,E999"
+
+  [tool.poe.tasks.cpplint]
+  help = "Run cpplint on the code base"
+  cmd = """cpplint --linelength=140 --headers=hpp,h --extensions=cc,cpp \
+         --filter=-legal/copyright,-readability/namespace,-readability/todo,-build/namespaces,-whitespace/comments,-readability/casting,-runtime/references,-whitespace/braces,-whitespace/forcolon,-build/include_order,-build/c++11 \
+        --exclude=include/buffalo/cuda/als/als.hpp \
+        --exclude=include/buffalo/cuda/bpr/bpr.hpp \
+        --recursive ./lib ./include"""
+
+  [tool.poe.tasks.lint]
+  help = "Run linting tools on the code base"
+  sequence  = ["flake8-py", "flake8-pyx", "cpplint"]
+
+  [tool.poe.tasks.codespell]
+  help = "Run codespell on the code base"
+  cmd = "codespell --skip=3rd,build,.git,_*.cpp --ignore-words-list=als,ALS,coo"
+
 [build-system]
-requires = ["setuptools>=1.3.2", "wheel", "numpy", "cython", "cmake>=2.8.8"]
+requires = ["poetry-core", "setuptools", "wheel", "numpy>=1.21.6", "Cython>=0.29.32", "cmake>=3.17.0"]
+build-backend = "poetry.core.masonry.api"
