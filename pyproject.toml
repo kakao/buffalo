@@ -29,8 +29,7 @@ codespell = "^2.2.2"
 Buffalo = "buffalo.cli:_cli_buffalo"
 
 [tool.poetry.build]
-script = "build.py"
-
+script = "build_extension.py"
 
 [tool.poe.tasks]
 

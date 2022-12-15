@@ -8,7 +8,7 @@ import numpy as np
 from setuptools import Extension
 from Cython.Build import cythonize
 
-from cuda_build import CUDA, build_ext
+from cuda_extension import CUDA, build_ext
 
 assert platform.system() == 'Linux'  # TODO: MacOS
 
