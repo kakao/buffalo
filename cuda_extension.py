@@ -3,14 +3,14 @@
 import logging
 import os
 import sys
-
 from distutils import ccompiler, errors, msvccompiler, unixccompiler
+
 from setuptools.command.build_ext import build_ext as setuptools_build_ext
 
 
 def find_in_path(name, path):
     "Find a file in a search path"
-    # adapted fom http://code.activestate.com/recipes/52224-find-a-file-given-a-search-path/
+    # adapted from http://code.activestate.com/recipes/52224-find-a-file-given-a-search-path/
     for dir in path.split(os.pathsep):
         binpath = os.path.join(dir, name)
         if os.path.exists(binpath):
@@ -48,7 +48,7 @@ def locate_cuda():
     cudaconfig = {'home': home,
                   'nvcc': nvcc,
                   'include': os.path.join(home, 'include'),
-                  'lib64':   os.path.join(home, 'lib64')}
+                  'lib64': os.path.join(home, 'lib64')}
     post_args = ['-gencode=arch=compute_60,code=sm_60',
                  '-gencode=arch=compute_60,code=compute_60',
                  '-gencode=arch=compute_75,code=compute_75',

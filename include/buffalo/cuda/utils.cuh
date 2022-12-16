@@ -14,7 +14,7 @@ using std::invalid_argument;
 typedef std::chrono::steady_clock::time_point time_p;
 
 time_p get_now(){
-    return std::chrono::steady_clock::now();    
+    return std::chrono::steady_clock::now();
 }
 
 double GetTimeDiff(const time_p& begin_t, const time_p& end_t){
@@ -89,7 +89,7 @@ float dot(const float * a, const float * b) {
     float val = a[threadIdx.x] * b[threadIdx.x];
     val = warp_reduce_sum(val);
 
-    // write out the partial reduction to shared memory if appropiate
+    // write out the partial reduction to shared memory if appropriate
     if (lane == 0) {
         shared[warp] = val;
     }

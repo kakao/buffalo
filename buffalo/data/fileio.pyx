@@ -1,9 +1,8 @@
 # cython: experimental_cpp_class_def=True, language_level=3
 # distutils: language=c++
-# -*- coding: utf-8 -*-
 from libc.stdint cimport int64_t
-from libcpp.vector cimport vector
 from libcpp.string cimport string
+from libcpp.vector cimport vector
 
 
 cdef extern from "fileio.hpp" namespace "fileio":

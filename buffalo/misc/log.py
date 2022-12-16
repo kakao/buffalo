@@ -1,10 +1,8 @@
-# -*- coding: utf-8 -*-
-import time
 import logging
 import logging.handlers
+import time
 
 from buffalo.misc._log import PyBuffaloLog
-
 
 NOTSET = 0
 WARN = 1

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
+
 os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 import fire
-from models import BuffaloLib, LightfmLib
-
 from base import _print_table
+from models import BuffaloLib, LightfmLib
 
 
 def _buffalo_validation(algo_name, database):

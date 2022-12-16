@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
 import time
-import logging
 import unittest
 
 import numpy as np

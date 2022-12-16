@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-
 import os
 import platform
 import sysconfig
 
 import numpy as np
-from setuptools import Extension
 from Cython.Build import cythonize
+from setuptools import Extension
 
 from cuda_extension import CUDA, build_ext
 

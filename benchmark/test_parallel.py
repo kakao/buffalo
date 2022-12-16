@@ -1,16 +1,16 @@
 # -*- coding: utf-8 -*-
 import os
+
 os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 import fire
 import numpy as np
+from base import _get_elapsed_time, _print_table
+from models import BuffaloLib, ImplicitLib
 from n2 import HnswIndex
 
 from buffalo.parallel.base import ParALS, ParBPRMF
-
-from models import BuffaloLib, ImplicitLib
-from base import _get_elapsed_time, _print_table
 
 
 def _buffalo(algo_name, database):
@@ -22,8 +22,7 @@ def _buffalo(algo_name, database):
                'bpr': {'num_workers': 4,
                        'compute_loss_on_training': False,
                        'd': 32,
-                       'num_iters': 100},
-              }
+                       'num_iters': 100}}
     opt = options[algo_name]
 
     # linear
@@ -95,8 +94,7 @@ def _implicit(algo_name, database):
                'bpr': {'num_workers': 4,
                        'compute_loss_on_training': False,
                        'd': 32,
-                       'num_iters': 100},
-              }
+                       'num_iters': 100}}
     opt = options[algo_name]
 
     # linear

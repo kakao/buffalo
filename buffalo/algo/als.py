@@ -1,19 +1,18 @@
-# -*- coding: utf-8 -*-
-import time
 import json
+import time
 
 import numpy as np
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
-from buffalo.misc import aux, log
-from buffalo.data.base import Data
 from buffalo.algo._als import CyALS
-from buffalo.evaluate import Evaluable
-from buffalo.algo.options import ALSOption
-from buffalo.algo.optimize import Optimizable
-from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtension
+from buffalo.algo.optimize import Optimizable
+from buffalo.algo.options import ALSOption
+from buffalo.data.base import Data
+from buffalo.data.buffered_data import BufferedDataMatrix
+from buffalo.evaluate import Evaluable
+from buffalo.misc import aux, log
 
 inited_CUALS = True
 try:
@@ -80,7 +79,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.init_factors()
 
     def init_factors(self):
-        assert self.data, 'Data is not setted'
+        assert self.data, 'Data is not set'
         self.vdim = self.obj.get_vdim() if self.opt.accelerator else self.opt.d
         header = self.data.get_header()
         for name, rows in [('P', header['num_users']), ('Q', header['num_items'])]:
@@ -218,7 +217,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         loss['loss'] = loss.get(self.opt.optimize.loss)
         if any([metric in self.opt.optimize.loss for metric in ['ndcg', 'map', 'accracy']]):
             loss['loss'] *= -1
-        # TODO: deal with failture of training
+        # TODO: deal with failure of training
         loss['status'] = HOPT_STATUS_OK
         self._optimize_loss = loss
         return loss

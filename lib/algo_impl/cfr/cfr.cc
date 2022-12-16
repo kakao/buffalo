@@ -78,7 +78,7 @@ void CCFR::set_embedding(float* data, int size, string obj_type) {
         new (&Ib_) Map<VectorType>(data, size);
     else if (obj_type == "context_bias")
         new (&Cb_) Map<VectorType>(data, size);
-    DEBUG("{} setted (size: {})", obj_type, size);
+    DEBUG("{} set (size: {})", obj_type, size);
 }
 
 

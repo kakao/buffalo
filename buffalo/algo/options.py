@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 from buffalo.misc.aux import InputOptions, Option
 
 

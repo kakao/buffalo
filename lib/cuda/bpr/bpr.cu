@@ -32,10 +32,10 @@ __global__ void fill_rows_kernel(const int start_x, const int next_x,
     }
 }
 
-__global__ void generate_samples_kernel(const int start_x, const int next_x, 
+__global__ void generate_samples_kernel(const int start_x, const int next_x,
         int* user, int* pos, int* neg,
-        const int64_t* indptr, const float* dist, const int* rows, const int* keys, 
-        const int num_items, const size_t sample_size, const int num_neg_samples, const bool uniform_dist, 
+        const int64_t* indptr, const float* dist, const int* rows, const int* keys,
+        const int num_items, const size_t sample_size, const int num_neg_samples, const bool uniform_dist,
         const bool verify_neg, default_random_engine* rngs, const bool random_positive){
     // prepare sampling
     int64_t beg = start_x == 0? 0: indptr[start_x - 1];
@@ -47,15 +47,15 @@ __global__ void generate_samples_kernel(const int start_x, const int next_x,
     uniform_int_distribution<int> item_dist1(0, num_items-1); // item distribution in case of uniform sampling
     uniform_real_distribution<float> item_dist2(0.0, Z); // item distribution in case of multinomial sampling
     uniform_int_distribution<int64_t> pos_dist(0, end-beg-1); // positive sampler
-    
+
     for(int64_t s=blockIdx.x; s<(sample_size*num_neg_samples); s+=gridDim.x){
         int64_t idx;
         if (random_positive) idx = pos_dist(rng); // draw positive index
         else idx = s % sample_size; // straight-forward positive index
         int _user = rows[idx]; // find user
-        int _pos = keys[idx]; // get postive key
+        int _pos = keys[idx]; // get positive key
         // indexes for finding positive keys of target user
-        size_t _beg = _user == 0? 0: indptr[_user - 1] - beg; 
+        size_t _beg = _user == 0? 0: indptr[_user - 1] - beg;
         size_t _end = indptr[_user] - beg;
         // negative sampling
         int _neg;
@@ -86,13 +86,13 @@ __global__ void generate_samples_kernel(const int start_x, const int next_x,
     }
 }
 
-__global__ void update_bpr_kernel(const int dim, const int vdim, 
-        float* P, float* Q, float* Qb, float* loss, 
-        const int* user, const int* pos, const int* neg, 
+__global__ void update_bpr_kernel(const int dim, const int vdim,
+        float* P, float* Q, float* Qb, float* loss,
+        const int* user, const int* pos, const int* neg,
         const size_t sample_size, const float lr, const bool compute_loss,
         const float reg_u, const float reg_i, const float reg_j, const float reg_b,
         const bool update_i, const bool update_j, const bool use_bias){
-    
+
     for (size_t s=blockIdx.x; s<sample_size; s+=gridDim.x){
         // take a sample
         const int _user = user[s], _pos = pos[s], _neg = neg[s];
@@ -114,7 +114,7 @@ __global__ void update_bpr_kernel(const int dim, const int vdim,
         diff = max(min(diff, MAX_EXP), -MAX_EXP);
         float e = expf(diff);
         float logit = e / (1 + e);
-        
+
         // compute loss
         if (compute_loss and threadIdx.x == 0)
             loss[blockIdx.x] += logf(1 + e);
@@ -145,11 +145,11 @@ __global__ void update_bpr_kernel(const int dim, const int vdim,
     }
 }
 
-__global__ void compute_bpr_sample_loss_kernel(const int dim, const int vdim, 
-        float* P, float* Q, float* Qb, float* loss, 
-        const int* user, const int* pos, const int* neg, 
+__global__ void compute_bpr_sample_loss_kernel(const int dim, const int vdim,
+        float* P, float* Q, float* Qb, float* loss,
+        const int* user, const int* pos, const int* neg,
         const size_t sample_size, const bool use_bias){
-    
+
     for (size_t s=blockIdx.x; s<sample_size; s+=gridDim.x){
         // take a sample
         const int _user = user[s], _pos = pos[s], _neg = neg[s];
@@ -162,7 +162,7 @@ __global__ void compute_bpr_sample_loss_kernel(const int dim, const int vdim,
         // compute scores
         float pos_score = dot(_P, _Qp);
         float neg_score = dot(_P, _Qn);
-        
+
         if (use_bias){
             pos_score += Qb[_pos];
             neg_score += Qb[_neg];
@@ -170,7 +170,7 @@ __global__ void compute_bpr_sample_loss_kernel(const int dim, const int vdim,
         float diff = neg_score - pos_score;
         diff = max(min(diff, MAX_EXP), -MAX_EXP);
         float e = expf(diff);
-        
+
         // compute loss
         if (threadIdx.x == 0)
             loss[blockIdx.x] += logf(1 + e);
@@ -181,7 +181,7 @@ __global__ void compute_bpr_sample_loss_kernel(const int dim, const int vdim,
 
 CuBPR::CuBPR(){
     logger_ = BuffaloLogger().get_logger();
-    
+
     num_processed_ = 0;
     CHECK_CUDA(cudaGetDevice(&devId_));
     cudaDeviceProp prop;
@@ -212,7 +212,7 @@ CuBPR::CuBPR(){
             else INFO0("Unknown device type");
             break;
         default:
-            INFO0("Unknown device type"); 
+            INFO0("Unknown device type");
             break;
     }
 
@@ -265,7 +265,7 @@ bool CuBPR::init(std::string opt_path){
         // virtual dimension
         vdim_ = (dim_ / WARP_SIZE) * WARP_SIZE;
         if (dim_ % WARP_SIZE > 0) vdim_ += WARP_SIZE;
-      
+
         // set block count
         block_cnt_ = opt_["hyper_threads"].int_value() * (cores_ / vdim_);
         // get sampling option
@@ -279,16 +279,16 @@ bool CuBPR::init(std::string opt_path){
         }
         rngs_.resize(block_cnt_ * vdim_);
         init_rngs_kernel<<<block_cnt_*vdim_, 1>>>(raw_pointer_cast(rngs_.data()), rand_seed_);
-        
+
     }
     return ok;
 }
 
 void CuBPR::initialize_model(
         float* P, int P_rows,
-        float* Q, float* Qb, int Q_rows, 
+        float* Q, float* Qb, int Q_rows,
         int64_t num_total_process, bool set_gpu)
-{    
+{
     // initialize parameters and send to gpu memory
     hostP_ = P;
     hostQ_ = Q;
@@ -347,11 +347,11 @@ int CuBPR::get_vdim(){
     return vdim_;
 }
 
-std::pair<double, double> CuBPR::partial_update(int start_x, 
+std::pair<double, double> CuBPR::partial_update(int start_x,
         int next_x,
         int64_t* indptr,
         int* keys){
-    
+
     double el;
     time_p beg_t, end_t;
 
@@ -363,60 +363,60 @@ std::pair<double, double> CuBPR::partial_update(int start_x,
 
     // set zeros for measuring losses
     if (compute_loss_)
-        fill(devLoss_.begin(), devLoss_.end(), 0.0); 
+        fill(devLoss_.begin(), devLoss_.end(), 0.0);
     CHECK_CUDA(cudaDeviceSynchronize());
-    
+
     beg_t = get_now();
-     
+
     // generate samples
     fill_rows_kernel<<<block_cnt_*vdim_, 1>>>(start_x, next_x,
             raw_pointer_cast(indptr_.data()), raw_pointer_cast(rows_.data()));
     CHECK_CUDA(cudaDeviceSynchronize());
-    
+
     end_t = get_now();
     el = (GetTimeDiff(beg_t, end_t)) * 1000.0;
     TRACE("elapsed for filling rows: {} ms", el);
 
     beg_t = get_now();
-    
+
     // generate samples
-    generate_samples_kernel<<<block_cnt_*vdim_, 1>>>(start_x, next_x, 
-            raw_pointer_cast(user_.data()), 
+    generate_samples_kernel<<<block_cnt_*vdim_, 1>>>(start_x, next_x,
+            raw_pointer_cast(user_.data()),
             raw_pointer_cast(pos_.data()), raw_pointer_cast(neg_.data()),
-            raw_pointer_cast(indptr_.data()), raw_pointer_cast(dist_.data()), 
-            raw_pointer_cast(rows_.data()), raw_pointer_cast(keys_.data()), 
-            Q_rows_, sample_size, num_neg_samples_, uniform_dist_, 
+            raw_pointer_cast(indptr_.data()), raw_pointer_cast(dist_.data()),
+            raw_pointer_cast(rows_.data()), raw_pointer_cast(keys_.data()),
+            Q_rows_, sample_size, num_neg_samples_, uniform_dist_,
             verify_neg_, raw_pointer_cast(rngs_.data()), random_positive_);
     CHECK_CUDA(cudaDeviceSynchronize());
-    
+
     end_t = get_now();
     el = (GetTimeDiff(beg_t, end_t)) * 1000.0;
     TRACE("elapsed for sampling: {} ms", el);
 
     beg_t = get_now();
-   
+
     // decay lr
     double progressed = (double) num_processed_ / ((double) num_total_process_ * (double) num_iters_);
     double alpha = lr_ + (min_lr_ - lr_) * progressed;
     alpha = fmax(min_lr_, alpha);
-    
+
     // update bpr
-    update_bpr_kernel<<<block_cnt_, vdim_>>>(dim_, vdim_, 
-            raw_pointer_cast(devP_.data()), raw_pointer_cast(devQ_.data()), 
-            raw_pointer_cast(devQb_.data()), raw_pointer_cast(devLoss_.data()), 
-            raw_pointer_cast(user_.data()), 
-            raw_pointer_cast(pos_.data()), raw_pointer_cast(neg_.data()), 
+    update_bpr_kernel<<<block_cnt_, vdim_>>>(dim_, vdim_,
+            raw_pointer_cast(devP_.data()), raw_pointer_cast(devQ_.data()),
+            raw_pointer_cast(devQb_.data()), raw_pointer_cast(devLoss_.data()),
+            raw_pointer_cast(user_.data()),
+            raw_pointer_cast(pos_.data()), raw_pointer_cast(neg_.data()),
             sample_size*num_neg_samples_, alpha, compute_loss_,
             reg_u_, reg_i_, reg_j_, reg_b_,
             update_i_, update_j_, use_bias_);
     CHECK_CUDA(cudaDeviceSynchronize());
     num_processed_ += sample_size;
-   
+
 
     end_t = get_now();
     el = (GetTimeDiff(beg_t, end_t)) * 1000.0;
     TRACE("elapsed for update: {} ms", el);
-   
+
     // accumulate losses
     double loss = 0;
     if (compute_loss_){
@@ -429,10 +429,10 @@ std::pair<double, double> CuBPR::partial_update(int start_x,
     return std::make_pair(loss, sample_size*num_neg_samples_);
 }
 
-double CuBPR::compute_loss(int num_loss_samples, 
+double CuBPR::compute_loss(int num_loss_samples,
         int* user, int* pos, int* neg){
-    
-    fill(devLoss_.begin(), devLoss_.end(), 0.0); 
+
+    fill(devLoss_.begin(), devLoss_.end(), 0.0);
     CHECK_CUDA(cudaDeviceSynchronize());
 
     // copy sample data to gpu memory
@@ -441,14 +441,14 @@ double CuBPR::compute_loss(int num_loss_samples,
     copy(neg, neg+num_loss_samples, neg_.begin());
 
     // update bpr
-    compute_bpr_sample_loss_kernel<<<block_cnt_, vdim_>>>(dim_, vdim_, 
-            raw_pointer_cast(devP_.data()), raw_pointer_cast(devQ_.data()), 
-            raw_pointer_cast(devQb_.data()), raw_pointer_cast(devLoss_.data()), 
-            raw_pointer_cast(user_.data()), 
-            raw_pointer_cast(pos_.data()), raw_pointer_cast(neg_.data()), 
+    compute_bpr_sample_loss_kernel<<<block_cnt_, vdim_>>>(dim_, vdim_,
+            raw_pointer_cast(devP_.data()), raw_pointer_cast(devQ_.data()),
+            raw_pointer_cast(devQb_.data()), raw_pointer_cast(devLoss_.data()),
+            raw_pointer_cast(user_.data()),
+            raw_pointer_cast(pos_.data()), raw_pointer_cast(neg_.data()),
             num_loss_samples, use_bias_);
     CHECK_CUDA(cudaDeviceSynchronize());
-   
+
     // accumulate losses
     double loss = 0;
     copy(devLoss_.begin(), devLoss_.end(), hostLoss_.begin());

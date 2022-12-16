@@ -44,15 +44,23 @@ bool CALS::init(string opt_path) {
         // get optimizer
         string optimizer = opt_["optimizer"].string_value();
         if (d >= 128) optimizer = "ialspp";
-        if (optimizer == "llt") optimizer_code_ = 0;
-        else if (optimizer == "ldlt") optimizer_code_ = 1;
-        else if (optimizer == "manual_cg") optimizer_code_ = 2;
-        else if (optimizer == "eigen_cg") optimizer_code_ = 3;
-        else if (optimizer == "eigen_bicg") optimizer_code_ = 4;
-        else if (optimizer == "eigen_gmres") optimizer_code_ = 5;
-        else if (optimizer == "eigen_dgmres") optimizer_code_ = 6;
-        else if (optimizer == "eigen_minres") optimizer_code_ = 7;
-        else if (optimizer == "ialspp") {
+        if (optimizer == "llt") {
+            optimizer_code_ = 0;
+        } else if (optimizer == "ldlt") {
+            optimizer_code_ = 1;
+        } else if (optimizer == "manual_cg") {
+            optimizer_code_ = 2;
+        } else if (optimizer == "eigen_cg") {
+            optimizer_code_ = 3;
+        } else if (optimizer == "eigen_bicg") {
+            optimizer_code_ = 4;
+        } else if (optimizer == "eigen_gmres") {
+            optimizer_code_ = 5;
+        } else if (optimizer == "eigen_dgmres") {
+            optimizer_code_ = 6;
+        } else if (optimizer == "eigen_minres") {
+            optimizer_code_ = 7;
+        } else if (optimizer == "ialspp") {
             use_ialspp_ = true;
             optimizer_code_ = 8;
         }
@@ -70,7 +78,7 @@ void CALS::initialize_model(float* P, int P_rows, float* Q, int Q_rows) {
     new (&P_) Map<FactorTypeRowMajor>(P, P_rows, d);
     new (&Q_) Map<FactorTypeRowMajor>(Q, Q_rows, d);
 
-    DEBUG("P({} x {}) Q({} x {}) setted",
+    DEBUG("P({} x {}) Q({} x {}) set",
             P_.rows(), P_.cols(), Q_.rows(), Q_.cols());
 }
 
@@ -164,7 +172,7 @@ pair<double, double> CALS::_partial_update(
             Fxy.setZero();
 
             // compute loss on negative samples (only item side)
-            if (compute_loss_on_training and axis == 1) {
+            if (compute_loss_on_training && axis == 1) {
                 loss_nume[worker_id] += P.row(u).dot(P.row(u) * FF_);
                 loss_deno[worker_id] += Q.rows();
             }
@@ -175,8 +183,8 @@ pair<double, double> CALS::_partial_update(
                 Fs.row(idx) = v * Q.row(c);
                 Fs2.row(idx) = Q.row(c);
                 Fxy.noalias() += (Q.row(c) * (1.0 + v * alpha));
-                // taking postive samples into account for computing loss (only item side)
-                if (compute_loss_on_training and axis == 1) {
+                // taking positive samples into account for computing loss (only item side)
+                if (compute_loss_on_training && axis == 1) {
                     float dot = P.row(u).dot(Q.row(c));
                     loss_nume[worker_id] -= dot * dot;
                     loss_nume[worker_id] += (dot - 1) * (dot - 1) * (1.0 + v * alpha);
@@ -221,8 +229,7 @@ pair<double, double> CALS::_partial_update_ialspp(
 
     if (axis == 0) {
         reg = opt_["reg_u"].number_value();
-    }
-    else { // if (axis == 1) {
+    } else { // if (axis == 1) {
         reg = opt_["reg_i"].number_value();
         swap(P_rows, Q_rows);
         swap(P_cols, Q_cols);
@@ -289,7 +296,7 @@ pair<double, double> CALS::_partial_update_ialspp(
                 const FactorType& block_p = p.block(0, block_beg, 1, block_size);
                 FactorType b = p * gramian + reg * block_p;
 
-                if (block_beg == 0 and compute_loss_on_training and axis == 1) {
+                if (block_beg == 0 && compute_loss_on_training && axis == 1) {
                     loss_nume[worker_id] += P.row(u).dot(P.row(u) * FF_);
                     loss_deno[worker_id] += Q.rows();
                 }
@@ -300,7 +307,7 @@ pair<double, double> CALS::_partial_update_ialspp(
                     float residual = Yui[it - shifted] - 1.0;
                     const FactorType& v = block_q.row(col);
                     b.noalias() += residual * val * alpha * v;
-                    if ((block_beg == 0) and compute_loss_on_training and axis == 1) {
+                    if ((block_beg == 0) && compute_loss_on_training && axis == 1) {
                         float dot = P.row(u).dot(Q.row(col));
                         loss_nume[worker_id] -= dot * dot;
                         loss_nume[worker_id] += (dot - 1) * (dot - 1) * (1.0 + val * alpha);
@@ -309,7 +316,7 @@ pair<double, double> CALS::_partial_update_ialspp(
                 }
                 float ada_reg = adaptive_reg ? (float)data_size : 1.0;
                 // compute loss on regularizatio term (both user and item side)
-                if ((block_beg == 0) and compute_loss_on_training) {
+                if ((block_beg == 0) && compute_loss_on_training) {
                     loss_nume[worker_id] += ada_reg * reg * P.row(u).dot(P.row(u));
                 }
                 // CG Update

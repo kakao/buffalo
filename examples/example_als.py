@@ -5,10 +5,10 @@ import time
 import fire
 
 from buffalo.algo.als import ALS
-from buffalo.misc import aux, log
-from buffalo.parallel.base import ParALS
 from buffalo.algo.options import ALSOption
 from buffalo.data.mm import MatrixMarketOptions
+from buffalo.misc import aux, log
+from buffalo.parallel.base import ParALS
 
 
 def example1():
@@ -77,9 +77,9 @@ def example2():
     als.normalize('item')
     als.build_itemid_map()
 
-    print('Make item recommendation on als.ml20m.par.top10.tsv with Paralell(Thread=4)')
+    print('Make item recommendation on als.ml20m.par.top10.tsv with Parallel(Thread=4)')
     par = ParALS(als)
-    par.num_workers=4
+    par.num_workers = 4
     all_items = als._idmanager.itemids
     start_t = time.time()
     with open('als.ml20m.par.top10.tsv', 'w') as fout:
@@ -98,7 +98,7 @@ def example2():
     index.unload()
     print('Make item recommendation on als.ml20m.par.top10.tsv with Ann(Thread=1)')
     par.set_hnsw_index('ml20m.n2.index', 'item')
-    par.num_workers=4
+    par.num_workers = 4
     start_t = time.time()
     with open('als.ml20m.ann.top10.tsv', 'w') as fout:
         for idx in range(0, len(all_items), 128):
@@ -106,6 +106,7 @@ def example2():
             for q, p in zip(all_items[idx:idx + 128], topks):
                 fout.write('%s\t%s\n' % (q, '\t'.join(p)))
     print('took: %.3f secs' % (time.time() - start_t))
+
 
 if __name__ == '__main__':
     fire.Fire({'example1': example1,

@@ -1,19 +1,18 @@
-# -*- coding: utf-8 -*-
-import time
 import json
+import time
 
 import numpy as np
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
-from buffalo.misc import aux, log
-from buffalo.data.base import Data
 from buffalo.algo._plsi import CyPLSI
-from buffalo.evaluate import Evaluable
-from buffalo.algo.options import PLSIOption
-from buffalo.algo.optimize import Optimizable
-from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.algo.base import Algo, Serializable, TensorboardExtension
+from buffalo.algo.optimize import Optimizable
+from buffalo.algo.options import PLSIOption
+from buffalo.data.base import Data
+from buffalo.data.buffered_data import BufferedDataMatrix
+from buffalo.evaluate import Evaluable
+from buffalo.misc import aux, log
 
 
 class PLSI(Algo, PLSIOption, Evaluable, Serializable, Optimizable, TensorboardExtension):

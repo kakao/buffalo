@@ -1,8 +1,7 @@
-# -*- coding: utf-8 -*-
 import fire
 
-from buffalo.misc import log, aux
 from buffalo.algo.als import ALS as _ALS
+from buffalo.misc import aux, log
 
 
 class ALS:

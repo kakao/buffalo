@@ -2,12 +2,14 @@
 # distutils: language=c++
 # -*- coding: utf-8 -*-
 import cython
+
+from libc.stdint cimport int32_t, int64_t
 from libcpp cimport bool
 from libcpp.pair cimport pair
 from libcpp.string cimport string
-from libc.stdint cimport int32_t, int64_t
 
 import numpy as np
+
 cimport numpy as np
 
 

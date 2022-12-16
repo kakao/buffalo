@@ -154,7 +154,7 @@ int _parallel_build_sppmi(string from_path, string to_path,
 
                 appearances[cur_id-1].fetch_add(1, memory_order_relaxed);
 
-                // not less than. for prcessing first line of next split
+                // not less than. for processing first line of next split
                 if (end_pos < fin.tellg()) {
                     break;
                 }
@@ -194,7 +194,7 @@ int _parallel_build_sppmi(string from_path, string to_path,
                         break;
                     }
 
-                    // not less than. for prcessing first line of next split
+                    // not less than. for processing first line of next split
                     if (end_pos < fin.tellg()) {
                         break_if_new_id_begin = true;
                     }
@@ -238,7 +238,7 @@ int _parallel_build_sppmi(string from_path, string to_path,
                     }
                 }
 
-                // not less than. for prcessing first line of next split
+                // not less than. for processing first line of next split
                 if (end_pos < fin.tellg()) {
                     break_if_new_id_begin = true;
                 }
@@ -303,7 +303,7 @@ vector<string> _sort_and_compressed_binarization(
                 sscanf(line.c_str(), "%d %d %f", &r, &c, &v);
                 records.emplace_back(r, c, v);
 
-                // not less than. for prcessing first line of next split
+                // not less than. for processing first line of next split
                 if (end_pos < fin.tellg()) {
                     break;
                 }

@@ -16,7 +16,7 @@ namespace plsi {
 
 
 class CPLSI : public Algorithm {
-public:
+ public:
     CPLSI();
     ~CPLSI();
 
@@ -29,7 +29,7 @@ public:
     void initialize_model(float* P, int P_rows, float* Q, int Q_rows);
     float partial_update(int start_x, int next_x, int64_t* indptrs, int32_t* keys, float* vals);
 
-private:
+ private:
     Json opt_;
     Map<MatrixType> P_, Q_;
     MatrixType P, Q;

@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 import os
+
 os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
-import time
-import queue
 import datetime
+import queue
 import threading
+import time
 
 import h5py
-import psutil
 import numpy as np
-
+import psutil
 from evaluate import evaluate_ranking_metrics
-
 
 DB = {'kakao_reco_730m': './tmp/kakao_reco_730m.h5py',
       'ml20m': './tmp/ml20m.h5py',
@@ -228,7 +227,7 @@ class BuffaloLib(Benchmark):
         if name == 'ml20m':
             data_opt.data.path = DB[name]
             data_opt.input.main = '../tests/ext/ml-20m/main'
-        elif name =='ml100k':
+        elif name == 'ml100k':
             data_opt.data.path = DB[name]
             data_opt.input.main = '../tests/ext/ml-100k/main'
         elif name == 'kakao_reco_730m':
@@ -264,7 +263,6 @@ class BuffaloLib(Benchmark):
         inst.data._prepare_validation_data()
         K = kwargs.get('validation', {}).get('topk', 10)
         userids = list(set(inst.data.handle['vali']['row'][::]))
-        itemids = list(range(inst.data.handle['idmap']['cols'].shape[0]))
         recs = []
         for user in userids:
             seen = inst.data.vali_data['validation_seen'].get(user, set())
@@ -490,16 +488,16 @@ class PysparkLib(Benchmark):
             return ratings
 
     def als(self, database, **kwargs):
-        from pyspark.sql import SparkSession
-        from pyspark.ml.recommendation import ALS
         from pyspark import SparkConf, SparkContext
+        from pyspark.ml.recommendation import ALS
+        from pyspark.sql import SparkSession
         opts = self.get_option('pyspark', 'als', **kwargs)
         conf = SparkConf()\
-               .setAppName("pyspark")\
-               .setMaster('local[%s]' % kwargs.get('num_workers'))\
-               .set('spark.local.dir', './tmp/')\
-               .set('spark.worker.cleanup.enabled', 'true')\
-               .set('spark.driver.memory', '32G')
+            .setAppName("pyspark")\
+            .setMaster('local[%s]' % kwargs.get('num_workers'))\
+            .set('spark.local.dir', './tmp/')\
+            .set('spark.worker.cleanup.enabled', 'true')\
+            .set('spark.driver.memory', '32G')
         context = SparkContext(conf=conf)
         context.setLogLevel('WARN')
         spark = SparkSession(context)

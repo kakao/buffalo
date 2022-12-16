@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 import os
-import time
-import unittest
-from collections import Counter
+
 
 from buffalo.misc import aux, log
-from buffalo.misc.log import set_log_level
-from buffalo.data.mm import MatrixMarketOptions
 
 
 def prepare_dataset():

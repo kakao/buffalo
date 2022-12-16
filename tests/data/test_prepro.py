@@ -106,5 +106,6 @@ class TestPrepro(unittest.TestCase):
         opt.data.value_prepro = aux.Option({'name': 'SPPMI'})
         self.assertRaises(RuntimeError, MatrixMarket, opt)
 
+
 if __name__ == '__main__':
     unittest.main()

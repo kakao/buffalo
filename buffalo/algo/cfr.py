@@ -1,20 +1,19 @@
-# -*- coding: utf-8 -*-
-import time
 import json
+import time
 
 import numpy as np
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
+from buffalo.algo._cfr import CyCFR
+from buffalo.algo.base import Algo, Serializable, TensorboardExtension
+from buffalo.algo.optimize import Optimizable
+from buffalo.algo.options import CFROption
+from buffalo.data.base import Data
+from buffalo.data.buffered_data import BufferedDataMatrix
+from buffalo.evaluate import Evaluable
 from buffalo.misc import aux, log
 from buffalo.misc.log import ProgressBar
-from buffalo.data.base import Data
-from buffalo.algo._cfr import CyCFR
-from buffalo.evaluate import Evaluable
-from buffalo.algo.options import CFROption
-from buffalo.algo.optimize import Optimizable
-from buffalo.data.buffered_data import BufferedDataMatrix
-from buffalo.algo.base import Algo, Serializable, TensorboardExtension
 
 
 class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExtension):
@@ -44,7 +43,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.is_valid_option(self.opt)
         assert self.obj.init(self.opt_path.encode("utf8")), "putting parameter to cython object failed"
 
-        # ensure embedding matrix is initialzed for preventing segmentation fault
+        # ensure embedding matrix is initialized for preventing segmentation fault
         self.is_initialized = False
 
         self.data = None
@@ -87,7 +86,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def initialize(self):
         super().initialize()
-        assert self.data, 'Data is not setted'
+        assert self.data, 'Data is not set'
         header = self.data.get_header()
         num_users, num_items, d = \
             header["num_users"], header["num_items"], self.opt.d

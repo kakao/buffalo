@@ -56,5 +56,6 @@ class TestAlgoBase(TestBase):
         q1, q2, q3 = '49.Star_Wars_(1977)', '180.Return_of_the_Jedi_(1983)', '171.Empire_Strikes_Back,_The_(1980)'
         self._test_most_similar(als, q1, q2, q3)
 
+
 if __name__ == '__main__':
     unittest.main()

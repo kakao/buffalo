@@ -1,15 +1,14 @@
-# -*- coding: utf-8 -*-
-import os
 import abc
-import psutil
+import os
 
 import h5py
 import numpy as np
+import psutil
 from scipy.sparse import csr_matrix
 
 from buffalo.data import prepro
-from buffalo.misc import aux, log
 from buffalo.data.fileio import chunking_into_bins, sort_and_compressed_binarization
+from buffalo.misc import aux, log
 
 
 class Data(object):
@@ -118,11 +117,11 @@ class Data(object):
             data_index = end
 
     def iterate(self, axis='rowwise', use_repr_name=False) -> [int, int, float]:
-        """Iterate over datas
+        """Iterate over data
 
         args:
             group: which data group
-            use_repr_name: return representive name of internal ids
+            use_repr_name: return representative name of internal ids
         """
         userids, itemids = None, None
         idmap = self.get_group('idmap')

@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
 import abc
-from buffalo.misc import aux, log
 
-from hyperopt import hp, fmin, tpe, Trials, space_eval
+from hyperopt import Trials, fmin, hp, space_eval, tpe
+
+from buffalo.misc import aux, log
 
 
 class Optimizable(object):
@@ -53,7 +53,7 @@ class Optimizable(object):
             self.initialize_tensorboard(1000000 if max_trials == -1 else max_trials,
                                         name_postfix='.optimize')
             tb_opt, self.opt.tensorboard = self.opt.tensorboard, tb_opt  # trick
-            while(max_trials):
+            while (max_trials):
                 with log.supress_log_level(log.WARN):
                     raw_best_parameters = fmin(fn=self._optimize,
                                                space=space,

@@ -1,12 +1,12 @@
-# -*- coding: utf-8 -*-
-import os
 import abc
-import json
 import atexit
-import psutil
-import warnings
-import tempfile
+import json
+import os
 import subprocess
+import tempfile
+import warnings
+
+import psutil
 
 from buffalo.misc import log
 

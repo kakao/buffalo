@@ -77,12 +77,10 @@ bool CWARP::init(string opt_path) {
         if (score_func == "l2") {
             score_f_ = l2_score;
             get_deriv_ = l2_deriv;
-        }
-        else {
+        } else {
             score_f_ = dot_score;
             get_deriv_ = dot_deriv;
         }
-
     }
     return ok;
 }

@@ -158,7 +158,7 @@ void SGDAlgorithm::initialize_model(
     new (&Q_) Map<MatrixType>(Q, Q_rows, D);
     new (&Qb_) Map<MatrixType>(Qb, Q_rows, one);
 
-    DEBUG("P({} x {}) Q({} x {}) Qb({} x {}) setted.",
+    DEBUG("P({} x {}) Q({} x {}) Qb({} x {}) set.",
             P_.rows(), P_.cols(),
             Q_.rows(), Q_.cols(), Qb_.rows(), Qb_.cols());
 

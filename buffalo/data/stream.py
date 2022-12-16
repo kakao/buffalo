@@ -1,16 +1,15 @@
-# -*- coding: utf-8 -*-
 import os
-import psutil
-import warnings
 import traceback
+import warnings
 from collections import Counter
 
 import h5py
 import numpy as np
+import psutil
 
-from buffalo.misc import aux, log
 from buffalo.data.base import Data, DataOption
 from buffalo.data.fileio import parallel_build_sppmi
+from buffalo.misc import aux, log
 
 
 class StreamOptions(DataOption):

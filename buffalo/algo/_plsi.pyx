@@ -3,11 +3,11 @@
 # -*- coding: utf-8 -*-
 import cython
 import numpy as np
-cimport numpy as np
 
-from libcpp.string cimport string
-from libcpp cimport bool as bool_t
+cimport numpy as np
 from libc.stdint cimport int32_t, int64_t
+from libcpp cimport bool as bool_t
+from libcpp.string cimport string
 
 
 cdef extern from "buffalo/algo_impl/plsi/plsi.hpp" namespace "plsi":

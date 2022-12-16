@@ -50,7 +50,7 @@ public:
     float alpha_, reg_u_, reg_i_, cg_tolerance_, eps_;
     bool compute_loss_, adaptive_reg_;
     int devId_, mp_cnt_, block_cnt_, cores_;
-    bool opt_setted_, initialized_, ph_setted_;
+    bool opt_set_, initialized_, ph_set_;
 
     std::shared_ptr<spdlog::logger> logger_;
 

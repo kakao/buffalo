@@ -7,7 +7,6 @@ from buffalo.misc import aux
 from buffalo.algo.warp import WARP
 from buffalo.misc.log import set_log_level
 from buffalo.algo.options import WARPOption
-from buffalo.data.mm import MatrixMarketOptions
 
 from .base import TestBase
 

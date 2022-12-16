@@ -1,15 +1,14 @@
-# -*- coding: utf-8 -*-
 import os
 import traceback
 
 import h5py
-import scipy.io
 import numpy as np
+import scipy.io
 import scipy.sparse
 
 from buffalo.data import prepro
-from buffalo.misc import aux, log
 from buffalo.data.base import Data, DataOption, DataReader
+from buffalo.misc import aux, log
 
 
 class MatrixMarketOptions(DataOption):

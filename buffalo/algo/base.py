@@ -1,15 +1,15 @@
-# -*- coding: utf-8 -*-
-import os
 import abc
+import datetime
 import json
+import logging
+import os
 import pickle
 import struct
-import logging
-import datetime
 
+import absl.logging
 import numpy as np
 import tensorboard as tb
-import absl.logging
+
 logging.root.removeHandler(absl.logging._absl_handler)
 absl.logging._warn_preinit_stderr = False
 
@@ -343,9 +343,9 @@ class TensorboardExtension(object):
 
     def initialize_tensorboard(self, num_steps, name_prefix='', name_postfix='', metrics=None):
         if not self.opt.tensorboard:
-            if not hasattr(self, '_tb_setted'):
+            if not hasattr(self, '_tb_set'):
                 self.logger.debug('Cannot find tensorboard configuration.')
-            self._tb_setted = False
+            self._tb_set = False
             return
         name = self.opt.tensorboard.name
         name = name_prefix + name + name_postfix
@@ -358,7 +358,7 @@ class TensorboardExtension(object):
         self._tb.data_root = tb_dir
         self._tb.summary_writer = tb.summary.Writer(tb_dir)
         self._tb.metrics = metrics if metrics is not None else self.get_evaluation_metrics()
-        self._tb_setted = True
+        self._tb_set = True
 
     def update_tensorboard_data(self, metrics):
         if not self.opt.tensorboard:

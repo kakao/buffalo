@@ -1,7 +1,8 @@
-# -*- coding: utf-8 -*-
 import abc
 import bisect
+
 import numpy as np
+
 from buffalo.misc import log
 
 

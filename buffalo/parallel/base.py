@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
 import abc
 
 import numpy as np
 
 from buffalo.algo.als import ALS
+from buffalo.algo.bpr import BPRMF
 from buffalo.algo.cfr import CFR
 from buffalo.algo.w2v import W2V
-from buffalo.algo.bpr import BPRMF
-
-from buffalo.parallel._core import dot_topn, ann_search
+from buffalo.parallel._core import ann_search, dot_topn
 
 
 class Parallel(abc.ABC):
@@ -45,7 +43,7 @@ class Parallel(abc.ABC):
 
     @abc.abstractmethod
     def most_similar(self, keys, topk=10, group='item', pool=None, repr=False, ef_search=-1, use_mmap=True):
-        """Caculate TopK most similar items for each keys in parallel processing.
+        """Calculate TopK most similar items for each keys in parallel processing.
 
         :param list keys: Query Keys
         :param int topk: Number of topK
@@ -75,7 +73,7 @@ class Parallel(abc.ABC):
 
     @abc.abstractmethod
     def topk_recommendation(self, keys, topk=10, pool=None, repr=False):
-        """Caculate TopK recommendation for each users in parallel processing.
+        """Calculate TopK recommendation for each users in parallel processing.
 
         :param list keys: Query Keys
         :param int topk: Number of topK
@@ -101,7 +99,7 @@ class ParALS(Parallel):
             if len(pool) == 0:
                 raise RuntimeError('pool is empty')
         else:
-            # It assume that empty pool menas for all items
+            # It assume that empty pool means for all items
             pool = np.array([], dtype=np.int32)
         if group == 'item':
             topks, scores = super()._most_similar(group, indexes, self.algo.Q, topk, pool, ef_search, use_mmap)
@@ -128,7 +126,7 @@ class ParALS(Parallel):
             if len(pool) == 0:
                 raise RuntimeError('pool is empty')
         else:
-            # It assume that empty pool menas for all items
+            # It assume that empty pool means for all items
             pool = np.array([], dtype=np.int32)
         topks, scores = super()._topk_recommendation(indexes, self.algo.P, self.algo.Q, topk, pool)
         if repr:
@@ -152,7 +150,7 @@ class ParBPRMF(ParALS):
             if len(pool) == 0:
                 raise RuntimeError('pool is empty')
         else:
-            # It assume that empty pool menas for all items
+            # It assume that empty pool means for all items
             pool = np.array([], dtype=np.int32)
         topks, scores = super()._topk_recommendation_bias(indexes, self.algo.P, self.algo.Q, self.algo.Qb, topk, pool)
         if repr:
@@ -176,7 +174,7 @@ class ParW2V(Parallel):
             if len(pool) == 0:
                 raise RuntimeError('pool is empty')
         else:
-            # It assume that empty pool menas for all items
+            # It assume that empty pool means for all items
             pool = np.array([], dtype=np.int32)
         topks, scores = super()._most_similar('item', indexes, self.algo.L0, topk, pool, ef_search, use_mmap)
         if repr:

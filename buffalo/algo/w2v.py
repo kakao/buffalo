@@ -1,21 +1,21 @@
 # cython: experimental_cpp_class_def=True, language_level=3
 # distutils: language=c++
 # -*- coding: utf-8 -*-
-import time
 import json
+import time
 
 import numpy as np
 from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
-from buffalo.misc import aux, log
-from buffalo.data.base import Data
 from buffalo.algo._w2v import CyW2V
-from buffalo.evaluate import Evaluable
-from buffalo.algo.options import W2VOption
-from buffalo.algo.optimize import Optimizable
-from buffalo.data.buffered_data import BufferedDataStream
 from buffalo.algo.base import Algo, Serializable, TensorboardExtension
+from buffalo.algo.optimize import Optimizable
+from buffalo.algo.options import W2VOption
+from buffalo.data.base import Data
+from buffalo.data.buffered_data import BufferedDataStream
+from buffalo.evaluate import Evaluable
+from buffalo.misc import aux, log
 
 
 class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExtension):
@@ -85,7 +85,7 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
 
     def initialize(self):
         super().initialize()
-        assert self.data, 'Data is not setted'
+        assert self.data, 'Data is not set'
         self.buf = BufferedDataStream()
         self.buf.initialize(self.data)
         self.build_vocab()
@@ -223,7 +223,7 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
         self.init_factors()
         loss = self.train()
         loss['loss'] = loss.get(self.opt.optimize.loss)
-        # TODO: deal with failture of training
+        # TODO: deal with failure of training
         loss['status'] = HOPT_STATUS_OK
         self._optimize_loss = loss
         return loss

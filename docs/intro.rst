@@ -65,14 +65,14 @@ or
 
 Database
 --------
-We call term `database` as a data file format used by the buffalo internally. Buffalo take data that the Matrix Market or Stream format as input and converts it into a database class which store rawdata using h5py(http://www.h5py.org). The main reason to make custom database is to use the least amount of memory without compromising capacity of data volumn and learning speed.
+We call term `database` as a data file format used by the buffalo internally. Buffalo take data that the Matrix Market or Stream format as input and converts it into a database class which store rawdata using h5py(http://www.h5py.org). The main reason to make custom database is to use the least amount of memory without compromising capacity of data volume and learning speed.
 
 The Stream data format consists of two files:
 
   - main
 
     - Assumed that the data is reading history of users from some blog service, then each line is a reading history corresponding to each row of UID files. (i.e. users lists)
-    - The reading history is seperated by spaces, and the past is the left and the right is the most recent history.
+    - The reading history is separated by spaces, and the past is the left and the right is the most recent history.
     - e.g. `A B C D D E` means that a user read the contents in the order A B C D D E.
 
   - uid
@@ -92,12 +92,12 @@ For Matrix Market format, please refer to https://math.nist.gov/MatrixMarket/for
 
   - iid
 
-    - Each line is the actual itemkey corresponding to the colum id in the MM file.
+    - Each line is the actual itemkey corresponding to the column id in the MM file.
 
 uid and iid are the data needed to provide human readable results only, not required.
 
 
-Hyper paremter Optimization
+Hyper parameter Optimization
 ---------------------------
 The Algo classes inherited Optimizable class, a helper class for hyper parameter optimization. It inherits all features from hyperopt(http://hyperopt.github.io/hyperopt/), a well-known library.
 

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
+
 os.environ['OMP_NUM_THREADS'] = '1'
 os.environ['OPENBLAS_NUM_THREADS'] = '1'
 
 import fire
-from models import ImplicitLib, BuffaloLib, LightfmLib, QmfLib, PysparkLib
-
 from base import _get_elapsed_time, _print_table
+from models import BuffaloLib, ImplicitLib, LightfmLib, PysparkLib, QmfLib
 
 DIMENSION_SPACE = [10, 20, 40, 80, 160]
 WORKER_SPACE = [1, 2, 4, 8, 16]
@@ -30,8 +30,7 @@ def _performance(algo_name, database, lib, gpu):
                         'batch_mb': 4098,
                         'validation': {},
                         'compute_loss_on_training': False,
-                        'd': 40}
-              }
+                        'd': 40}}
     opt = options[algo_name]
 
     for d in DIMENSION_SPACE:
@@ -77,8 +76,7 @@ def _memory(algo_name, database, lib, gpu=False):
                'warp': {'num_workers': 16,
                         'compute_loss_on_training': False,
                         'd': 32,
-                        'num_iters': 2},
-              }
+                        'num_iters': 2}}
     opt = options[algo_name]
 
     for batch_mb in BUFFER_BATCH_SPACE:
