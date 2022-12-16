@@ -10,3 +10,4 @@ Makefile
 !docs/Makefile
 version.py
 setup.py
+*.so
