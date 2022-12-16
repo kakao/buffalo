@@ -4,9 +4,9 @@
 [submodule "3rd/spdlog"]
 	path = 3rd/spdlog
 	url = https://github.com/gabime/spdlog.git
-[submodule "3rd/n2"]
-	path = 3rd/n2
-	url = https://github.com/kakao/n2.git
 [submodule "3rd/eigen3"]
 	path = 3rd/eigen3
 	url = https://github.com/eigenteam/eigen-git-mirror.git
+[submodule "3rd/boost"]
+	url = https://github.com/boostorg/boost/
+	path = 3rd/boost
