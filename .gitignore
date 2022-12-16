@@ -1,4 +1,5 @@
 *.pyc
+*.so
 *.un~
 *.swp
 build/
@@ -10,3 +11,4 @@ Makefile
 !docs/Makefile
 version.py
 setup.py
+*.so
