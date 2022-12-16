@@ -7,6 +7,3 @@
 [submodule "3rd/eigen3"]
 	path = 3rd/eigen3
 	url = https://github.com/eigenteam/eigen-git-mirror.git
-[submodule "3rd/boost"]
-	url = https://github.com/boostorg/boost/
-	path = 3rd/boost
