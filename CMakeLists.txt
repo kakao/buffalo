@@ -17,7 +17,7 @@ file(GLOB W2V_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/lib/algo_impl/w2v/*.cc)
 file(GLOB PLSI_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/lib/algo_impl/plsi/*.cc)
 
 
-add_library(cbuffalo STATIC ${SOURCES} ${ALGO_SRCS} ${ALS_SRCS} ${CFR_SRCS} ${BPR_SRCS} ${WARP_SRCS} ${W2V_SRCS} ${PLSI_SRCS} ${MISC_SRCS})
+add_library(cbuffalo SHARED ${SOURCES} ${ALGO_SRCS} ${ALS_SRCS} ${CFR_SRCS} ${BPR_SRCS} ${WARP_SRCS} ${W2V_SRCS} ${PLSI_SRCS} ${MISC_SRCS})
 target_include_directories(cbuffalo
 PRIVATE
     ./include
@@ -26,3 +26,4 @@ PRIVATE
     ./3rd/eigen3
 )
 set_target_properties(cbuffalo PROPERTIES VERSION 0.1.0)
+set_target_properties(cbuffalo PROPERTIES SOVERSION 1)
