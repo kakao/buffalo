@@ -6,7 +6,7 @@ from buffalo.algo.als import ALS
 from buffalo.algo.bpr import BPRMF
 from buffalo.algo.cfr import CFR
 from buffalo.algo.w2v import W2V
-from buffalo.parallel._core import ann_search, dot_topn
+from buffalo.parallel._core import dot_topn
 
 
 class Parallel(abc.ABC):
@@ -22,24 +22,9 @@ class Parallel(abc.ABC):
         dummy_bias = np.array([[]], dtype=np.float32)
         out_keys = np.zeros(shape=(len(indexes), topk), dtype=np.int32)
         out_scores = np.zeros(shape=(len(indexes), topk), dtype=np.float32)
-        if group in self._ann_list:
-            if ef_search == -1:
-                ef_search = topk * 10
-            ann_search(self._ann_list[group].encode('utf8'), ef_search, use_mmap, indexes, Factor, Factor, dummy_bias, out_keys, out_scores, pool, topk, self.num_workers)
-        else:
-            dot_topn(indexes, Factor, Factor, dummy_bias, out_keys, out_scores, pool, topk, self.num_workers)
+
+        dot_topn(indexes, Factor, Factor, dummy_bias, out_keys, out_scores, pool, topk, self.num_workers)
         return out_keys, out_scores
-
-    def set_hnsw_index(self, path, group):
-        """ Set N2 HNSW Index for apporximate nearest neighbor features.
-
-        N2 is a open source project for approximate nearest neighbor.
-        For more detail please see the https://github.com/kakao/n2.
-
-        :param str path: The path of hnsw index file.
-        :param str group: Indexed data group.
-        """
-        self._ann_list[group] = path
 
     @abc.abstractmethod
     def most_similar(self, keys, topk=10, group='item', pool=None, repr=False, ef_search=-1, use_mmap=True):
