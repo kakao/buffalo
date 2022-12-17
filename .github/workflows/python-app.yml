@@ -64,7 +64,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
       - name: Set up QEMU
         if: runner.os == 'Linux'
         uses: docker/setup-qemu-action@v2
@@ -73,7 +72,10 @@ jobs:
       
       - name: setup 3rd party modules
         run: git submodule update --init --recursive
-        
+      
+      - name: upgrade cmake
+        run: pip3 install cmake --upgrade
+
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.11.3
         env:
