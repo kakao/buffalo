@@ -29,16 +29,20 @@ jobs:
 
     - name: Lint with isort
       run: |
-        poe isort
+        isort --profile black . -p=buffalo --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests --skip=.pyx --check-only
 
     - name: Lint with flake8 for .py
       run: |
-        poe flake8-py
+        flake8 ./ --filename='*.py' --ignore=E402,E501,E731,E741 --exclude=__init__.py,setup.py,3rd/,build/
 
     - name: Lint with flake8 for .pyx
       run: |
-        poe flake8-pyx
+        flake8 buffalo ./ --filename='*.pyx' --ignore=E225,E226,E227,E402,E501,E741,E901,E999 --exclude=__init__.py,3rd/,build/
 
     - name: Lint with cpplint
       run: |
-        poe cpplint
+        cpplint --linelength=140 --headers=hpp,h --extensions=cc,cpp \
+        --filter=-runtime/int,-build/include_subdir,-legal/copyright,-readability/namespace,-readability/todo,-build/namespaces,-whitespace/comments,-readability/casting,-runtime/references,-whitespace/braces,-whitespace/forcolon,-build/include_order,-build/c++11 \
+        --exclude=include/buffalo/cuda/als/als.hpp \
+        --exclude=include/buffalo/cuda/bpr/bpr.hpp \
+        --recursive ./lib ./include
