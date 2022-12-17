@@ -38,7 +38,7 @@ script = "build_extension.py"
 
   [tool.poe.tasks.isort]
   help = "Run isort on the code base"
-  cmd  = "isort --profile black . -p=buffalo --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests --skip=.pyx"
+  cmd  = "isort --profile black . -p=buffalo --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests --skip=.pyx --check-only"
 
   [tool.poe.tasks.black]
   help = "Run black on the code base"
