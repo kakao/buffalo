@@ -50,7 +50,7 @@ script = "build_extension.py"
 
   [tool.poe.tasks.flake8-pyx]
   help = "Run flake8 on the code base"
-  cmd = "flake8 buffalo ./ --ignore=E225,E226,E227,E402,E501,E741,E901,E999 --exclude=3rd/,build/,*.py"
+  cmd = "flake8 ./ --filename='*.pyx' --ignore=E225,E226,E227,E402,E501,E741,E901,E999 --exclude=__init__.py,3rd/,build/"
 
   [tool.poe.tasks.cpplint]
   help = "Run cpplint on the code base"
