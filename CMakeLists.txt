@@ -26,4 +26,3 @@ PRIVATE
     ./3rd/eigen3
 )
 set_target_properties(cbuffalo PROPERTIES VERSION 0.1.0)
-set_target_properties(cbuffalo PROPERTIES SOVERSION 1)
