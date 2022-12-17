@@ -47,48 +47,48 @@ jobs:
         --exclude=include/buffalo/cuda/bpr/bpr.hpp \
         --recursive ./lib ./include
  #brought from https://github.com/benfred/implicit/blob/main/.github/workflows/build.yml
-  # build-wheels:
-  #   needs: [static-lint]
-  #   runs-on: ${{ matrix.os }}
-  #   strategy:
-  #     matrix:
-  #       # TODO(ita9naiwa): Support macOS, WinOS
-  #       os: [ubuntu-latest]
-  #       python-version: [39, 310]
-  #       cibw-arch: [auto, aarch64]
-  #       exclude:
-  #         - os: macos-latest
-  #           cibw-arch: aarch64
-  #         - os: windows-latest
-  #           cibw-arch: aarch64
+  build-wheels:
+    needs: [static-lint]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # TODO(ita9naiwa): Support macOS, WinOS
+        os: [ubuntu-latest]
+        python-version: [39, 310]
+        cibw-arch: [auto, aarch64]
+        exclude:
+          - os: macos-latest
+            cibw-arch: aarch64
+          - os: windows-latest
+            cibw-arch: aarch64
 
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - name: Set up QEMU
-  #       if: runner.os == 'Linux'
-  #       uses: docker/setup-qemu-action@v2
-  #       with:
-  #         platforms: all
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up QEMU
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: all
       
-  #     - name: setup 3rd party modules
-  #       run: git submodule update --init --recursive
+      - name: setup 3rd party modules
+        run: git submodule update --init --recursive
       
-  #     - name: Build wheels
-  #       uses: pypa/cibuildwheel@v2.11.3
-  #       env:
-  #         CIBW_BEFORE_BUILD: pip install cmake --upgrade
-  #         CIBW_BUILD: cp${{matrix.python-version}}-*
-  #         CIBW_ARCHS_LINUX: ${{ matrix.cibw-arch }}
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.11.3
+        env:
+          CIBW_BEFORE_BUILD: pip install cmake --upgrade
+          CIBW_BUILD: cp${{matrix.python-version}}-*
+          CIBW_ARCHS_LINUX: ${{ matrix.cibw-arch }}
 
-  #     - name: Rename Wheels
-  #       run: |
-  #         python ci/rename_wheels.py
-  #       if: runner.os == 'Linux'
+      - name: Rename Wheels
+        run: |
+          python ci/rename_wheels.py
+        if: runner.os == 'Linux'
 
-  #     - name: Upload Binaries
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: wheels
-  #         path: wheelhouse
+      - name: Upload Binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: wheelhouse
     
         
