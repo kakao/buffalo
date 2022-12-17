@@ -73,12 +73,10 @@ jobs:
       - name: setup 3rd party modules
         run: git submodule update --init --recursive
       
-      - name: upgrade cmake
-        run: pip3 install cmake --upgrade
-
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.11.3
         env:
+          CIBW_BEFORE_BUILD: pip3 install cmake --upgrade
           CIBW_BUILD: cp${{matrix.python-version}}-*
           CIBW_ARCHS_LINUX: ${{ matrix.cibw-arch }}
 
