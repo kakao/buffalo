@@ -49,10 +49,3 @@ jobs:
     - name: Lint with cpplint
       run: |
         poe cpplint
-
-    #- name: install n2
-    #  run: pip install n2 
-    # Guess it must be on after all 
-    #- name: Test with pytest
-    #  run: |
-    #    cd tests; pytest ./ 
