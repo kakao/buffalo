@@ -35,23 +35,23 @@ jobs:
       
     - name: Lint with isort
       run: |
-      poe isort
+        poe isort
 
     - name: Lint with isort
       run: |
-      poe isort
+        poe isort
 
     - name: Lint with flake8 for .py
       run: |
-      poe flake8-py
+        poe flake8-py
 
     - name: Lint with flake8 for .pyx
       run: |
-      poe flake8-pyx
+        poe flake8-pyx
 
     - name: Lint with cpplint
       run: |
-      poe cpplint
+        poe cpplint
     
     # Guess it must be on after all 
     #- name: Test with pytest
