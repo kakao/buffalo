@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: Static Lint
+name: Build
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  static-lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -46,3 +46,45 @@ jobs:
         --exclude=include/buffalo/cuda/als/als.hpp \
         --exclude=include/buffalo/cuda/bpr/bpr.hpp \
         --recursive ./lib ./include
+ #brought from https://github.com/benfred/implicit/blob/main/.github/workflows/build.yml
+  build-wheels:
+    needs: [static-lint]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        python-version: [38, 39, 310, 311]
+        cibw-arch: [auto, aarch64]
+        exclude:
+          - os: macos-latest
+            cibw-arch: aarch64
+          - os: windows-latest
+            cibw-arch: aarch64
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        if: runner.os == 'Linux'
+        uses: docker/setup-qemu-action@v2
+        with:
+          platforms: all
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v2.11.3
+        env:
+          CIBW_BUILD: cp${{matrix.python-version}}-*
+          CIBW_ARCHS_LINUX: ${{ matrix.cibw-arch }}
+
+      - name: Rename Wheels
+        run: |
+          python ci/rename_wheels.py
+        if: runner.os == 'Linux'
+
+      - name: Upload Binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: wheelhouse
+    
+        
