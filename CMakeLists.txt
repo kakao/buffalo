@@ -21,7 +21,6 @@ PRIVATE
     ./include
     ./3rd/json11
     ./3rd/spdlog/include
-    ./3rd/n2/include
     ./3rd/eigen3
 )
 
@@ -37,34 +36,4 @@ install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/buffalo" # source directory
         PATTERN "*.hpp" # select header files
 )
 
-set(N2_DIR "./3rd/n2")
-file(GLOB_RECURSE N2_SRC CONFIGURE_DEPENDS ${N2_DIR}/src/*.cc)
-add_library(n2 SHARED ${N2_SRC})
-target_compile_options(n2 PRIVATE
-    ${OpenMP_CXX_FLAGS}
-    "-DBOOST_DISABLE_ASSERTS"
-)
-target_link_libraries(n2 PRIVATE pthread)
-target_include_directories(n2
-PRIVATE
-    ${N2_DIR}/include/
-    ${N2_DIR}/third_party/eigen/
-    ${N2_DIR}/third_party/spdlog/include/
-    ${N2_DIR}/third_party/boost/mpl/include/
-    ${N2_DIR}/third_party/boost/bind/include/
-    ${N2_DIR}/third_party/boost/core/include/
-    ${N2_DIR}/third_party/boost/heap/include/
-    ${N2_DIR}/third_party/boost/mp11/include/
-    ${N2_DIR}/third_party/boost/assert/include/
-    ${N2_DIR}/third_party/boost/config/include/
-    ${N2_DIR}/third_party/boost/detail/include/
-    ${N2_DIR}/third_party/boost/utility/include/
-    ${N2_DIR}/third_party/boost/iterator/include/
-    ${N2_DIR}/third_party/boost/parameter/include/
-    ${N2_DIR}/third_party/boost/type_traits/include/
-    ${N2_DIR}/third_party/boost/preprocessor/include/
-    ${N2_DIR}/third_party/boost/concept_check/include/
-    ${N2_DIR}/third_party/boost/static_assert/include/
-    ${N2_DIR}/third_party/boost/throw_exception/include/
-)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
