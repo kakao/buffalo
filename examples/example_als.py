@@ -107,8 +107,9 @@ def example2():
                 for q, p in zip(all_items[idx:idx + 128], topks):
                     fout.write('%s\t%s\n' % (q, '\t'.join(p)))
         print('took: %.3f secs' % (time.time() - start_t))
-    except:
-        print('n2 is not installed, skipped')
+    except ImportError:
+        print('n2 is not installed. skip it')
+
 
 if __name__ == '__main__':
     fire.Fire({'example1': example1,
