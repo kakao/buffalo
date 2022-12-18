@@ -8,7 +8,6 @@ from setuptools import Extension
 
 from cuda_extension import CUDA, build_ext
 
-
 MAJOR = 1
 MINOR = 2
 MICRO = 2
@@ -183,7 +182,7 @@ class BuildExtension(build_ext):
         os.chdir(self.build_temp)
         self.spawn(['cmake', str(cwd)] + cmake_args)
         if not self.dry_run:
-            self.spawn(['cmake', '--build', '.', "-j 4"] + build_args)
+            self.spawn(['cmake', '--build', '.', "-j 2"] + build_args)
         os.chdir(str(cwd))
 
 
