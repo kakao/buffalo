@@ -253,7 +253,7 @@ pair<double, double> CALS::_partial_update_ialspp(
     // build Y_ui
     vector<float> Yui(indptr[end_loop - 1]);
 
-    #pragma parallel for schedule(dynamic, 16)
+    #pragma omp parallel for schedule(dynamic, 16)
     for (int i=0; i < end_loop; ++i) {
         int x = start_x + i;
         const int u = x;
