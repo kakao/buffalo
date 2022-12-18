@@ -53,7 +53,8 @@ void CPLSI::initialize_model(float* init_P, int P_rows,
 
     #pragma omp parallel for
     for (int u = 0; u < P_rows; ++u) {
-        _mm_prefetch((char*)P_.row(u).data(), _MM_HINT_T0);
+        // TOO domain specific
+        // _mm_prefetch((char*)P_.row(u).data(), _MM_HINT_T0);
         for (int d = 0; d < d_; ++d)
             P_(u, d) = fabs(dist(RNG));
         P_.row(u) /= P_.row(u).sum();
@@ -61,7 +62,8 @@ void CPLSI::initialize_model(float* init_P, int P_rows,
 
     #pragma omp parallel for
     for (int k = 0; k < d_; ++k) {
-        _mm_prefetch((char*)Q_.col(k).data(), _MM_HINT_T0);
+        // TOO domain specific
+        // _mm_prefetch((char*)Q_.col(k).data(), _MM_HINT_T0);
         for (int i = 0; i < Q_rows; ++i)
             Q_(i, k) = fabs(dist(RNG));
         Q_.col(k) /= Q_.col(k).sum();

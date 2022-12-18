@@ -27,3 +27,11 @@ PRIVATE
 )
 set_target_properties(cbuffalo PROPERTIES VERSION 0.1.0)
 set_target_properties(cbuffalo PROPERTIES SOVERSION 1)
+
+install(TARGETS cbuffalo LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+install(DIRECTORY "${CMAKE_SOURCE_DIR}/include/buffalo" # source directory
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}" # target directory
+        FILES_MATCHING # install only matched files
+        PATTERN "*.hpp" # select header files
+)

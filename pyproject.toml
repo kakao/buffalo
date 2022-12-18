@@ -15,7 +15,6 @@ fire = "^0.4.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.2.0"
-n2 = "^0.1.7"
 poethepoet = "^0.16.5"
 isort = "^5.10.1"
 black = "^22.12.0"
@@ -28,7 +27,6 @@ Buffalo = "buffalo.cli:_cli_buffalo"
 
 [tool.poetry.build]
 script = "build_extension.py"
-
 
 
 [tool.poe.tasks]
@@ -66,5 +64,5 @@ script = "build_extension.py"
 
 
 [build-system]
-requires = ["poetry-core", "setuptools", "wheel", "numpy>=1.21.6", "Cython>=0.29.32", "cmake>=3.17.0"]
+requires = ["poetry-core>=1.2.0", "setuptools", "wheel", "numpy>=1.21.6", "Cython>=0.29.32", "cmake>=3.17.0"]
 build-backend = "poetry.core.masonry.api"
