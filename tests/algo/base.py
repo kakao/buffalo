@@ -4,7 +4,6 @@ import time
 import unittest
 
 import numpy as np
-from hyperopt import STATUS_OK
 
 from buffalo.misc import aux, log
 from buffalo.algo.base import Algo
@@ -16,7 +15,7 @@ from buffalo.algo.base import TensorboardExtension
 from buffalo.algo.warp import WARP
 
 
-class MockAlgo(Algo, Optimizable, TensorboardExtension):
+class MockAlgo(Algo):
     def __init__(self, *args, **kwargs):
         Algo.__init__(self, *args, **kwargs)
         Optimizable.__init__(self, *args, **kwargs)
@@ -29,17 +28,6 @@ class MockAlgo(Algo, Optimizable, TensorboardExtension):
         option.model_path = 'hello.world.bin'
         self.opt = option
         self._optimize_loss = {'loss': 987654321.0}
-
-    def _optimize(self, params):
-        self._optimize_params = params
-        loss = 1.0 - params['adaptive_reg'] / 1.0
-        loss += 1.0 / params['d']
-        loss += 1.0 / params['alpha']
-        loss += 1.0 / params['reg_i']
-        loss += 1.0 / params['reg_u']
-        self.validation_result = {'loss': loss}
-        return {'loss': loss,
-                'status': STATUS_OK}
 
     def save(self, path):
         return path

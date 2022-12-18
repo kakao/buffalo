@@ -13,7 +13,7 @@ https://github.com/jaraco/configparser/
 Copyright Jason R. Coombs
 
 
-MIT License 
+MIT License
 
 
  **CUDA Toolkit**
@@ -31,7 +31,7 @@ Copyright 2015 Preferred Infrastructure, Inc.
 Copyright 2015 Preferred Networks, Inc.
 
 
-MIT License 
+MIT License
 
 
  **Cython**
@@ -41,7 +41,7 @@ https://github.com/cython/cython
 Copyright 2019 Stefan Behnel, Robert Bradshaw, Dag Sverre Seljebotn, Greg Ewing, William Stein, Gabriel Gellner, et al.
 
 
-Apache License 2.0 
+Apache License 2.0
 
 
  **Google Python Fire**
@@ -51,7 +51,7 @@ https://github.com/google/python-fire
 Copyright 2017 Google Inc.
 
 
-Apache License 2.0 
+Apache License 2.0
 
 
  **HDF5 for Python**
@@ -61,17 +61,7 @@ https://github.com/h5py/h5py
 Copyright 2008-2013 Andrew Collette and contributors
 
 
-BSD 3-Clause "New" or "Revised" License 
-
-
- **Hyperopt**
-
-https://github.com/hyperopt/hyperopt
-
-Copyright 2013, James Bergstra
-
-
-BSD 3-Clause "New" or "Revised" License 
+BSD 3-Clause "New" or "Revised" License
 
 
  **json11**
@@ -81,7 +71,7 @@ https://github.com/dropbox/json11
 Copyright 2013 Dropbox, Inc.
 
 
-MIT License 
+MIT License
 
 
  **Kakao N2**
@@ -91,7 +81,7 @@ https://github.com/kakao/n2
 Copyright 2017 Kakao Corp. http://www.kakaocorp.com
 
 
-Apache License 2.0 
+Apache License 2.0
 
 
  **npcuda-example**
@@ -101,7 +91,7 @@ https://github.com/rmcgibbo/npcuda-example
 Copyright 2014, Robert T. McGibbon and the Authors
 
 
-BSD 2-Clause "Simplified" License 
+BSD 2-Clause "Simplified" License
 
 
  **NumPy**
@@ -111,7 +101,7 @@ https://github.com/numpy/numpy
 Copyright 2005-2018, NumPy Developers.
 
 
-BSD 3-Clause "New" or "Revised" License 
+BSD 3-Clause "New" or "Revised" License
 
 
  **psutil**
@@ -121,7 +111,7 @@ https://github.com/giampaolo/psutil
 Copyright 2009, Jay Loden, Dave Daeschler, Giampaolo Rodola'
 
 
-BSD 3-Clause "New" or "Revised" License 
+BSD 3-Clause "New" or "Revised" License
 
 
  **setuptools**
@@ -131,7 +121,7 @@ https://github.com/pypa/setuptools
 Copyright 2016 Jason R Coombs <jaraco@jaraco.com>
 
 
-MIT License 
+MIT License
 
 
  **spdlog**
@@ -141,7 +131,7 @@ https://github.com/gabime/spdlog
 Copyright 2016 Gabi Melman
 
 
-MIT License 
+MIT License
 
 
  **Sphinx**
@@ -151,7 +141,7 @@ https://github.com/sphinx-doc/sphinx
 Copyright 2007-2019 by the Sphinx team (see AUTHORS file).
 
 
-BSD 2-Clause "Simplified" License 
+BSD 2-Clause "Simplified" License
 
 
  **Tensorboard**
@@ -173,8 +163,8 @@ Copyright 2016 \[PR \#96\] on behalf of Google Inc.
 Copyright 2013 Noam Yorav-Raphael, original author.
 
 
-Mozilla Public License 2.0 
-MIT License 
+Mozilla Public License 2.0
+MIT License
 
 
 # Apache License 2.0 #

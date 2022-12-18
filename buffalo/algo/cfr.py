@@ -2,11 +2,10 @@ import json
 import time
 
 import numpy as np
-from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
 from buffalo.algo._cfr import CyCFR
-from buffalo.algo.base import Algo, Serializable, TensorboardExtension
+from buffalo.algo.base import Algo, Serializable
 from buffalo.algo.optimize import Optimizable
 from buffalo.algo.options import CFROption
 from buffalo.data.base import Data
@@ -16,7 +15,7 @@ from buffalo.misc import aux, log
 from buffalo.misc.log import ProgressBar
 
 
-class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExtension):
+class CFR(Algo, CFROption, Evaluable, Serializable):
     """Python implementation for CoFactor.
 
     Reference: Factorization Meets the Item Embedding:
@@ -222,27 +221,6 @@ class CFR(Algo, CFROption, Evaluable, Serializable, Optimizable, TensorboardExte
                     for k, v in self.validation_result.items()})
         self.finalize_tensorboard()
         return ret
-
-    def _optimize(self, params):
-        self._optimize_params = params
-        for name, value in params.items():
-            assert name in self.opt, 'Unexepcted parameter: {}'.format(name)
-            if isinstance(value, np.generic):
-                setattr(self.opt, name, value.item())
-            else:
-                setattr(self.opt, name, value)
-        with open(self._temporary_opt_file, 'w') as fout:
-            json.dump(self.opt, fout, indent=2)
-        assert self.obj.init(bytes(self._temporary_opt_file, 'utf-8')),\
-            'cannot parse option file: %s' % self._temporary_opt_file
-        self.logger.info(params)
-        self.initialize()
-        loss = self.train()
-        loss['loss'] = loss.get(self.opt.optimize.loss)
-        # TODO: deal with failure of training
-        loss['status'] = HOPT_STATUS_OK
-        self._optimize_loss = loss
-        return loss
 
     def _get_feature(self, index, group='item'):
         if group == 'item':

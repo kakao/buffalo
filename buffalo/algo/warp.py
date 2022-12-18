@@ -2,11 +2,10 @@ import json
 import time
 
 import numpy as np
-from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
 from buffalo.algo._warp import CyWARP
-from buffalo.algo.base import Algo, Serializable, TensorboardExtension
+from buffalo.algo.base import Algo, Serializable
 from buffalo.algo.optimize import Optimizable
 from buffalo.algo.options import WARPOption
 from buffalo.data.base import Data
@@ -15,7 +14,7 @@ from buffalo.evaluate import Evaluable
 from buffalo.misc import aux, log
 
 
-class WARP(Algo, WARPOption, Evaluable, Serializable, Optimizable, TensorboardExtension):
+class WARP(Algo, WARPOption, Evaluable, Serializable):
     """Python implementation for C-WARP.
     """
     def __init__(self, opt_path=None, *args, **kwargs):
@@ -268,28 +267,6 @@ class WARP(Algo, WARPOption, Evaluable, Serializable, Optimizable, TensorboardEx
         ret.update({'val_%s' % k: v for k, v in self.validation_result.items()})
         self.finalize_tensorboard()
         return ret
-
-    def _optimize(self, params):
-        # TODO: implement
-        self._optimize_params = params
-        for name, value in params.items():
-            assert name in self.opt, 'Unexepcted parameter: {}'.format(name)
-            if isinstance(value, np.generic):
-                setattr(self.opt, name, value.item())
-            else:
-                setattr(self.opt, name, value)
-        with open(self._temporary_opt_file, 'w') as fout:
-            json.dump(self.opt, fout, indent=2)
-        assert self.obj.init(bytes(self._temporary_opt_file, 'utf-8')),\
-            'cannot parse option file: %s' % self._temporary_opt_file
-        self.logger.info(params)
-        self.init_factors()
-        loss = self.train()
-        loss['loss'] = loss.get(self.opt.optimize.loss)
-        # TODO: deal with failure of training
-        loss['status'] = HOPT_STATUS_OK
-        self._optimize_loss = loss
-        return loss
 
     def _get_data(self):
         data = super()._get_data()

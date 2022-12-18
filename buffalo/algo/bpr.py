@@ -4,11 +4,10 @@ import json
 import time
 
 import numpy as np
-from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
 from buffalo.algo._bpr import CyBPRMF
-from buffalo.algo.base import Algo, Serializable, TensorboardExtension
+from buffalo.algo.base import Algo, Serializable
 from buffalo.algo.optimize import Optimizable
 from buffalo.algo.options import BPRMFOption
 from buffalo.data.base import Data
@@ -24,7 +23,7 @@ except ImportError:
     inited_CUBPR = False
 
 
-class BPRMF(Algo, BPRMFOption, Evaluable, Serializable, Optimizable, TensorboardExtension):
+class BPRMF(Algo, BPRMFOption, Evaluable, Serializable):
     """Python implementation for C-BPRMF.
     """
     def __init__(self, opt_path=None, *args, **kwargs):

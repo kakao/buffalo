@@ -178,12 +178,15 @@ class BuildExtension(build_ext):
                 '-DCMAKE_C_COMPILER=gcc-11',
                 '-DCMAKE_CXX_COMPILER=g++-11',
             ]
+            os.environ['CC'] = 'gcc-11'
+            os.environ['CXX'] = 'gcc-11'
+
         build_args = []
 
         os.chdir(self.build_temp)
         self.spawn(['cmake', str(cwd)] + cmake_args)
         if not self.dry_run:
-            self.spawn(['cmake', '--build', '.', "-j 4"] + build_args)
+            self.spawn(['cmake', '--build', '.', "-j 8"] + build_args)
         os.chdir(str(cwd))
 
 
