@@ -29,10 +29,8 @@ jobs:
 
     - name: Lint with isort
       run: |
-        isort --profile black . -p=buffalo \
-        --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests \
-        --skip=.pyx --skip=build_extension.py --skip=cuda_extension.py \
-        --skip=setup.py --check-only
+        isort --profile black . -p=buffalo --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests \
+        --skip=.pyx --skip=setup.py --check-only
 
     - name: Lint with flake8 for .py
       run: |
@@ -49,7 +47,7 @@ jobs:
         --exclude=include/buffalo/cuda/als/als.hpp \
         --exclude=include/buffalo/cuda/bpr/bpr.hpp \
         --recursive ./lib ./include
-        
+
   build-wheels:
     needs: [static-lint]
     runs-on: ${{ matrix.os }}

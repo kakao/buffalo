@@ -91,6 +91,7 @@ def example2():
 
     try:
         from n2 import HnswIndex
+        
         index = HnswIndex(als.Q.shape[1])
         for f in als.Q:
             index.add_data(f)

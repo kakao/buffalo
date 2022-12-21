@@ -31,7 +31,6 @@ Buffalo = "buffalo.cli:_cli_buffalo"
 [tool.poetry.build]
 script = "build_extension.py"
 
-
 [tool.poe.tasks]
   [tool.poe.tasks.codespell]
   help = "Run codespell on the code base"
@@ -39,7 +38,7 @@ script = "build_extension.py"
 
   [tool.poe.tasks.isort]
   help = "Run isort on the code base"
-  cmd  = "isort --profile black . -p=buffalo --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests --skip=.pyx --check-only"
+  cmd  = "isort --profile black . -p=buffalo --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests/ --skip=.pyx --skip=setup.py --check-only"
 
   [tool.poe.tasks.black]
   help = "Run black on the code base"
@@ -64,7 +63,6 @@ script = "build_extension.py"
   [tool.poe.tasks.lint]
   help = "Run linting tools on the code base"
   sequence  = ["isort", "flake8-py", "flake8-pyx", "cpplint"]
-
 
 [build-system]
 requires = ["poetry-core>=1.2.0", "setuptools", "wheel", "numpy>=1.21.6", "Cython>=0.29.32", "cmake>=3.17.0"]
