@@ -74,8 +74,8 @@ jobs:
       - name: installation
         run: |
           git submodule update --init --recursive --remote
-          pip install cmake git-lfs
-          pip3 install .
-          cd tests
+          pip install cmake git-lfs pytest
+          pip install .
           git-lfs install
           git lfs pull origin master
+          cd tests; pytest ./
