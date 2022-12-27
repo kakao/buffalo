@@ -74,5 +74,8 @@ jobs:
       - name: installation
         run: |
           git submodule update --init --recursive --remote
-          pip install cmake
-          poetry build
+          pip install cmake git-lfs
+          pip3 install .
+          cd tests
+          git-lfs install
+          git lfs pull origin master
