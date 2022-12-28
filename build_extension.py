@@ -8,8 +8,6 @@ from setuptools import Extension
 
 from cuda_extension import CUDA, build_ext
 
-assert platform.system() == 'Linux'  # TODO: MacOS
-
 MAJOR = 1
 MINOR = 2
 MICRO = 2
@@ -24,7 +22,7 @@ STATUS = {
 CLASSIFIERS = """{status}
 Programming Language :: C++
 Programming Language :: Cython
-Programming Language :: Python :: 3.6
+Programming Language :: Python
 Operating System :: POSIX :: Linux
 Operating System :: Unix
 Operating System :: MacOS
@@ -33,7 +31,10 @@ License :: OSI Approved :: Apache Software License""".format(status=STATUS.get(R
 CLIB_DIR = os.path.join(sysconfig.get_path('purelib'), 'buffalo')
 numpy_include_dirs = np.get_include()
 LIBRARY_DIRS = [CLIB_DIR]
-EXTRA_INCLUDE_DIRS = [numpy_include_dirs, '3rd/json11', '3rd/spdlog/include', '3rd/eigen3']
+EXTRA_INCLUDE_DIRS = [numpy_include_dirs,
+                      '3rd/json11',
+                      '3rd/spdlog/include',
+                      '3rd/eigen3']
 
 
 def get_extend_compile_flags():
@@ -171,12 +172,17 @@ class BuildExtension(build_ext):
             '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + CLIB_DIR,
         ]
 
+        if platform.system() == 'Darwin':
+            print("to build for MacOS, gcc-11 version must be installed and set(for m1 support)")
+            os.environ["CC"] = 'gcc-11'
+            os.environ["CXX"] = 'g++-11'
+            cmake_args += ['-DCMAKE_C_COMPILER=gcc-11', '-DCMAKE_CXX_COMPILER=g++-11']
         build_args = []
 
         os.chdir(self.build_temp)
         self.spawn(['cmake', str(cwd)] + cmake_args)
         if not self.dry_run:
-            self.spawn(['cmake', '--build', '.'] + build_args)
+            self.spawn(['cmake', '--build', '.', '-j 4'] + build_args)
         os.chdir(str(cwd))
 
 

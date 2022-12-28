@@ -89,23 +89,27 @@ def example2():
                 fout.write('%s\t%s\n' % (q, '\t'.join(p)))
     print('took: %.3f secs' % (time.time() - start_t))
 
-    from n2 import HnswIndex
-    index = HnswIndex(als.Q.shape[1])
-    for f in als.Q:
-        index.add_data(f)
-    index.build(n_threads=4)
-    index.save('ml20m.n2.index')
-    index.unload()
-    print('Make item recommendation on als.ml20m.par.top10.tsv with Ann(Thread=1)')
-    par.set_hnsw_index('ml20m.n2.index', 'item')
-    par.num_workers = 4
-    start_t = time.time()
-    with open('als.ml20m.ann.top10.tsv', 'w') as fout:
-        for idx in range(0, len(all_items), 128):
-            topks, _ = par.most_similar(all_items[idx:idx + 128], repr=True)
-            for q, p in zip(all_items[idx:idx + 128], topks):
-                fout.write('%s\t%s\n' % (q, '\t'.join(p)))
-    print('took: %.3f secs' % (time.time() - start_t))
+    try:
+        from n2 import HnswIndex
+
+        index = HnswIndex(als.Q.shape[1])
+        for f in als.Q:
+            index.add_data(f)
+        index.build(n_threads=4)
+        index.save('ml20m.n2.index')
+        index.unload()
+        print('Make item recommendation on als.ml20m.par.top10.tsv with Ann(Thread=1)')
+        par.set_hnsw_index('ml20m.n2.index', 'item')
+        par.num_workers = 4
+        start_t = time.time()
+        with open('als.ml20m.ann.top10.tsv', 'w') as fout:
+            for idx in range(0, len(all_items), 128):
+                topks, _ = par.most_similar(all_items[idx:idx + 128], repr=True)
+                for q, p in zip(all_items[idx:idx + 128], topks):
+                    fout.write('%s\t%s\n' % (q, '\t'.join(p)))
+        print('took: %.3f secs' % (time.time() - start_t))
+    except ImportError:
+        print('n2 is not installed. skip it')
 
 
 if __name__ == '__main__':

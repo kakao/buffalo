@@ -11,7 +11,6 @@ recursive-include include/ *.cuh
 recursive-include lib/ *.cc
 recursive-include lib/ *.cu
 
-recursive-include 3rd/n2/ *
 recursive-include 3rd/json11/ *
 recursive-include 3rd/spdlog/ *
 recursive-include 3rd/eigen3/ *
