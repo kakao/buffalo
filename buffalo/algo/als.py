@@ -2,12 +2,10 @@ import json
 import time
 
 import numpy as np
-from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
 from buffalo.algo._als import CyALS
 from buffalo.algo.base import Algo, Serializable, TensorboardExtension
-from buffalo.algo.optimize import Optimizable
 from buffalo.algo.options import ALSOption
 from buffalo.data.base import Data
 from buffalo.data.buffered_data import BufferedDataMatrix
@@ -21,7 +19,7 @@ except Exception:
     inited_CUALS = False
 
 
-class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExtension):
+class ALS(Algo, ALSOption, Evaluable, Serializable, TensorboardExtension):
     """Python implementation for C-ALS.
 
     Implementation of Collaborative Filtering for Implicit Feedback datasets.
@@ -32,7 +30,6 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
         ALSOption.__init__(self, *args, **kwargs)
         Evaluable.__init__(self, *args, **kwargs)
         Serializable.__init__(self, *args, **kwargs)
-        Optimizable.__init__(self, *args, **kwargs)
         if opt_path is None:
             opt_path = ALSOption().get_default_option()
 
@@ -198,29 +195,6 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, Optimizable, TensorboardExte
                     for k, v in self.validation_result.items()})
         self.finalize_tensorboard()
         return ret
-
-    def _optimize(self, params):
-        self._optimize_params = params
-        for name, value in params.items():
-            assert name in self.opt, 'Unexepcted parameter: {}'.format(name)
-            if isinstance(value, np.generic):
-                setattr(self.opt, name, value.item())
-            else:
-                setattr(self.opt, name, value)
-        with open(self._temporary_opt_file, 'w') as fout:
-            json.dump(self.opt, fout, indent=2)
-        assert self.obj.init(bytes(self._temporary_opt_file, 'utf-8')),\
-            'cannot parse option file: %s' % self._temporary_opt_file
-        self.logger.info(params)
-        self.initialize()
-        loss = self.train()
-        loss['loss'] = loss.get(self.opt.optimize.loss)
-        if any([metric in self.opt.optimize.loss for metric in ['ndcg', 'map', 'accracy']]):
-            loss['loss'] *= -1
-        # TODO: deal with failure of training
-        loss['status'] = HOPT_STATUS_OK
-        self._optimize_loss = loss
-        return loss
 
     def _get_feature(self, index, group='item'):
         if group == 'item':

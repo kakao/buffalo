@@ -13,7 +13,6 @@ h5py = "^3.7.0"
 psutil = "^5.9.4"
 fire = "^0.4.0"
 tensorboard = "^2.11.0"
-hyperopt = "^0.2.7"
 absl-py = "^1.3.0"
 
 [tool.poetry.group.dev.dependencies]
@@ -46,11 +45,11 @@ script = "build_extension.py"
 
   [tool.poe.tasks.flake8-py]
   help = "Run flake8 on the code base"
-  cmd = "flake8 ./ --filename='*.py' --ignore=E402,E501,E731,E741 --exclude=__init__.py,setup.py,3rd/,build/"
+  cmd = "flake8 ./ --filename=*.py --ignore=E402,E501,E731,E741 --exclude=__init__.py,setup.py,3rd/,build/"
 
   [tool.poe.tasks.flake8-pyx]
   help = "Run flake8 on the code base"
-  cmd = "flake8 ./ --filename='*.pyx' --ignore=E225,E226,E227,E402,E501,E741,E901,E999 --exclude=__init__.py,3rd/,build/"
+  cmd = "flake8 ./ --filename=*.pyx --ignore=E225,E731,E226,E227,E402,E501,E741,E901,E999 --exclude=__init__.py,3rd/,build/"
 
   [tool.poe.tasks.cpplint]
   help = "Run cpplint on the code base"

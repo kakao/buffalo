@@ -64,16 +64,6 @@ Copyright 2008-2013 Andrew Collette and contributors
 BSD 3-Clause "New" or "Revised" License
 
 
- **Hyperopt**
-
-https://github.com/hyperopt/hyperopt
-
-Copyright 2013, James Bergstra
-
-
-BSD 3-Clause "New" or "Revised" License
-
-
  **json11**
 
 https://github.com/dropbox/json11

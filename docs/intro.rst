@@ -97,22 +97,6 @@ For Matrix Market format, please refer to https://math.nist.gov/MatrixMarket/for
 uid and iid are the data needed to provide human readable results only, not required.
 
 
-Hyper parameter Optimization
----------------------------
-The Algo classes inherited Optimizable class, a helper class for hyper parameter optimization. It inherits all features from hyperopt(http://hyperopt.github.io/hyperopt/), a well-known library.
-
-The options for optimization should be stored in optimize field in Algo option. The following is a list of possible options. You can find the practical example from the unittests.
-
-- loss(str): Target loss to optimize.
-- max_trials(int, option): Maximum experiments for optimization. If not given, run forever.
-- min_trials(int, option): Minimum experiments before deploying model. (Since the best parameter may not be found after min_trials, the first best parameter is always deployed)
-- deployment(bool): Set True to train model with the best parameter. During the optimization, it dumps the model which beats the previous best loss.
-- start_with_default_parameters(bool): If set to True, the loss value of the default parameter is used as the starting loss to beat.
-- space(dict): Parameter space definition. For more information, please reference hyperopt documentation.
-
-  - Note) Since hyperopt's randint does not support lower value, we changed the implementation. Please check optimize.py.
-
-
 Logging
 -------
 It is recommend to use the log library of buffalo for consistent log format.
