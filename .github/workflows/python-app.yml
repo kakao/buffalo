@@ -74,6 +74,7 @@ jobs:
       - name: installation
         run: |
           git submodule update --init --recursive --remote
+          pip install --upgrade pip setuptools wheel
           pip install cmake git-lfs pytest
           pip install .
           git-lfs install
