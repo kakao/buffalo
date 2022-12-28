@@ -48,7 +48,7 @@ jobs:
         --exclude=include/buffalo/cuda/bpr/bpr.hpp \
         --recursive ./lib ./include
 
-  build-wheels:
+  build-and-test:
     needs: [static-lint]
     runs-on: ${{ matrix.os }}
     strategy:
