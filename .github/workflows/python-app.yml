@@ -48,13 +48,13 @@ jobs:
         --exclude=include/buffalo/cuda/bpr/bpr.hpp \
         --recursive ./lib ./include
 
-  build-wheels:
+  build-and-test:
     needs: [static-lint]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         # TODO(ita9naiwa): Support macOS, WinOS
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest]
         python-version: ["3.9", "3.10"]
         cibw-arch: [auto]
         exclude:

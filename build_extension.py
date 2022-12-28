@@ -182,7 +182,8 @@ class BuildExtension(build_ext):
         os.chdir(self.build_temp)
         self.spawn(['cmake', str(cwd)] + cmake_args)
         if not self.dry_run:
-            self.spawn(['cmake', '--build', '.', '-j 4'] + build_args)
+            cpu_count = os.cpu_count()
+            self.spawn(['cmake', '--build', '.', '-j %d' % cpu_count] + build_args)
         os.chdir(str(cwd))
 
 
