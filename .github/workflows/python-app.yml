@@ -55,7 +55,7 @@ jobs:
       matrix:
         # TODO(ita9naiwa): Support macOS, WinOS
         os: [ubuntu-latest]
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.9", "3.10"]
         cibw-arch: [auto]
         exclude:
           - os: macos-latest
