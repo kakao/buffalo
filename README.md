@@ -9,8 +9,8 @@ Buffalo is a fast and scalable production-ready open source project for recommen
 For more information see the [documentation](https://buffalo-recsys.readthedocs.io)
 
 ## Requirements
-- Python 3.6+
-- cmake 2.8.8+
+- Python 3.8+
+- cmake 3.17+
 - gcc/g++ (with std=c++14)
 
 
