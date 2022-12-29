@@ -152,6 +152,7 @@ if CUDA:
 else:
     print("Failed to find CUDA toolkit. Building without GPU acceleration.")
 
+
 def build(kwargs):
     cmdclass = {'build_ext': build_ext}
     kwargs.update(
