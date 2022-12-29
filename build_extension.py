@@ -4,7 +4,7 @@ import sysconfig
 
 import numpy as np
 from Cython.Build import cythonize
-from setuptools import Extension
+from setuptools import Extension, find_packages
 
 from cuda_extension import CUDA, build_ext
 
@@ -99,7 +99,7 @@ extensions = [
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.misc._log",
-              sources=["lib/misc/log.cc"] + common_srcs,
+              sources=["buffalo/misc/_log.pyx", "lib/misc/log.cc"] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp'],
@@ -153,10 +153,9 @@ else:
 
 class BuildExtension(build_ext):
     def run(self):
-        # for ext in self.extensions:
-        #     cythonize(ext)
-            # if hasattr(ext, 'extension_type') and ext.extension_type == 'cmake':
-                # self.cmake(ext)
+        for ext in self.extensions:
+            if hasattr(ext, 'extension_type') and ext.extension_type == 'cmake':
+                self.cmake(ext)
         super(BuildExtension, self).run()
 
     def cmake(self, ext):
@@ -185,11 +184,9 @@ class BuildExtension(build_ext):
 
 
 def build(kwargs):
-    cmdclass = {
-        'build_ext': BuildExtension
-    }
+    cmdclass = {'build_ext': build_ext}
     kwargs.update(
-        dict(
+        dict(packages=find_packages(),
             cmdclass=cmdclass,
             ext_modules=cythonize(extensions),
             platforms=['Linux'],
