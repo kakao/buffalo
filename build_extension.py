@@ -35,7 +35,7 @@ EXTRA_INCLUDE_DIRS = [numpy_include_dirs,
                       '3rd/json11',
                       '3rd/spdlog/include',
                       '3rd/eigen3']
-common_srcs = ['lib/algo.cc', "./3rd/json11/json11.cpp"]
+common_srcs = ["lib/misc/log.cc", 'lib/algo.cc', "./3rd/json11/json11.cpp"]
 
 if platform.system() == 'Darwin':
     print("to build for MacOS, gcc-11 version must be installed and set(for m1 support)")
@@ -101,7 +101,7 @@ extensions = [
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.misc._log",
-              sources=["buffalo/misc/_log.pyx", "lib/misc/log.cc"] + common_srcs,
+              sources=["buffalo/misc/_log.pyx"] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp'],
