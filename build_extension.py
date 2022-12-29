@@ -152,39 +152,6 @@ if CUDA:
 else:
     print("Failed to find CUDA toolkit. Building without GPU acceleration.")
 
-
-class BuildExtension(build_ext):
-    def run(self):
-        for ext in self.extensions:
-            if hasattr(ext, 'extension_type') and ext.extension_type == 'cmake':
-                self.cmake(ext)
-        super(BuildExtension, self).run()
-
-    def cmake(self, ext):
-        cwd = os.path.abspath(os.getcwd())
-        os.makedirs(self.build_temp, exist_ok=True)
-
-        build_type = 'Debug' if self.debug else 'Release'
-
-        cmake_args = [
-            '-DCMAKE_BUILD_TYPE=' + build_type,
-            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + CLIB_DIR,
-        ]
-
-        if platform.system() == 'Darwin':
-            print("to build for MacOS, gcc-11 version must be installed and set(for m1 support)")
-            os.environ["CC"] = 'gcc-11'
-            os.environ["CXX"] = 'g++-11'
-            cmake_args += ['-DCMAKE_C_COMPILER=gcc-11', '-DCMAKE_CXX_COMPILER=g++-11']
-        build_args = []
-
-        os.chdir(self.build_temp)
-        self.spawn(['cmake', str(cwd)] + cmake_args)
-        if not self.dry_run:
-            self.spawn(['cmake', '--build', '.', '-j 4'] + build_args)
-        os.chdir(str(cwd))
-
-
 def build(kwargs):
     cmdclass = {'build_ext': build_ext}
     kwargs.update(
