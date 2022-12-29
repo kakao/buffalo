@@ -42,9 +42,11 @@ if platform.system() == 'Darwin':
     os.environ["CC"] = 'gcc-11'
     os.environ["CXX"] = 'g++-11'
 
+
 def get_extend_compile_flags():
     flags = ['-march=native']
     return flags
+
 
 extend_compile_flags = get_extend_compile_flags()
 
@@ -187,9 +189,8 @@ def build(kwargs):
     cmdclass = {'build_ext': build_ext}
     kwargs.update(
         dict(packages=find_packages(),
-            cmdclass=cmdclass,
-            ext_modules=cythonize(extensions),
-            platforms=['Linux'],
-            zip_safe=False,
-        )
+             cmdclass=cmdclass,
+             ext_modules=cythonize(extensions),
+             platforms=['Linux'],
+             zip_safe=False)
     )
