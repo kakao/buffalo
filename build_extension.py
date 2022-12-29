@@ -153,9 +153,10 @@ else:
 
 class BuildExtension(build_ext):
     def run(self):
-        for ext in self.extensions:
-            if hasattr(ext, 'extension_type') and ext.extension_type == 'cmake':
-                self.cmake(ext)
+        # for ext in self.extensions:
+        #     cythonize(ext)
+            # if hasattr(ext, 'extension_type') and ext.extension_type == 'cmake':
+                # self.cmake(ext)
         super(BuildExtension, self).run()
 
     def cmake(self, ext):
