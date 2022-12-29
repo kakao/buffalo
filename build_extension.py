@@ -35,77 +35,74 @@ EXTRA_INCLUDE_DIRS = [numpy_include_dirs,
                       '3rd/json11',
                       '3rd/spdlog/include',
                       '3rd/eigen3']
+common_srcs = ['lib/algo.cc', "./3rd/json11/json11.cpp"]
 
+if platform.system() == 'Darwin':
+    print("to build for MacOS, gcc-11 version must be installed and set(for m1 support)")
+    os.environ["CC"] = 'gcc-11'
+    os.environ["CXX"] = 'g++-11'
 
 def get_extend_compile_flags():
     flags = ['-march=native']
     return flags
 
-
-class CMakeExtension(Extension, object):
-    extension_type = 'cmake'
-
-    def __init__(self, name, **kwargs):
-        super(CMakeExtension, self).__init__(name, sources=[])
-
-
 extend_compile_flags = get_extend_compile_flags()
 
+
 extensions = [
-    CMakeExtension(name="cbuffalo"),
     Extension(name="buffalo.algo._als",
-              sources=['buffalo/algo/_als.pyx'],
+              sources=['buffalo/algo/_als.pyx', 'lib/algo_impl/als/als.cc'] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
-              libraries=['gomp', 'cbuffalo'],
+              libraries=['gomp'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._cfr",
-              sources=['buffalo/algo/_cfr.pyx'],
+              sources=['buffalo/algo/_cfr.pyx', 'lib/algo_impl/cfr/cfr.cc'] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
-              libraries=['gomp', 'cbuffalo'],
+              libraries=['gomp'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._bpr",
-              sources=['buffalo/algo/_bpr.pyx'],
+              sources=['buffalo/algo/_bpr.pyx', 'lib/algo_impl/bpr/bpr.cc'] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
-              libraries=['gomp', 'cbuffalo'],
+              libraries=['gomp'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._plsi",
-              sources=['buffalo/algo/_plsi.pyx'],
+              sources=['buffalo/algo/_plsi.pyx', 'lib/algo_impl/plsi/plsi.cc'] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
-              libraries=['gomp', 'cbuffalo'],
+              libraries=['gomp'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._warp",
-              sources=['buffalo/algo/_warp.pyx'],
+              sources=['buffalo/algo/_warp.pyx', 'lib/algo_impl/warp/warp.cc'] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
-              libraries=['gomp', 'cbuffalo'],
+              libraries=['gomp'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.algo._w2v",
-              sources=['buffalo/algo/_w2v.pyx'],
+              sources=['buffalo/algo/_w2v.pyx', 'lib/algo_impl/w2v/w2v.cc'] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
-              libraries=['gomp', 'cbuffalo'],
+              libraries=['gomp'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
     Extension(name="buffalo.misc._log",
-              sources=['buffalo/misc/_log.pyx'],
+              sources=["lib/misc/log.cc"] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
-              libraries=['gomp', 'cbuffalo'],
+              libraries=['gomp'],
               library_dirs=LIBRARY_DIRS,
               runtime_library_dirs=LIBRARY_DIRS,
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
