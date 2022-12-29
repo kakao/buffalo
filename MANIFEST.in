@@ -1,5 +1,5 @@
-include cuda_setup.py
-include CMakeLists.txt
+include build_extension.py
+include cuda_extension.py
 include requirements.txt
 include pyproject.toml
 include tests/res/*.json

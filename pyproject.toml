@@ -65,5 +65,5 @@ script = "build_extension.py"
   sequence  = ["isort", "flake8-py", "flake8-pyx", "cpplint"]
 
 [build-system]
-requires = ["poetry-core>=1.2.0", "setuptools", "wheel", "numpy>=1.21.6", "Cython>=0.29.32", "cmake>=3.17.0"]
+requires = ["poetry-core>=1.2.0", "setuptools", "wheel", "numpy>=1.21.6", "Cython>=0.29.32"]
 build-backend = "poetry.core.masonry.api"
