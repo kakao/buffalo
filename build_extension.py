@@ -47,20 +47,18 @@ if platform.system().lower() == 'darwin':
             pattern = re.compile(r'gcc-([0-9]+[.]*[0-9]*[.]*[0-9]*)')
         elif name == 'g++':
             pattern = re.compile(r'g\+\+-([0-9]+[.]*[0-9]*[.]*[0-9]*)')
-        for dirname in binary_dir:
-            fnames = glob.glob(pjoin(dirname, f'{name}*'))
-            for fname in fnames:
-                basename = os.path.basename(fname)
-                if basename == name:
-                    ret = subprocess.run([fname, '--dumpversion'], capture_output=True)
-                    version = ret.stdout.strip().decode()
-                    binaries.append((fname, version))
-                elif basename.startswith(f'{name}-'):
-                    matched = pattern.match(basename)
-                    if matched is None:
-                        continue
-                    version = matched.group(1)
-                    binaries.append((fname, version))
+        for fname in glob.glob(pjoin(binary_dir, f'{name}*')):
+            basename = os.path.basename(fname)
+            if basename == name:
+                ret = subprocess.run([fname, '--dumpversion'], capture_output=True)
+                version = ret.stdout.strip().decode()
+                binaries.append((fname, version))
+            elif basename.startswith(f'{name}-'):
+                matched = pattern.match(basename)
+                if matched is None:
+                    continue
+                version = matched.group(1)
+                binaries.append((fname, version))
         if not binaries:
             print('To build buffalo in MacOs, gcc must be installed. Install gcc via `brew install gcc`')
             sys.exit(1)
@@ -68,10 +66,12 @@ if platform.system().lower() == 'darwin':
         binaries.sort(key=lambda x: packaging.version.Version(x[1]), reverse=True)
         return binaries[-1][0]
 
-    binary_dir = [
-        '/usr/local/bin',  # Intel brew install binaries into /usr/local/bin
-        '/opt/homebrew/bin',  # M1 brew install binaries into /usr/local/bin
-    ]
+    ret = subprocess.run(['brew', '--prefix'], capture_output=True)
+    if ret.stderr:
+        print('`brew` is required. Install `brew` first.')
+        sys.exit(1)
+    brew_prefix = ret.stdout.strip().decode()
+    binary_dir = pjoin(brew_prefix, 'bin')
     # Find gcc & g++
     os.environ['CC'] = get_compiler('gcc')
     os.environ['CXX'] = get_compiler('g++')
