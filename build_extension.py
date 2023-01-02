@@ -6,8 +6,8 @@ import platform
 import subprocess
 from os.path import join as pjoin
 
-import packaging
 import numpy as np
+import packaging.version
 from setuptools import Extension, find_packages
 
 from cuda_extension import CUDA, build_ext
@@ -43,7 +43,10 @@ if platform.system().lower() == 'darwin':
 
     def get_compiler(name: str):
         binaries = []
-        pattern = re.compile(f'{name}-([0-9]+[.]*[0-9]*[.]*[0-9]*)')
+        if name == 'gcc':
+            pattern = re.compile(r'gcc-([0-9]+[.]*[0-9]*[.]*[0-9]*)')
+        elif name == 'g++':
+            pattern = re.compile(r'g\+\+-([0-9]+[.]*[0-9]*[.]*[0-9]*)')
         for dirname in binary_dir:
             fnames = glob.glob(pjoin(dirname, f'{name}*'))
             for fname in fnames:
@@ -63,13 +66,13 @@ if platform.system().lower() == 'darwin':
             sys.exit(1)
 
         binaries.sort(key=lambda x: packaging.version.Version(x[1]), reverse=True)
-        return binaries[-1]
+        return binaries[-1][0]
 
     binary_dir = [
-        '/usr/local/bin',  # Intel brew install binary into /usr/local/bin
-        '/opt/homebrew/bin',  # M1 brew install binary into /usr/local/bin
+        '/usr/local/bin',  # Intel brew install binaries into /usr/local/bin
+        '/opt/homebrew/bin',  # M1 brew install binaries into /usr/local/bin
     ]
-    # Find gcc
+    # Find gcc & g++
     os.environ['CC'] = get_compiler('gcc')
     os.environ['CXX'] = get_compiler('g++')
 
@@ -174,6 +177,6 @@ def build(kwargs):
         dict(packages=find_packages(),
              cmdclass=cmdclass,
              ext_modules=extensions,
-             platforms=['Linux'],
+             platforms=['Linux', 'MacOS'],
              zip_safe=False)
     )
