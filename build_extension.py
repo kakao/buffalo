@@ -37,7 +37,7 @@ EXTRA_INCLUDE_DIRS = [numpy_include_dirs,
                       '3rd/json11',
                       '3rd/spdlog/include',
                       '3rd/eigen3']
-common_srcs = ["lib/misc/log.cc", 'lib/algo.cc', "./3rd/json11/json11.cpp"]
+common_srcs = ['lib/misc/log.cc', 'lib/algo.cc', './3rd/json11/json11.cpp']
 
 if platform.system().lower() == 'darwin':
 
@@ -76,64 +76,62 @@ if platform.system().lower() == 'darwin':
     os.environ['CC'] = get_compiler('gcc')
     os.environ['CXX'] = get_compiler('g++')
 
-
 def get_extend_compile_flags():
     flags = ['-march=native']
     return flags
-
 
 extend_compile_flags = get_extend_compile_flags()
 
 
 extensions = [
-    Extension(name="buffalo.algo._als",
+    Extension(name='buffalo.algo._als',
               sources=['buffalo/algo/_als.pyx', 'lib/algo_impl/als/als.cc'] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.algo._cfr",
+    Extension(name='buffalo.algo._cfr',
               sources=['buffalo/algo/_cfr.pyx', 'lib/algo_impl/cfr/cfr.cc'] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.algo._bpr",
+    Extension(name='buffalo.algo._bpr',
               sources=['buffalo/algo/_bpr.pyx', 'lib/algo_impl/bpr/bpr.cc'] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.algo._plsi",
+    Extension(name='buffalo.algo._plsi',
               sources=['buffalo/algo/_plsi.pyx', 'lib/algo_impl/plsi/plsi.cc'] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.algo._warp",
+    Extension(name='buffalo.algo._warp',
               sources=['buffalo/algo/_warp.pyx', 'lib/algo_impl/warp/warp.cc'] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.algo._w2v",
+    Extension(name='buffalo.algo._w2v',
               sources=['buffalo/algo/_w2v.pyx', 'lib/algo_impl/w2v/w2v.cc'] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.misc._log",
-              sources=["buffalo/misc/_log.pyx"] + common_srcs,
+    Extension(name='buffalo.misc._log',
+              sources=['buffalo/misc/_log.pyx'] + common_srcs,
               language='c++',
               include_dirs=['./include'] + EXTRA_INCLUDE_DIRS,
               libraries=['gomp'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.data.fileio",
+    Extension(name='buffalo.data.fileio',
               sources=['buffalo/data/fileio.pyx'],
               language='c++',
               libraries=['gomp'],
               extra_compile_args=['-fopenmp', '-std=c++14', '-ggdb', '-O3'] + extend_compile_flags),
-    Extension(name="buffalo.parallel._core",
+    Extension(name='buffalo.parallel._core',
               sources=['buffalo/parallel/_core.pyx'],
               language='c++',
               libraries=['gomp'],
@@ -143,32 +141,32 @@ extensions = [
 
 if CUDA:
     extra_compile_args = ['-std=c++14', '-ggdb', '-O3'] + extend_compile_flags
-    extensions.append(Extension("buffalo.algo.cuda._als",
-                                sources=["buffalo/algo/cuda/_als.pyx",
-                                         "lib/cuda/als/als.cu",
-                                         "./3rd/json11/json11.cpp",
-                                         "lib/misc/log.cc"],
-                                language="c++",
+    extensions.append(Extension('buffalo.algo.cuda._als',
+                                sources=['buffalo/algo/cuda/_als.pyx',
+                                         'lib/cuda/als/als.cu',
+                                         './3rd/json11/json11.cpp',
+                                         'lib/misc/log.cc'],
+                                language='c++',
                                 extra_compile_args=extra_compile_args,
                                 library_dirs=[CUDA['lib64']],
                                 libraries=['cudart', 'cublas', 'curand'],
-                                include_dirs=["./include", numpy_include_dirs,
-                                              CUDA['include'], "./3rd/json11",
-                                              "./3rd/spdlog/include"]))
-    extensions.append(Extension("buffalo.algo.cuda._bpr",
-                                sources=["buffalo/algo/cuda/_bpr.pyx",
-                                         "lib/cuda/bpr/bpr.cu",
-                                         "./3rd/json11/json11.cpp",
-                                         "lib/misc/log.cc"],
-                                language="c++",
+                                include_dirs=['./include', numpy_include_dirs,
+                                              CUDA['include'], './3rd/json11',
+                                              './3rd/spdlog/include']))
+    extensions.append(Extension('buffalo.algo.cuda._bpr',
+                                sources=['buffalo/algo/cuda/_bpr.pyx',
+                                         'lib/cuda/bpr/bpr.cu',
+                                         './3rd/json11/json11.cpp',
+                                         'lib/misc/log.cc'],
+                                language='c++',
                                 extra_compile_args=extra_compile_args,
                                 library_dirs=[CUDA['lib64']],
                                 libraries=['cudart', 'cublas', 'curand'],
-                                include_dirs=["./include", numpy_include_dirs,
-                                              CUDA['include'], "./3rd/json11",
-                                              "./3rd/spdlog/include"]))
+                                include_dirs=['./include', numpy_include_dirs,
+                                              CUDA['include'], './3rd/json11',
+                                              './3rd/spdlog/include']))
 else:
-    print("Failed to find CUDA toolkit. Building without GPU acceleration.")
+    print('Failed to find CUDA toolkit. Building without GPU acceleration.')
 
 
 def build(kwargs):
