@@ -1,10 +1,19 @@
 [tool.poetry]
 name = "buffalo"
 version = "1.2.2"
-description = ""
+description = "TOROS Buffalo: A fast and scalable production-ready open source project for recommender systems"
 authors = ["recoteam <recoteam@kakaocorp.com>"]
 license = "Apache2"
 readme = "README.md"
+include = [
+    "3rd/",
+    "lib/",
+    "include/",
+    "poetry.lock",
+    "pyproject.toml",
+    "cuda_extension.py",
+    "build_extension.py",
+]
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
