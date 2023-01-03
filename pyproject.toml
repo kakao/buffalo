@@ -1,10 +1,19 @@
 [tool.poetry]
 name = "buffalo"
 version = "1.2.2"
-description = ""
+description = "TOROS Buffalo: A fast and scalable production-ready open source project for recommender systems"
 authors = ["recoteam <recoteam@kakaocorp.com>"]
 license = "Apache2"
 readme = "README.md"
+include = [
+    "3rd/",
+    "lib/",
+    "include/",
+    "poetry.lock",
+    "pyproject.toml",
+    "cuda_extension.py",
+    "build_extension.py",
+]
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
@@ -65,5 +74,5 @@ script = "build_extension.py"
   sequence  = ["isort", "flake8-py", "flake8-pyx", "cpplint"]
 
 [build-system]
-requires = ["poetry-core>=1.2.0", "setuptools", "wheel", "numpy>=1.21.6", "Cython>=0.29.32", "cmake>=3.17.0"]
+requires = ["poetry-core>=1.2.0", "setuptools", "wheel", "numpy>=1.21.6", "Cython>=0.29.32", "packaging>=22.0"]
 build-backend = "poetry.core.masonry.api"
