@@ -1,9 +1,9 @@
-import os
-import sys
-import re
 import glob
+import os
 import platform
+import re
 import subprocess
+import sys
 from os.path import join as pjoin
 
 import numpy as np
@@ -76,13 +76,13 @@ if platform.system().lower() == 'darwin':
     os.environ['CC'] = get_compiler('gcc')
     os.environ['CXX'] = get_compiler('g++')
 
+
 def get_extend_compile_flags():
     flags = ['-march=native']
     return flags
 
+
 extend_compile_flags = get_extend_compile_flags()
-
-
 extensions = [
     Extension(name='buffalo.algo._als',
               sources=['buffalo/algo/_als.pyx', 'lib/algo_impl/als/als.cc'] + common_srcs,
