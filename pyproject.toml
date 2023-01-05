@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "buffalo"
-version = "1.2.2"
+version = "1.3.0"
 description = "TOROS Buffalo: A fast and scalable production-ready open source project for recommender systems"
 authors = ["recoteam <recoteam@kakaocorp.com>"]
 license = "Apache2"
@@ -13,6 +13,15 @@ include = [
     "pyproject.toml",
     "cuda_extension.py",
     "build_extension.py",
+]
+classifiers = [
+    "Programming Language :: C++",
+    "Programming Language :: Cython",
+    "Programming Language :: Python",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+    "License :: OSI Approved :: Apache Software License",
 ]
 
 [tool.poetry.dependencies]

@@ -12,26 +12,6 @@ from setuptools import Extension, find_packages
 
 from cuda_extension import CUDA, build_ext
 
-MAJOR = 1
-MINOR = 2
-MICRO = 2
-Release = True
-STAGE = {True: '', False: 'b'}.get(Release)
-VERSION = f'{MAJOR}.{MINOR}.{MICRO}{STAGE}'
-STATUS = {
-    False: 'Development Status :: 4 - Beta',
-    True: 'Development Status :: 5 - Production/Stable'
-}
-
-CLASSIFIERS = """{status}
-Programming Language :: C++
-Programming Language :: Cython
-Programming Language :: Python
-Operating System :: POSIX :: Linux
-Operating System :: Unix
-Operating System :: MacOS
-License :: OSI Approved :: Apache Software License""".format(status=STATUS.get(Release))
-
 numpy_include_dirs = np.get_include()
 EXTRA_INCLUDE_DIRS = [numpy_include_dirs,
                       '3rd/json11',
