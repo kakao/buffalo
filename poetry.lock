@@ -223,14 +223,6 @@ python-versions = ">=3.7"
 [package.dependencies]
 numpy = ">=1.14.5"
 
-[[package]]
-name = "hyperopt"
-version = "0.2.7"
-description = "Distributed Asynchronous Hyperparameter Optimization"
-category = "main"
-optional = false
-python-versions = "*"
-
 [package.dependencies]
 cloudpickle = "*"
 future = "*"
@@ -876,10 +868,6 @@ h5py = [
     {file = "h5py-3.7.0-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9e7535df5ee3dc3e5d1f408fdfc0b33b46bc9b34db82743c82cd674d8239b9ad"},
     {file = "h5py-3.7.0-cp39-cp39-win_amd64.whl", hash = "sha256:9e2ad2aa000f5b1e73b5dfe22f358ca46bf1a2b6ca394d9659874d7fc251731a"},
     {file = "h5py-3.7.0.tar.gz", hash = "sha256:3fcf37884383c5da64846ab510190720027dca0768def34dd8dcb659dbe5cbf3"},
-]
-hyperopt = [
-    {file = "hyperopt-0.2.7-py2.py3-none-any.whl", hash = "sha256:f3046d91fe4167dbf104365016596856b2524a609d22f047a066fc1ac796427c"},
-    {file = "hyperopt-0.2.7.tar.gz", hash = "sha256:1bf89ae58050bbd32c7307199046117feee245c2fd9ab6255c7308522b7ca149"},
 ]
 idna = [
     {file = "idna-3.4-py3-none-any.whl", hash = "sha256:90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2"},

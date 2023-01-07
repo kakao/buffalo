@@ -7,7 +7,6 @@ class AlgoOption(InputOptions):
 
     def get_default_option(self):
         """Default options for Algo classes.
-
         :ivar bool evaluation_on_learning: Set True to do run evaluation on training phrase. (default: True)
         :ivar bool compute_loss_on_training: Set True to calculate loss on training phrase. (default: True)
         :ivar int early_stopping_rounds: The number of exceed epochs after reached minimum loss on training phrase. If set 0, it doesn't work. (default: 0)
@@ -29,19 +28,8 @@ class AlgoOption(InputOptions):
         }
         return opt
 
-    def get_default_optimize_option(self):
-        """Default options for optimize feature.
-
-        :ivar str loss: Name of loss to monitor. (default: train_loss)
-        """
-        opt = {
-            'loss': 'train_loss',
-        }
-        return opt
-
     def get_default_tensorboard_option(self):
         """Default options for tensorboard feature.
-
         :ivar str name: Name of graph name. (default: default)
         :ivar str root: Path where to make graph directory. (default: ./tb)
         :ivar str name_template: Name template for directory name. (default: {name}.{dtm})
@@ -67,7 +55,6 @@ class ALSOption(AlgoOption):
 
     def get_default_option(self):
         """Options for Alternating Least Squares.
-
         :ivar bool adaptive_reg: Set True, for adaptive regularization. (default: False)
         :ivar bool save_factors: Set True, to save models. (default: False)
         :ivar bool accelerator: Set True, to accelerate training using GPU. (default: False)
@@ -118,33 +105,6 @@ class ALSOption(AlgoOption):
             raise RuntimeError(msg)
         return b
 
-    def get_default_optimize_option(self):
-        """Optimization Options for ALS.
-
-        :ivar str loss: Target loss to optimize.
-        :ivar int max_trials: The maximum experiments for optimization. If not given, run forever.
-        :ivar int min_trials: The minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
-        :ivar bool deployment: Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
-        :ivar bool start_with_default_parameters: If set to True, the loss value of the default parameter is used as the starting loss to beat.
-        :ivar dict space: The parameter space definition. For more information, please check reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Please see optimize.py to check how we deal with `randint`.
-        """
-        opt = super().get_default_optimize_option()
-        opt.update({
-            'loss': 'train_loss',
-            'max_trials': 100,
-            'min_trials': 0,
-            'deployment': True,
-            'start_with_default_parameters': True,
-            'space': {
-                'adaptive_reg': ['choice', ['adaptive_reg', [0, 1]]],
-                'd': ['randint', ['d', 10, 30]],
-                'reg_u': ['uniform', ['reg_u', 0.1, 1]],
-                'reg_i': ['uniform', ['reg_i', 0.1, 1]],
-                'alpha': ['randint', ['alpha', 1, 32]]
-            }
-        })
-        return Option(opt)
-
 
 class CFROption(AlgoOption):
     def __init__(self, *args, **kwargs):
@@ -152,7 +112,6 @@ class CFROption(AlgoOption):
 
     def get_default_option(self):
         """ Basic Options for CoFactor.
-
         :ivar int d: The number of latent feature dimension. (default: 20)
         :ivar int num_iters: The number of iterations for training. (default: 10)
         :ivar int num_workers: The number of threads. (default: 1)
@@ -190,34 +149,6 @@ class CFROption(AlgoOption):
         })
         return Option(opt)
 
-    def get_default_optimize_option(self):
-        """Optimization options for CoFactor.
-
-        :ivar str loss: Target loss to optimize.
-        :ivar int max_trials: Maximum experiments for optimization. If not given, run forever.
-        :ivar int min_trials: Minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
-        :ivar bool deployment(: Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
-        :ivar bool start_with_default_parameters: If set to True, the loss value of the default parameter is used as the starting loss to beat.
-        :ivar dict space: Parameter space definition. For more information, please check reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Please see optimize.py to check how we deal with `randint`.
-        """
-        opt = super().get_default_optimize_option()
-        opt.update({
-            'loss': 'train_loss',
-            'max_trials': 100,
-            'min_trials': 0,
-            'deployment': True,
-            'start_with_default_parameters': True,
-            'space': {
-                'd': ['randint', ['d', 10, 30]],
-                'reg_u': ['uniform', ['reg_u', 0.1, 1]],
-                'reg_i': ['uniform', ['reg_i', 0.1, 1]],
-                'reg_c': ['uniform', ['reg_c', 0.1, 1]],
-                'alpha': ['randint', ['alpha', 1, 32]],
-                'l': ['randint', ['l', 1, 32]]
-            }
-        })
-        return Option(opt)
-
     def is_valid_option(self, opt):
         b = super().is_valid_option(opt)
         possible_optimizers = ["llt", "ldlt", "manual_cg", "eigen_cg", "eigen_bicg",
@@ -234,7 +165,6 @@ class BPRMFOption(AlgoOption):
 
     def get_default_option(self):
         """Options for Bayesian Personalized Ranking Matrix Factorization.
-
         :ivar bool accelerator: Set True, to accelerate training using GPU. (default: False)
         :ivar bool use_bias: Set True, to use bias term for the model.
         :ivar int evaluation_period: (default: 100)
@@ -294,24 +224,6 @@ class BPRMFOption(AlgoOption):
         })
         return Option(opt)
 
-    def get_default_optimize_option(self):
-        """Optimization options for BPRMF.
-        """
-        opt = super().get_default_optimize_option()
-        opt.update({
-            'loss': 'train_loss',
-            'max_trials': 100,
-            'min_trials': 0,
-            'deployment': True,
-            'start_with_default_parameters': True,
-            'space': {
-                'd': ['randint', ['d', 10, 30]],
-                'reg_u': ['uniform', ['reg_u', 0.1, 1]],
-                'reg_i': ['uniform', ['reg_i', 0.1, 1]]
-            }
-        })
-        return Option(opt)
-
 
 class WARPOption(AlgoOption):
     def __init__(self, *args, **kwargs):
@@ -319,7 +231,6 @@ class WARPOption(AlgoOption):
 
     def get_default_option(self):
         """Options for WARP Matrix Factorization.
-
         :ivar bool accelerator: Set True, to accelerate training using GPU. (default: False)
         :ivar int evaluation_period: (default: 15)
         :ivar int num_workers: The number of threads. (default: 1)
@@ -371,26 +282,6 @@ class WARPOption(AlgoOption):
         })
         return Option(opt)
 
-    def get_default_optimize_option(self):
-        """Optimization options for WARP.
-        """
-        opt = super().get_default_optimize_option()
-        opt.update({
-            'loss': 'train_loss',
-            'max_trials': 100,
-            'min_trials': 0,
-            'deployment': True,
-            'start_with_default_parameters': True,
-            'space': {
-                'd': ['randint', ['d', 10, 256]],
-                'threshold': ['uniform', ['threshold', 0.5, 5.0]],
-                'reg_u': ['uniform', ['reg_u', 0.01, 1.0]],
-                'reg_i': ['uniform', ['reg_i', 0.0, 0.001]],
-                'reg_j': ['uniform', ['reg_j', 0.0, 0.001]]
-            }
-        })
-        return Option(opt)
-
 
 class W2VOption(AlgoOption):
     def __init__(self, *args, **kwargs):
@@ -398,7 +289,6 @@ class W2VOption(AlgoOption):
 
     def get_default_option(self):
         """Options for Word2Vec.
-
         :ivar bool evaluation_on_learning: Set True to do run evaluation on training phrase. (default: False)
         :ivar int num_workers: The number of threads. (default: 1)
         :ivar int num_iters: The number of iterations for training. (default: 100)
@@ -431,24 +321,6 @@ class W2VOption(AlgoOption):
         })
         return Option(opt)
 
-    def get_default_optimize_option(self):
-        """Optimization options for W2V
-        """
-        #
-        opt = super().get_default_optimize_option()
-        opt.update({
-            'loss': 'train_loss',
-            'max_trials': 100,
-            'min_trials': 0,
-            'deployment': True,
-            'start_with_default_parameters': True,
-            'space': {
-                'd': ['randint', ['d', 10, 30]],
-                'window': ['randint', ['window', 2, 8]],
-            }
-        })
-        return Option(opt)
-
 
 class PLSIOption(AlgoOption):
     def __init__(self, *args, **kwargs):
@@ -456,7 +328,6 @@ class PLSIOption(AlgoOption):
 
     def get_default_option(self):
         """ Basic Options for pLSI.
-
         :ivar int d: The number of latent feature dimension. (default: 20)
         :ivar int num_iters: The number of iterations for training. (default: 10)
         :ivar int num_workers: The number of threads. (default: 1)
@@ -479,30 +350,5 @@ class PLSIOption(AlgoOption):
             'save_factors': False,
             'data_opt': {},
             'inherit_opt': {}
-        })
-        return Option(opt)
-
-    def get_default_optimize_option(self):
-        """Optimization options for pLSI.
-
-        :ivar str loss: Target loss to optimize.
-        :ivar int max_trials: Maximum experiments for optimization. If not given, run forever.
-        :ivar int min_trials: Minimum experiments before deploying model. (Since the best parameter may not be found after `min_trials`, the first best parameter is always deployed)
-        :ivar bool deployment: Set True to train model with the best parameter. During the optimization, it try to dump the model which beated the previous best loss.
-        :ivar bool start_with_default_parameters: If set to True, the loss value of the default parameter is used as the starting loss to beat.
-        :ivar dict space: Parameter space definition. For more information, please check reference hyperopt's express. Note) Due to hyperopt's `randint` does not provide lower value, we had to implement it a bait tricky. Please see optimize.py to check how we deal with `randint`.
-        """
-        opt = super().get_default_optimize_option()
-        opt.update({
-            'loss': 'train_loss',
-            'max_trials': 100,
-            'min_trials': 0,
-            'deployment': True,
-            'start_with_default_parameters': True,
-            'space': {
-                'd': ['randint', ['d', 10, 30]],
-                'alpha1': ['uniform', ['alpha1', 0.1, 1.2]],
-                'alpha2': ['uniform', ['alpha2', 0.1, 1.2]]
-            }
         })
         return Option(opt)

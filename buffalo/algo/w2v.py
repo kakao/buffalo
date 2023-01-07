@@ -5,12 +5,10 @@ import json
 import time
 
 import numpy as np
-from hyperopt import STATUS_OK as HOPT_STATUS_OK
 
 import buffalo.data
 from buffalo.algo._w2v import CyW2V
 from buffalo.algo.base import Algo, Serializable, TensorboardExtension
-from buffalo.algo.optimize import Optimizable
 from buffalo.algo.options import W2VOption
 from buffalo.data.base import Data
 from buffalo.data.buffered_data import BufferedDataStream
@@ -18,7 +16,7 @@ from buffalo.evaluate import Evaluable
 from buffalo.misc import aux, log
 
 
-class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExtension):
+class W2V(Algo, W2VOption, Evaluable, Serializable, TensorboardExtension):
     """Python implementation for C-W2V
     """
     def __init__(self, opt_path=None, *args, **kwargs):
@@ -26,7 +24,6 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
         W2VOption.__init__(self, *args, **kwargs)
         Evaluable.__init__(self, *args, **kwargs)
         Serializable.__init__(self, *args, **kwargs)
-        Optimizable.__init__(self, *args, **kwargs)
         if opt_path is None:
             opt_path = W2VOption().get_default_option()
 
@@ -205,28 +202,6 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, Optimizable, TensorboardExte
         # loss = self.obj.join()
         self.obj.join()
         return {}
-
-    def _optimize(self, params):
-        # TODO: implement
-        self._optimize_params = params
-        for name, value in params.items():
-            assert name in self.opt, 'Unexepcted parameter: {}'.format(name)
-            if isinstance(value, np.generic):
-                setattr(self.opt, name, value.item())
-            else:
-                setattr(self.opt, name, value)
-        with open(self._temporary_opt_file, 'w') as fout:
-            json.dump(self.opt, fout, indent=2)
-        assert self.obj.init(bytes(self._temporary_opt_file, 'utf-8')),\
-            'cannot parse option file: %s' % self._temporary_opt_file
-        self.logger.info(params)
-        self.init_factors()
-        loss = self.train()
-        loss['loss'] = loss.get(self.opt.optimize.loss)
-        # TODO: deal with failure of training
-        loss['status'] = HOPT_STATUS_OK
-        self._optimize_loss = loss
-        return loss
 
     def _get_data(self):
         data = super()._get_data()
