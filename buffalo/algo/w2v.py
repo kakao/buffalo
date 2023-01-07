@@ -8,7 +8,7 @@ import numpy as np
 
 import buffalo.data
 from buffalo.algo._w2v import CyW2V
-from buffalo.algo.base import Algo, Serializable, TensorboardExtension
+from buffalo.algo.base import Algo, Serializable
 from buffalo.algo.options import W2VOption
 from buffalo.data.base import Data
 from buffalo.data.buffered_data import BufferedDataStream
@@ -16,7 +16,7 @@ from buffalo.evaluate import Evaluable
 from buffalo.misc import aux, log
 
 
-class W2V(Algo, W2VOption, Evaluable, Serializable, TensorboardExtension):
+class W2V(Algo, W2VOption, Evaluable, Serializable):
     """Python implementation for C-W2V
     """
     def __init__(self, opt_path=None, *args, **kwargs):
@@ -192,7 +192,7 @@ class W2V(Algo, W2VOption, Evaluable, Serializable, TensorboardExtension):
                 pbar.update(sz)
         self.logger.debug(f'processed({updated}) elapsed(data feed: {feed_t:0.3f}s update: {update_t:0.3f})s')
 
-    def train(self):
+    def train(self, training_callback=None):
         self.validation_result = {}
         self.obj.launch_workers()
         for i in range(self.opt.num_iters):

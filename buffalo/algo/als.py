@@ -5,7 +5,7 @@ import numpy as np
 
 import buffalo.data
 from buffalo.algo._als import CyALS
-from buffalo.algo.base import Algo, Serializable, TensorboardExtension
+from buffalo.algo.base import Algo, Serializable
 from buffalo.algo.options import ALSOption
 from buffalo.data.base import Data
 from buffalo.data.buffered_data import BufferedDataMatrix
@@ -19,7 +19,7 @@ except Exception:
     inited_CUALS = False
 
 
-class ALS(Algo, ALSOption, Evaluable, Serializable, TensorboardExtension):
+class ALS(Algo, ALSOption, Evaluable, Serializable):
     """Python implementation for C-ALS.
 
     Implementation of Collaborative Filtering for Implicit Feedback datasets.
@@ -140,7 +140,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, TensorboardExtension):
             f'{group} updated: processed({updated}) elapsed(data feed: {feed_t:0.3f}s update: {update_t:0.03}s)')
         return loss_nume, loss_deno
 
-    def train(self):
+    def train(self, training_callback=None):
         if self.opt.accelerator:
             for attr in ["P", "Q"]:
                 F = getattr(self, attr)
@@ -157,7 +157,6 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, TensorboardExtension):
             self.obj.set_placeholder(lindptr, rindptr, batch_size)
 
         best_loss, rmse, self.validation_result = 987654321.0, None, {}
-        self.initialize_tensorboard(self.opt.num_iters)
         full_st = time.time()
         for i in range(self.opt.num_iters):
             start_t = time.time()
@@ -180,8 +179,9 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, TensorboardExtension):
                 self.logger.info(f'Validation: {val_str} Elapsed {vali_t:0.3f} secs')
                 metrics.update({'val_%s' % k: v
                                 for k, v in self.validation_result.items()})
+                if training_callback is not None and callable(training_callback):
+                    training_callback(i, metrics)
             self.logger.info('Iteration %d: RMSE %.3f Elapsed %.3f secs' % (i + 1, rmse, train_t))
-            self.update_tensorboard_data(metrics)
             best_loss = self.save_best_only(rmse, best_loss, i)
             if self.early_stopping(rmse):
                 break
@@ -193,7 +193,6 @@ class ALS(Algo, ALSOption, Evaluable, Serializable, TensorboardExtension):
         ret = {'train_loss': rmse}
         ret.update({'val_%s' % k: v
                     for k, v in self.validation_result.items()})
-        self.finalize_tensorboard()
         return ret
 
     def _get_feature(self, index, group='item'):

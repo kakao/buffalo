@@ -3,10 +3,9 @@ import unittest
 
 import numpy as np
 
-from buffalo.misc import aux
-from buffalo.misc.log import set_log_level
+from buffalo.misc import aux, set_log_level
 from buffalo.algo.options import BPRMFOption
-from buffalo.algo.bpr import BPRMF, inited_CUBPR
+from buffalo.algo import BPRMF, inited_CUBPR
 
 from .base import TestBase
 
@@ -47,10 +46,16 @@ class TestBPRMF(TestBase):
         opt.num_iters = 500
         opt.random_seed = 7
         opt.validation = aux.Option({'topk': 10})
-        opt.tensorboard = aux.Option({'root': './tb',
-                                      'name': 'bpr'})
 
         self._test5_validation(BPRMF, opt, ndcg=0.03, map=0.02)
+
+    def test05_1_validation_with_callback(self,):
+        opt = BPRMFOption().get_default_option()
+        opt.d = 5
+        opt.num_iters = 15
+        opt.evaluation_period = 5
+        opt.validation = aux.Option({'topk': 10})
+        self._test5_1_validation_with_callback(BPRMF, opt)
 
     def test06_topk(self):
         opt = BPRMFOption().get_default_option()
@@ -100,8 +105,6 @@ class TestBPRMF(TestBase):
         opt.evaluation_period = 50
         opt.random_seed = 777
         opt.validation = aux.Option({'topk': 10})
-        opt.tensorboard = aux.Option({'root': './tb',
-                                      'name': 'bpr'})
 
         self._test5_validation(BPRMF, opt, ndcg=0.03, map=0.02)
 

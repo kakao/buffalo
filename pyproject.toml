@@ -30,7 +30,6 @@ numpy = "^1.21.6"
 h5py = "^3.7.0"
 psutil = "^5.9.4"
 fire = "^0.4.0"
-tensorboard = "^2.11.0"
 absl-py = "^1.3.0"
 scipy = "^1.7.1"
 

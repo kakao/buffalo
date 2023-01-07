@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-import numpy as np
-
-from buffalo.misc import aux
+from buffalo.misc import aux, set_log_level
 from buffalo.algo.warp import WARP
-from buffalo.misc.log import set_log_level
 from buffalo.algo.options import WARPOption
 
 from .base import TestBase
@@ -48,12 +45,18 @@ class TestWARP(TestBase):
             self._test4_train(WARP, opt)
 
     def test05_validation(self):
-        np.random.seed(7)
         for opt in self.get_opts():
             opt.validation = aux.Option({'topk': 10})
-            # opt.tensorboard = aux.Option({'root': './tb',
-            #                               'name': 'warp'})
+
             self._test5_validation(WARP, opt, ndcg=0.03, map=0.02)
+
+    def test05_1_validation_with_callback(self,):
+        for opt in self.get_opts():
+            opt.d = 5
+            opt.num_iters = 15
+            opt.evaluation_period = 5
+            opt.validation = aux.Option({'topk': 10})
+            self._test5_1_validation_with_callback(WARP, opt)
 
     def test06_topk(self):
         for opt in self.get_opts():

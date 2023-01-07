@@ -5,7 +5,7 @@ import numpy as np
 
 import buffalo.data
 from buffalo.algo._cfr import CyCFR
-from buffalo.algo.base import Algo, Serializable, TensorboardExtension
+from buffalo.algo.base import Algo, Serializable
 from buffalo.algo.options import CFROption
 from buffalo.data.base import Data
 from buffalo.data.buffered_data import BufferedDataMatrix
@@ -14,7 +14,7 @@ from buffalo.misc import aux, log
 from buffalo.misc.log import ProgressBar
 
 
-class CFR(Algo, CFROption, Evaluable, Serializable, TensorboardExtension):
+class CFR(Algo, CFROption, Evaluable, Serializable):
     """Python implementation for CoFactor.
 
     Reference: Factorization Meets the Item Embedding:
@@ -185,11 +185,10 @@ class CFR(Algo, CFROption, Evaluable, Serializable, TensorboardExtension):
         alpha, l = self.opt.alpha, self.opt.l
         return l * (alpha * vsum + num_users * num_items) + sppmi_nnz
 
-    def train(self):
+    def train(self, training_callback=None):
         assert self.is_initialized, "embedding matrix is not initialized"
         buf = self._get_buffer()
         best_loss, self.validation_result = 987654321.0, {}
-        self.initialize_tensorboard(self.opt.num_iters)
         scale = self.compute_scale()
         for i in range(self.opt.num_iters):
             start_t = time.time()
@@ -209,15 +208,15 @@ class CFR(Algo, CFROption, Evaluable, Serializable, TensorboardExtension):
                 self.logger.info(f'Validation: {val_str} Elased {vali_t:0.3f}')
                 metrics.update({'vali_%s' % k: v
                                 for k, v in self.validation_result.items()})
+                if training_callback is not None and callable(training_callback):
+                    training_callback(i, metrics)
             self.logger.info('Iteration %d: Loss %.3f Elapsed %.3f secs' % (i + 1, loss, train_t))
-            self.update_tensorboard_data(metrics)
             best_loss = self.save_best_only(loss, best_loss, i)
             if self.early_stopping(loss):
                 break
         ret = {'train_loss': loss}
         ret.update({'vali_%s' % k: v
                     for k, v in self.validation_result.items()})
-        self.finalize_tensorboard()
         return ret
 
     def _get_feature(self, index, group='item'):

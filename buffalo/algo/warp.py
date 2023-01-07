@@ -5,7 +5,7 @@ import numpy as np
 
 import buffalo.data
 from buffalo.algo._warp import CyWARP
-from buffalo.algo.base import Algo, Serializable, TensorboardExtension
+from buffalo.algo.base import Algo, Serializable
 from buffalo.algo.options import WARPOption
 from buffalo.data.base import Data
 from buffalo.data.buffered_data import BufferedDataMatrix
@@ -13,7 +13,7 @@ from buffalo.evaluate import Evaluable
 from buffalo.misc import aux, log
 
 
-class WARP(Algo, WARPOption, Evaluable, Serializable, TensorboardExtension):
+class WARP(Algo, WARPOption, Evaluable, Serializable):
     """Python implementation for C-WARP.
     """
     def __init__(self, opt_path=None, *args, **kwargs):
@@ -232,9 +232,8 @@ class WARP(Algo, WARPOption, Evaluable, Serializable, TensorboardExtension):
         else:
             return self.obj.join()
 
-    def train(self):
+    def train(self, training_callback=None):
         self.validation_result = {}
-        self.initialize_tensorboard(self.opt.num_iters)
         self.sampling_loss_samples()
         best_loss = 987654321.0
         # initialize placeholder in case of running accelerator otherwise launch workers
@@ -255,15 +254,15 @@ class WARP(Algo, WARPOption, Evaluable, Serializable, TensorboardExtension):
                 self.logger.info(f'Validation: {val_str} Elased {vali_t:0.3f}')
                 metrics.update({'val_%s' % k: v
                                 for k, v in self.validation_result.items()})
+                if training_callback is not None and callable(training_callback):
+                    training_callback(i, metrics)
             self.logger.info('Iteration %s: PR-Loss %.3f Elapsed %.3f secs' % (i + 1, loss, time.time() - start_t))
-            self.update_tensorboard_data(metrics)
             best_loss = self.save_best_only(loss, best_loss, i)
             if self.early_stopping(loss):
                 break
         # reshape factor if using accelerator else join workers
         ret = {'train_loss': self._finalize_train()}
         ret.update({'val_%s' % k: v for k, v in self.validation_result.items()})
-        self.finalize_tensorboard()
         return ret
 
     def _get_data(self):

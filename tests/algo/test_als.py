@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from buffalo.misc import aux
-from buffalo.misc.log import set_log_level
+from buffalo.misc import aux, set_log_level
 from buffalo.algo.options import ALSOption
-from buffalo.algo.als import ALS, inited_CUALS
+from buffalo.algo import ALS, inited_CUALS
 
 from .base import TestBase
 
@@ -42,9 +41,14 @@ class TestALS(TestBase):
         opt.d = 5
         opt.num_iters = 20
         opt.validation = aux.Option({'topk': 10})
-        opt.tensorboard = aux.Option({'root': './tb',
-                                      'name': 'als'})
         self._test5_validation(ALS, opt)
+
+    def test05_1_validation_with_callback(self,):
+        opt = ALSOption().get_default_option()
+        opt.d = 5
+        opt.num_iters = 20
+        opt.validation = aux.Option({'topk': 10})
+        self._test5_1_validation_with_callback(ALS, opt)
 
     def test06_topk(self):
         opt = ALSOption().get_default_option()

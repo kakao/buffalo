@@ -7,12 +7,9 @@ from itertools import combinations
 
 import numpy as np
 
-from buffalo.algo.als import ALS
-from buffalo.algo.w2v import W2V
-from buffalo.algo.bpr import BPRMF
-from buffalo.misc.log import set_log_level
-from buffalo.data.stream import StreamOptions
-from buffalo.data.mm import MatrixMarketOptions
+from buffalo.algo import ALS, BPRMF, W2V
+from buffalo.misc import set_log_level
+from buffalo.data import MatrixMarketOptions, StreamOptions
 from buffalo.parallel.base import ParALS, ParBPRMF, ParW2V
 from buffalo.algo.options import ALSOption, BPRMFOption, W2VOption
 

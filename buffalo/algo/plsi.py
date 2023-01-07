@@ -5,7 +5,7 @@ import numpy as np
 
 import buffalo.data
 from buffalo.algo._plsi import CyPLSI
-from buffalo.algo.base import Algo, Serializable, TensorboardExtension
+from buffalo.algo.base import Algo, Serializable
 from buffalo.algo.options import PLSIOption
 from buffalo.data.base import Data
 from buffalo.data.buffered_data import BufferedDataMatrix
@@ -13,7 +13,7 @@ from buffalo.evaluate import Evaluable
 from buffalo.misc import aux, log
 
 
-class PLSI(Algo, PLSIOption, Evaluable, Serializable, TensorboardExtension):
+class PLSI(Algo, PLSIOption, Evaluable, Serializable):
     """Python implementation for pLSI."""
     def __init__(self, opt_path=None, *args, **kwargs):
         Algo.__init__(self, *args, **kwargs)
@@ -158,9 +158,8 @@ class PLSI(Algo, PLSIOption, Evaluable, Serializable, TensorboardExtension):
             f'updated processed({updated}) elapsed(data feed: {feed_t:0.5f} update: {update_t:0.5f})')
         return loss_nume, loss_deno
 
-    def train(self):
+    def train(self, training_callback=None):
         best_loss, loss, self.validation_result = 1e+10, None, {}
-        self.initialize_tensorboard(self.opt.num_iters)
         self.logger.info(f'Train pLSI, K: {self.opt.d}, alpha1: {self.opt.alpha1}, '
                          f'alpha2: {self.opt.alpha2}, num_workers: {self.opt.num_workers}')
         for i in range(self.opt.num_iters):
@@ -180,16 +179,15 @@ class PLSI(Algo, PLSIOption, Evaluable, Serializable, TensorboardExtension):
                 val_str = ' '.join([f'{k}:{v:0.5f}' for k, v in self.validation_result.items()])
                 self.logger.info(f'Validation: {val_str} Elapsed {vali_t:0.3f} secs')
                 metrics.update({'val_%s' % k: v for k, v in self.validation_result.items()})
-
+                if training_callback is not None and callable(training_callback):
+                    training_callback(i, metrics)
             self.logger.info('Iteration %d: Loss %.3f Elapsed %.3f secs' % (i + 1, loss, train_t))
-            self.update_tensorboard_data(metrics)
             best_loss = self.save_best_only(loss, best_loss, i)
             if self.early_stopping(loss):
                 break
 
         ret = {'train_loss': loss}
         ret.update({'val_%s' % k: v for k, v in self.validation_result.items()})
-        self.finalize_tensorboard()
         return ret
 
     def _get_feature(self, index, group='item'):

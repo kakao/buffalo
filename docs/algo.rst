@@ -8,7 +8,7 @@ Buffalo provides the following algorithm implementations:
   - Word2Vec
   - CoFactors
 
-All algorithms inherit common parent classes such as Algo, Serializable, TensorboardExtension, Evaluable.
+All algorithms inherit common parent classes such as Algo, Serializable, Evaluable.
 
 
 Algo
@@ -22,14 +22,6 @@ Algo
 Serializable
 `````````````
 .. autoclass:: buffalo.algo.base.Serializable
-   :members:
-   :exclude-members:
-   :show-inheritance:
-   :undoc-members:
-
-TensorboardExtension
-````````````````````
-.. autoclass:: buffalo.algo.base.TensorboardExtension
    :members:
    :exclude-members:
    :show-inheritance:

@@ -1,14 +1,10 @@
 import abc
-import datetime
-import json
 import logging
-import os
 import pickle
 import struct
 
 import absl.logging
 import numpy as np
-import tensorboard as tb
 
 logging.root.removeHandler(absl.logging._absl_handler)
 absl.logging._warn_preinit_stderr = False
@@ -325,54 +321,3 @@ class Serializable(abc.ABC):
         c = cls(opt)
         c.load(path, data_fields)
         return c
-
-
-class TensorboardExtension(object):
-    @abc.abstractmethod
-    def get_evaluation_metrics(self):
-        raise NotImplementedError
-
-    def _get_initial_tensorboard_data(self):
-        tb = aux.Option({'summary_writer': None,
-                         'name': None,
-                         'metrics': [],
-                         'pbar': None,
-                         'data_root': None,
-                         'step': 1})
-        return tb
-
-    def initialize_tensorboard(self, num_steps, name_prefix='', name_postfix='', metrics=None):
-        if not self.opt.tensorboard:
-            if not hasattr(self, '_tb_set'):
-                self.logger.debug('Cannot find tensorboard configuration.')
-            self._tb_set = False
-            return
-        name = self.opt.tensorboard.name
-        name = name_prefix + name + name_postfix
-        dtm = datetime.datetime.now().strftime('%Y%m%d-%H.%M')
-        template = self.opt.tensorboard.get('name_template', '{name}.{dtm}')
-        self._tb = self._get_initial_tensorboard_data()
-        self._tb.name = template.format(name=name, dtm=dtm)
-        os.makedirs(self.opt.tensorboard.root, exist_ok=True)
-        tb_dir = os.path.join(self.opt.tensorboard.root, self._tb.name)
-        self._tb.data_root = tb_dir
-        self._tb.summary_writer = tb.summary.Writer(tb_dir)
-        self._tb.metrics = metrics if metrics is not None else self.get_evaluation_metrics()
-        self._tb_set = True
-
-    def update_tensorboard_data(self, metrics):
-        if not self.opt.tensorboard:
-            return
-        for m in self._tb.metrics:
-            v = metrics.get(m, 0.0)
-            self._tb.summary_writer.add_scalar(m, v, self._tb.step)
-        self._tb.summary_writer.flush()
-        self._tb.step += 1
-
-    def finalize_tensorboard(self):
-        if not self.opt.tensorboard:
-            return
-        with open(os.path.join(self._tb.data_root, 'opt.json'), 'w') as fout:
-            fout.write(json.dumps(self.opt, indent=2))
-        self._tb.summary_writer.close()
-        self._tb = None

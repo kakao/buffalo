@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 
 import buffalo.data
-from buffalo.misc import aux
+from buffalo.misc import aux, set_log_level
 from buffalo.algo.plsi import PLSI
 from buffalo.algo.options import PLSIOption
 from buffalo.data.mm import MatrixMarketOptions
@@ -15,6 +15,7 @@ from .base import TestBase
 
 class TestPLSI(TestBase):
     def test00_get_default_option(self):
+        set_log_level(3)
         PLSIOption().get_default_option()
         self.assertTrue(True)
 
@@ -43,6 +44,11 @@ class TestPLSI(TestBase):
         opt = PLSIOption().get_default_option()
         opt.validation = aux.Option({'topk': 10})
         self._test5_validation(PLSI, opt, ndcg=0.03, map=0.02)
+
+    def test05_1_validation_with_callback(self):
+        opt = PLSIOption().get_default_option()
+        opt.validation = aux.Option({'topk': 10})
+        self._test5_1_validation_with_callback(PLSI, opt)
 
     def test06_topk(self):
         opt = PLSIOption().get_default_option()

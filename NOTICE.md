@@ -134,13 +134,6 @@ Copyright 2007-2019 by the Sphinx team (see AUTHORS file).
 BSD 2-Clause "Simplified" License
 
 
- **Tensorboard**
-
-https://github.com/tensorflow/tensorboard
-
-Copyright 2017 The TensorFlow Authors.
-
-
 Apache License 2.0
 
 

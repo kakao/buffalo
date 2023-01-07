@@ -28,19 +28,6 @@ class AlgoOption(InputOptions):
         }
         return opt
 
-    def get_default_tensorboard_option(self):
-        """Default options for tensorboard feature.
-        :ivar str name: Name of graph name. (default: default)
-        :ivar str root: Path where to make graph directory. (default: ./tb)
-        :ivar str name_template: Name template for directory name. (default: {name}.{dtm})
-        """
-        opt = {
-            'name': 'default',
-            'root': './tb',
-            'name_template': '{name}.{dtm}'
-        }
-        return opt
-
     def is_valid_option(self, opt):
         b = super().is_valid_option(opt)
         for f in ['num_workers']:

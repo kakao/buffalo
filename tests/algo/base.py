@@ -9,15 +9,14 @@ from buffalo.misc import aux, log
 from buffalo.algo.base import Algo
 from buffalo.misc.log import set_log_level
 from buffalo.algo.options import ALSOption
-from buffalo.data.mm import MatrixMarketOptions
-from buffalo.algo.base import TensorboardExtension
-from buffalo.algo.warp import WARP
+from buffalo.data import MatrixMarketOptions
+from buffalo.algo import WARP
 
 
-class MockAlgo(Algo, TensorboardExtension):
+class MockAlgo(Algo):
     def __init__(self, *args, **kwargs):
+        np.random.seed(7)
         Algo.__init__(self, *args, **kwargs)
-        TensorboardExtension.__init__(self, *args, **kwargs)
         self.logger = log.get_logger('MockAlgo')
         option = ALSOption().get_default_option()
         option.model_path = 'hello.world.bin'
@@ -101,6 +100,26 @@ class TestBase(unittest.TestCase):
         results = c.get_validation_results()
         self.assertTrue(results['ndcg'] > ndcg, msg='NDCG Test')
         self.assertTrue(results['map'] > map, msg='MAP Test')
+
+    def _test5_1_validation_with_callback(self, cls, opt, ndcg=0.06, map=0.04):
+        set_log_level(2)
+        data_opt = MatrixMarketOptions().get_default_option()
+        data_opt.input.main = self.ml_100k + 'main'
+        data_opt.input.uid = self.ml_100k + 'uid'
+        data_opt.input.iid = self.ml_100k + 'iid'
+        data_opt.data.value_prepro = aux.Option({'name': 'OneBased'})
+        data_opt.validation = aux.Option({"topk": 10})
+        call_count = 0
+
+        def training_callback(curr_iter, metrics):
+            nonlocal call_count
+            call_count += 1
+            print(f"curr_iter : {curr_iter}\n call_count: {call_count}")
+
+        c = cls(opt, data_opt=data_opt)
+        c.initialize()
+        c.train(training_callback)
+        self.assertTrue((call_count * opt.evaluation_period) == opt.num_iters)
 
     def _test6_topk(self, cls, opt):
         set_log_level(2)
