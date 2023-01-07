@@ -5,3 +5,5 @@ from .cfr import CFR
 from .plsi import PLSI
 from .w2v import W2V
 from .warp import WARP
+
+from .options import AlgoOption, ALSOption, BPRMFOption, CFROption, WARPOption, PLSIOption, W2VOption

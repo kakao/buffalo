@@ -2,8 +2,7 @@
 import unittest
 
 from buffalo.misc import aux, set_log_level
-from buffalo.algo.options import ALSOption
-from buffalo.algo import ALS, inited_CUALS
+from buffalo.algo import ALS, inited_CUALS, ALSOption
 
 from .base import TestBase
 

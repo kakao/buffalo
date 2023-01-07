@@ -2,8 +2,7 @@
 import unittest
 
 from buffalo.misc import aux, set_log_level
-from buffalo.algo.warp import WARP
-from buffalo.algo.options import WARPOption
+from buffalo.algo import WARP, WARPOption
 
 from .base import TestBase
 

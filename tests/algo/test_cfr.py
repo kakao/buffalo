@@ -4,9 +4,8 @@ import time
 
 import unittest
 from .base import TestBase
-from buffalo.algo import CFR
+from buffalo.algo import CFR, CFROption
 from buffalo.misc import aux, set_log_level
-from buffalo.algo.options import CFROption
 from buffalo.data import StreamOptions
 
 

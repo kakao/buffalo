@@ -4,8 +4,7 @@ import unittest
 import numpy as np
 
 from buffalo.misc import aux, set_log_level
-from buffalo.algo.options import BPRMFOption
-from buffalo.algo import BPRMF, inited_CUBPR
+from buffalo.algo import BPRMF, inited_CUBPR, BPRMFOption
 
 from .base import TestBase
 

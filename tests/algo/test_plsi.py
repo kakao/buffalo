@@ -6,9 +6,8 @@ import numpy as np
 
 import buffalo.data
 from buffalo.misc import aux, set_log_level
-from buffalo.algo.plsi import PLSI
-from buffalo.algo.options import PLSIOption
-from buffalo.data.mm import MatrixMarketOptions
+from buffalo.algo.plsi import PLSI, PLSIOption
+from buffalo.data import MatrixMarketOptions
 
 from .base import TestBase
 
