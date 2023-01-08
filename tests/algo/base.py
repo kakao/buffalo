@@ -6,11 +6,7 @@ import unittest
 import numpy as np
 
 from buffalo.misc import aux, log
-from buffalo.algo.base import Algo
-from buffalo.misc.log import set_log_level
-from buffalo.algo.options import ALSOption
-from buffalo.data import MatrixMarketOptions
-from buffalo.algo import WARP
+from buffalo import Algo, WARP, set_log_level, ALSOption, MatrixMarketOptions
 
 
 class MockAlgo(Algo):

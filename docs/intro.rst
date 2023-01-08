@@ -9,8 +9,8 @@ Buffalo provides the following algorithms:
   - Bayesian Personalized Ranking Matrix Factorization (BPR)
   - Word2Vec (W2V)
   - CoFactors (CFR)
-  - Weighted Approximate Rank Pairwise (WARP), along with L2 distance variant (CML)
   - Probabilistic latent semantic indexing (pLSI)
+  - Collaborative Metric Learning, along with dot and l2 distance metrics (WARP)
 
 ALS is one of the most famous matrix factorization models which decompose the observed user-item interaction matrix into user and item latent factors. One disitnguishing feature of the implementation of Buffalo ALS is that we offer both GPU based optimization and recently proposed [Block Coordinate Least Squares](https://arxiv.org/abs/2110.14044) which enable blazingly fast model training. More ranking optimized models are BPR and WARP. W2V and CFR mainly focus on the item co-occurrence data. Unlike other models, pLSI (a.k.a probabilistic latent semantic analysis) is a soft clustering module that performs a low-rank approximation of user-item matrix on the basis of their frequencies.
 

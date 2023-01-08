@@ -5,9 +5,9 @@ import unittest
 import numpy as np
 
 import buffalo.data
-from buffalo.misc import aux, set_log_level
-from buffalo.algo.plsi import PLSI, PLSIOption
-from buffalo.data import MatrixMarketOptions
+from buffalo import aux, set_log_level
+from buffalo import PLSI, PLSIOption
+from buffalo import MatrixMarketOptions
 
 from .base import TestBase
 

@@ -7,6 +7,7 @@ class AlgoOption(InputOptions):
 
     def get_default_option(self):
         """Default options for Algo classes.
+
         :ivar bool evaluation_on_learning: Set True to do run evaluation on training phrase. (default: True)
         :ivar bool compute_loss_on_training: Set True to calculate loss on training phrase. (default: True)
         :ivar int early_stopping_rounds: The number of exceed epochs after reached minimum loss on training phrase. If set 0, it doesn't work. (default: 0)
@@ -42,6 +43,7 @@ class ALSOption(AlgoOption):
 
     def get_default_option(self):
         """Options for Alternating Least Squares.
+
         :ivar bool adaptive_reg: Set True, for adaptive regularization. (default: False)
         :ivar bool save_factors: Set True, to save models. (default: False)
         :ivar bool accelerator: Set True, to accelerate training using GPU. (default: False)
@@ -99,6 +101,7 @@ class CFROption(AlgoOption):
 
     def get_default_option(self):
         """ Basic Options for CoFactor.
+
         :ivar int d: The number of latent feature dimension. (default: 20)
         :ivar int num_iters: The number of iterations for training. (default: 10)
         :ivar int num_workers: The number of threads. (default: 1)
@@ -152,6 +155,7 @@ class BPRMFOption(AlgoOption):
 
     def get_default_option(self):
         """Options for Bayesian Personalized Ranking Matrix Factorization.
+
         :ivar bool accelerator: Set True, to accelerate training using GPU. (default: False)
         :ivar bool use_bias: Set True, to use bias term for the model.
         :ivar int evaluation_period: (default: 100)
@@ -218,6 +222,7 @@ class WARPOption(AlgoOption):
 
     def get_default_option(self):
         """Options for WARP Matrix Factorization.
+
         :ivar bool accelerator: Set True, to accelerate training using GPU. (default: False)
         :ivar int evaluation_period: (default: 15)
         :ivar int num_workers: The number of threads. (default: 1)
@@ -276,6 +281,7 @@ class W2VOption(AlgoOption):
 
     def get_default_option(self):
         """Options for Word2Vec.
+
         :ivar bool evaluation_on_learning: Set True to do run evaluation on training phrase. (default: False)
         :ivar int num_workers: The number of threads. (default: 1)
         :ivar int num_iters: The number of iterations for training. (default: 100)
@@ -315,6 +321,7 @@ class PLSIOption(AlgoOption):
 
     def get_default_option(self):
         """ Basic Options for pLSI.
+
         :ivar int d: The number of latent feature dimension. (default: 20)
         :ivar int num_iters: The number of iterations for training. (default: 10)
         :ivar int num_workers: The number of threads. (default: 1)

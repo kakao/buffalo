@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from buffalo.algo import ALS, ALSOption
-from buffalo.misc import set_log_level
-from buffalo.data import MatrixMarketOptions
+from buffalo import ALS, ALSOption
+from buffalo import set_log_level, MatrixMarketOptions
 
 from .base import TestBase, MockAlgo
 

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from buffalo.misc import aux, set_log_level
-from buffalo.algo import WARP, WARPOption
+from buffalo import WARP, WARPOption
+from buffalo import aux, set_log_level
 
 from .base import TestBase
 

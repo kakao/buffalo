@@ -10,9 +10,9 @@ environ["NUMEXPR_NUM_THREADS"] = "4"
 import numpy as np
 
 import unittest
-from .base import TestBase
 from buffalo.evaluate.base import Evaluable
 
+from .base import TestBase
 
 scores = np.random.uniform(size=(100, 100000)).astype(np.float32)
 topk = 10

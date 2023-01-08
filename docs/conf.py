@@ -12,13 +12,16 @@
 #
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath('..'))
 import mock
-MOCK_MODULES = ['buffalo.data.fileio', 'buffalo.misc.log',
-                'buffalo.parallel._core',
+
+MOCK_MODULES = ['buffalo',
+                'buffalo.data.fileio', 'buffalo.misc.log',
                 'buffalo.algo._als', 'buffalo.algo._bpr',
                 'buffalo.algo._cfr', 'buffalo.algo._w2v',
                 'buffalo.algo._warp', 'buffalo.algo._plsi']
+
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = mock.Mock()
 
@@ -32,7 +35,7 @@ author = 'Kakao Recommendation Team'
 master_doc = 'index'
 
 # The full version, including alpha/beta/rc tags
-release = '1.2.2'
+release = '2.0.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -43,7 +46,6 @@ release = '1.2.2'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx_rtd_theme',
-
 ]
 
 # Add any paths that contain templates here, relative to this directory.

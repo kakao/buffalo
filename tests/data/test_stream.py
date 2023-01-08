@@ -3,7 +3,7 @@ import os
 import unittest
 import tempfile
 
-from buffalo.data.stream import Stream, StreamOptions
+from buffalo import Stream, StreamOptions
 
 
 class TestStream(unittest.TestCase):

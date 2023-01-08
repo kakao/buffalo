@@ -8,42 +8,15 @@ Buffalo provides the following algorithm implementations:
   - Word2Vec
   - CoFactors
 
-All algorithms inherit common parent classes such as Algo, Serializable, Evaluable.
-
-
-Algo
----------
-.. autoclass:: buffalo.algo.base.Algo
-   :members:
-   :exclude-members: get_option, periodical, save_best_only, early_stopping
-   :show-inheritance:
-   :undoc-members:
-
-Serializable
-`````````````
-.. autoclass:: buffalo.algo.base.Serializable
-   :members:
-   :exclude-members:
-   :show-inheritance:
-   :undoc-members:
-
-Evaluable
-`````````
-.. autoclass:: buffalo.evaluate.base.Evaluable
-   :members:
-   :exclude-members:
-   :show-inheritance:
-   :undoc-members:
-
 Alternating Least Squares
 -------------------------
-.. autoclass:: buffalo.algo.als.ALS
+.. autoclass:: buffalo.ALS
    :members:
    :exclude-members: get_evaluation_metrics, init_factors, set_data
    :show-inheritance:
    :undoc-members:
 
-.. autoclass:: buffalo.algo.options.ALSOption
+.. autoclass:: buffalo.ALSOption
    :members:
    :exclude-members:
    :show-inheritance:
@@ -51,13 +24,13 @@ Alternating Least Squares
 
 Bayesian Personalized Ranking Matrix Factorization
 --------------------------------------------------
-.. autoclass:: buffalo.algo.bpr.BPRMF
+.. autoclass:: buffalo.BPRMF
    :members:
    :exclude-members: get_evaluation_metrics, init_factors, set_data, compute_loss, prepare_sampling, sampling_loss_samples, set_data
    :show-inheritance:
    :undoc-members:
 
-.. autoclass:: buffalo.algo.options.BPRMFOption
+.. autoclass:: buffalo.BPRMFOption
    :members:
    :exclude-members:
    :show-inheritance:
@@ -65,13 +38,13 @@ Bayesian Personalized Ranking Matrix Factorization
 
 Weighted Approximate-Rank Pairwise
 --------------------------------------------------
-.. autoclass:: buffalo.algo.warp.WARP
+.. autoclass:: buffalo.WARP
    :members:
    :exclude-members: get_evaluation_metrics, init_factors, set_data, compute_loss, prepare_sampling, sampling_loss_samples, set_data
    :show-inheritance:
    :undoc-members:
 
-.. autoclass:: buffalo.algo.options.WARPOption
+.. autoclass:: buffalo.WARPOption
    :members:
    :exclude-members:
    :show-inheritance:
@@ -80,13 +53,13 @@ Weighted Approximate-Rank Pairwise
 
 CoFactors
 ---------
-.. autoclass:: buffalo.algo.cfr.CFR
+.. autoclass:: buffalo.CFR
    :members:
    :exclude-members: compute_scale, get_evaluation_metrics, partial_update, set_data
    :show-inheritance:
    :undoc-members:
 
-.. autoclass:: buffalo.algo.options.CFROption
+.. autoclass:: buffalo.CFROption
    :members:
    :exclude-members:
    :show-inheritance:
@@ -95,13 +68,13 @@ CoFactors
 
 Word2Vec
 --------
-.. autoclass:: buffalo.algo.w2v.W2V
+.. autoclass:: buffalo.W2V
    :members:
    :exclude-members: get_evaluation_metrics, build_vocab, get_sampling_distribution, init_factors, set_data
    :show-inheritance:
    :undoc-members:
 
-.. autoclass:: buffalo.algo.options.W2VOption
+.. autoclass:: buffalo.W2VOption
    :members:
    :exclude-members:
    :show-inheritance:
@@ -110,13 +83,13 @@ Word2Vec
 
 pLSI
 --------------------------------------------------
-.. autoclass:: buffalo.algo.plsi.PLSI
+.. autoclass:: buffalo.PLSI
    :members:
    :exclude-members: get_evaluation_metrics, init_factors, set_data
    :show-inheritance:
    :undoc-members:
 
-.. autoclass:: buffalo.algo.options.PLSIOption
+.. autoclass:: buffalo.PLSIOption
    :members:
    :exclude-members:
    :show-inheritance:

@@ -6,8 +6,8 @@ import tempfile
 import numpy as np
 import scipy.sparse
 
-from buffalo.misc import set_log_level
-from buffalo.data.mm import MatrixMarket, MatrixMarketOptions
+from buffalo import set_log_level
+from buffalo import MatrixMarket, MatrixMarketOptions
 
 
 class TestMatrixMarket(unittest.TestCase):

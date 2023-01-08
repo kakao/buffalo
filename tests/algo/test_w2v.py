@@ -5,9 +5,8 @@ import unittest
 import numpy as np
 from tempfile import NamedTemporaryFile
 
-from buffalo.misc import set_log_level
-from buffalo.algo import W2V, W2VOption
-from buffalo.data import StreamOptions
+from buffalo import W2V, W2VOption
+from buffalo import set_log_level, StreamOptions
 
 from .base import TestBase
 

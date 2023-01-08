@@ -10,7 +10,7 @@ from base import _get_elapsed_time, _print_table
 from models import BuffaloLib, ImplicitLib
 from n2 import HnswIndex
 
-from buffalo.parallel.base import ParALS, ParBPRMF
+from buffalo.parallel import ParALS, ParBPRMF
 
 
 def _buffalo(algo_name, database):

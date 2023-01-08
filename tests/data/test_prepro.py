@@ -4,8 +4,8 @@ import math
 import unittest
 import tempfile
 
-from buffalo.misc import aux
-from buffalo.data.mm import MatrixMarket, MatrixMarketOptions
+from buffalo import aux
+from buffalo import MatrixMarket, MatrixMarketOptions
 
 
 class TestPrepro(unittest.TestCase):

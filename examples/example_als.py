@@ -4,11 +4,10 @@ import time
 
 import fire
 
-from buffalo.algo.als import ALS
-from buffalo.algo.options import ALSOption
-from buffalo.data.mm import MatrixMarketOptions
+from buffalo.algo import ALS, ALSOption
+from buffalo.data import MatrixMarketOptions
 from buffalo.misc import aux, log
-from buffalo.parallel.base import ParALS
+from buffalo.parallel import ParALS
 
 
 def example1():
@@ -28,47 +27,14 @@ def example1():
     for rank, (movie_name, score) in enumerate(als.most_similar('49.Star_Wars_(1977)')):
         print(f'{rank + 1:02d}. {score:.3f} {movie_name}')
 
-    print('Run hyper parameter optimization for val_ndcg...')
-    als.opt.num_workers = 4
-    als.opt.evaluation_period = 10
-    als.opt.optimize = aux.Option({
-        'loss': 'val_ndcg',
-        'max_trials': 100,
-        'deployment': True,
-        'start_with_default_parameters': True,
-        'space': {
-            'd': ['randint', ['d', 10, 128]],
-            'reg_u': ['uniform', ['reg_u', 0.1, 1.0]],
-            'reg_i': ['uniform', ['reg_i', 0.1, 1.0]],
-            'alpha': ['randint', ['alpha', 1, 10]],
-        }
-    })
-    log.set_log_level(log.INFO)
-    als.opt.model_path = './example1.ml100k.als.optimize.bin'
-    print(json.dumps({'alpha': als.opt.alpha, 'd': als.opt.d,
-                      'reg_u': als.opt.reg_u, 'reg_i': als.opt.reg_i}, indent=2))
-    als.optimize()
-    als.load('./example1.ml100k.als.optimize.bin')
-
-    print('Similar movies to Star_Wars_(1977)')
-    for rank, (movie_name, score) in enumerate(als.most_similar('49.Star_Wars_(1977)')):
-        print(f'{rank + 1:02d}. {score:.3f} {movie_name}')
-
-    optimization_res = als.get_optimization_data()
-    best_parameters = optimization_res['best_parameters']
-
-    print(json.dumps(optimization_res['best'], indent=2))
-    print(json.dumps({'alpha': int(best_parameters['alpha']), 'd': int(best_parameters['d']),
-                      'reg_u': best_parameters['reg_u'], 'reg_i': best_parameters['reg_i']}, indent=2))
-
 
 def example2():
     log.set_log_level(log.INFO)
     als_option = ALSOption().get_default_option()
     data_option = MatrixMarketOptions().get_default_option()
-    data_option.input.main = '../tests/ext/ml-20m/main'
-    data_option.input.iid = '../tests/ext/ml-20m/iid'
-    data_option.data.path = './ml20m.h5py'
+    data_option.input.main = '../tests/ext/ml-100k/main'
+    data_option.input.iid = '../tests/ext/ml-100k/iid'
+    # data_option.data.path = './ml20m.h5py'
     data_option.data.use_cache = True
 
     als = ALS(als_option, data_opt=data_option)

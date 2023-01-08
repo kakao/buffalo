@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 import unittest
 
-from buffalo.misc import aux, set_log_level
-from buffalo.algo import ALS, inited_CUALS, ALSOption
+from buffalo import aux, set_log_level
+from buffalo import ALS, inited_CUALS, ALSOption
 
 from .base import TestBase
 
