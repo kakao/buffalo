@@ -73,25 +73,25 @@ class InputOptions(abc.ABC):
         keys = self.get_default_option()
         for key in keys:
             if key not in opt:
-                raise RuntimeError('{} not exists on Option'.format(key))
+                raise RuntimeError("{} not exists on Option".format(key))
             expected_type = type(default_opt[key])
             if not isinstance(opt.get(key), expected_type):
-                raise RuntimeError('Invalid type for {}, {} expected. '.format(key, type(default_opt[key])))
+                raise RuntimeError("Invalid type for {}, {} expected. ".format(key, type(default_opt[key])))
         return True
 
     def create_temporary_option_from_dict(self, opt) -> str:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", ResourceWarning)
             str_opt = json.dumps(opt)
-            tmp = tempfile.NamedTemporaryFile(mode='w', dir=opt.get('tmp_dir', '/tmp/'), delete=False)
+            tmp = tempfile.NamedTemporaryFile(mode="w", dir=opt.get("tmp_dir", "/tmp/"), delete=False)
             tmp.write(str_opt)
             _temporary_files.append(tmp.name)
             return tmp.name
 
 
 def copy_to_temporary_file(source_path, ignore_lines=0, chunk_size=8192, binary=False):
-    W = 'w' if not binary else 'wb'
-    R = 'r' if not binary else 'rb'
+    W = "w" if not binary else "wb"
+    R = "r" if not binary else "rb"
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", ResourceWarning)
         with tempfile.NamedTemporaryFile(mode=W, delete=False) as w:
@@ -108,30 +108,30 @@ def copy_to_temporary_file(source_path, ignore_lines=0, chunk_size=8192, binary=
             return w.name
 
 
-def psort(path, parallel=-1, field_seperator=' ', key=1, tmp_dir='/tmp/', buffer_mb=1024, output=None):
+def psort(path, parallel=-1, field_seperator=" ", key=1, tmp_dir="/tmp/", buffer_mb=1024, output=None):
     # TODO: We need better way for OS/platform compatibility.
     # we need compatibility checking routine for this method.
-    commands = ['sort', '-n', '-s']
+    commands = ["sort", "-n", "-s"]
     if parallel == -1:
         parallel = psutil.cpu_count()
     if parallel > 0:
-        commands.extend(['--parallel', parallel])
+        commands.extend(["--parallel", parallel])
     if not output:
         output = path
-    commands.extend(['-t', '{}'.format(field_seperator)])
-    commands.extend(['-k', key])
-    commands.extend(['-T', tmp_dir])
-    commands.extend(['-S', '%sM' % buffer_mb])
-    commands.extend(['-o', output])
+    commands.extend(["-t", "{}".format(field_seperator)])
+    commands.extend(["-k", key])
+    commands.extend(["-T", tmp_dir])
+    commands.extend(["-S", "%sM" % buffer_mb])
+    commands.extend(["-o", output])
     commands.append(path)
     try:
-        subprocess.check_output(map(str, commands), stderr=subprocess.STDOUT, env={'LC_ALL': 'C'})
+        subprocess.check_output(map(str, commands), stderr=subprocess.STDOUT, env={"LC_ALL": "C"})
     except Exception as e:
-        log.get_logger().error('Unexpected error: %s for %s' % (str(e), ' '.join(list(map(str, commands)))))
+        log.get_logger().error("Unexpected error: %s for %s" % (str(e), " ".join(list(map(str, commands)))))
         raise
 
 
-def get_temporary_file(root='/tmp/', write_mode='w'):
+def get_temporary_file(root="/tmp/", write_mode="w"):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", ResourceWarning)
         w = tempfile.NamedTemporaryFile(mode=write_mode, dir=root, delete=False)

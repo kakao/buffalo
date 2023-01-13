@@ -16,9 +16,9 @@ EPS = 1e-8
 
 class Algo(abc.ABC):
     def __init__(self, *args, **kwargs):
-        self._idmanager = aux.Option({'userid': [], 'userid_map': {},
-                                      'itemid': [], 'itemid_map': {},
-                                      'userid_mapped': False, 'itemid_mapped': False})
+        self._idmanager = aux.Option({"userid": [], "userid_map": {},
+                                      "itemid": [], "itemid_map": {},
+                                      "userid_mapped": False, "itemid_mapped": False})
 
     def get_option(self, opt_path) -> (aux.Option, str):
         if isinstance(opt_path, (dict, aux.Option)):
@@ -33,13 +33,13 @@ class Algo(abc.ABC):
         return feat
 
     def initialize(self):
-        self.__early_stopping = {'round': 0,
-                                 'min_loss': 987654321}
+        self.__early_stopping = {"round": 0,
+                                 "min_loss": 987654321}
         if self.opt.random_seed:
             np.random.seed(self.opt.random_seed)
 
     @abc.abstractmethod
-    def normalize(self, group='item'):
+    def normalize(self, group="item"):
         raise NotImplementedError
 
     def _get_topk_recommendation(self, p, Q, pb, Qb, pool, topk, num_workers):
@@ -76,7 +76,7 @@ class Algo(abc.ABC):
         if not self._idmanager.itemid_mapped:
             self.build_itemid_map()
         if pool is not None:
-            pool = self.get_index_pool(pool, group='item')
+            pool = self.get_index_pool(pool, group="item")
             if len(pool) == 0:
                 return []
         rows = [self._idmanager.userid_map[k] for k in keys
@@ -91,7 +91,7 @@ class Algo(abc.ABC):
             for k, vv in topks:
                 return [self._idmanager.itemids[v] for v in vv]
 
-    def most_similar(self, key, topk=10, group='item', pool=None):
+    def most_similar(self, key, topk=10, group="item", pool=None):
         """Return top-k most similar items
 
         :param str key: Query key
@@ -103,7 +103,7 @@ class Algo(abc.ABC):
         :return: Top-k most similar items for given query.
         :rtype: list
         """
-        if group == 'item':
+        if group == "item":
             if not self._idmanager.itemid_mapped:
                 self.build_itemid_map()
             return self._most_similar_item(key, topk, pool)
@@ -147,7 +147,7 @@ class Algo(abc.ABC):
                 return []
             f = col
         if pool is not None:
-            pool = self.get_index_pool(pool, group='item')
+            pool = self.get_index_pool(pool, group="item")
             if len(pool) == 0:
                 return []
         topks, scores = self._get_most_similar_item(f, topk, pool)
@@ -160,40 +160,40 @@ class Algo(abc.ABC):
                     if k != f]
 
     def build_itemid_map(self):
-        idmap = self.data.get_group('idmap')
+        idmap = self.data.get_group("idmap")
         header = self.data.get_header()
-        if idmap['cols'].shape[0] == 0:
-            self._idmanager.itemids = list(map(str, list(range(header['num_items']))))
-            self._idmanager.itemid_map = {str(i): i for i in range(header['num_items'])}
+        if idmap["cols"].shape[0] == 0:
+            self._idmanager.itemids = list(map(str, list(range(header["num_items"]))))
+            self._idmanager.itemid_map = {str(i): i for i in range(header["num_items"])}
         else:
-            self._idmanager.itemids = list(map(lambda x: x.decode('utf-8', 'ignore'), idmap['cols'][::]))
+            self._idmanager.itemids = list(map(lambda x: x.decode("utf-8", "ignore"), idmap["cols"][::]))
             self._idmanager.itemid_map = {v: idx
                                           for idx, v in enumerate(self._idmanager.itemids)}
         self._idmanager.itemid_mapped = True
 
     def build_userid_map(self):
-        idmap = self.data.get_group('idmap')
+        idmap = self.data.get_group("idmap")
         header = self.data.get_header()
-        if idmap['rows'].shape[0] == 0:
-            self._idmanager.userids = list(map(str, list(range(header['num_users']))))
-            self._idmanager.userid_map = {str(i): i for i in range(header['num_users'])}
+        if idmap["rows"].shape[0] == 0:
+            self._idmanager.userids = list(map(str, list(range(header["num_users"]))))
+            self._idmanager.userid_map = {str(i): i for i in range(header["num_users"])}
         else:
-            self._idmanager.userids = list(map(lambda x: x.decode('utf-8', 'ignore'), idmap['rows'][::]))
+            self._idmanager.userids = list(map(lambda x: x.decode("utf-8", "ignore"), idmap["rows"][::]))
             self._idmanager.userid_map = {v: idx
                                           for idx, v in enumerate(self._idmanager.userids)}
         self._idmanager.userid_mapped = True
 
-    def get_feature(self, name, group='item'):
+    def get_feature(self, name, group="item"):
         index = self.get_index(name, group=group)
         if index is None:
             return None
         return self._get_feature(index, group)
 
     @abc.abstractmethod
-    def _get_feature(self, index, group='item'):
+    def _get_feature(self, index, group="item"):
         raise NotImplementedError
 
-    def get_weighted_feature(self, weights, group='item', min_length=1):
+    def get_weighted_feature(self, weights, group="item", min_length=1):
         if isinstance(weights, dict):
             feat = [(self.get_feature(k), w) for k, w in weights.items()]
             feat = [f * w for f, w in feat if f is not None]
@@ -218,17 +218,17 @@ class Algo(abc.ABC):
     def early_stopping(self, loss):
         if self.opt.early_stopping_rounds < 1:
             return False
-        if self.__early_stopping['min_loss'] < loss:
-            self.__early_stopping['round'] += 1
+        if self.__early_stopping["min_loss"] < loss:
+            self.__early_stopping["round"] += 1
         else:
-            self.__early_stopping['round'] = 0
-        self.__early_stopping['min_loss'] = loss
-        if self.__early_stopping['round'] >= self.opt.early_stopping_rounds:
-            self.logger.info('Reached at early_stopping rounds, stopping train.')
+            self.__early_stopping["round"] = 0
+        self.__early_stopping["min_loss"] = loss
+        if self.__early_stopping["round"] >= self.opt.early_stopping_rounds:
+            self.logger.info("Reached at early_stopping rounds, stopping train.")
             return True
         return False
 
-    def get_index(self, keys, group='item'):
+    def get_index(self, keys, group="item"):
         """Get index list of given item keys.
         If there is no index for such key, return None.
 
@@ -241,11 +241,11 @@ class Algo(abc.ABC):
         if not is_many:
             keys = [keys]
         indexes = []
-        if group == 'item':
+        if group == "item":
             if not self._idmanager.itemid_mapped:
                 self.build_itemid_map()
             indexes = [self._idmanager.itemid_map.get(k) for k in keys]
-        elif group == 'user':
+        elif group == "user":
             if not self._idmanager.userid_mapped:
                 self.build_userid_map()
             indexes = [self._idmanager.userid_map.get(k) for k in keys]
@@ -254,7 +254,7 @@ class Algo(abc.ABC):
         return np.array(indexes)
 
     # NOTE: Ugly naming?
-    def get_index_pool(self, pool, group='item'):
+    def get_index_pool(self, pool, group="item"):
         """Simple wrapper of get_index.
         For np.ndarray pool, it returns asis with nothing. But list, it perform get_index with keys in pool.
 
@@ -268,7 +268,7 @@ class Algo(abc.ABC):
         elif isinstance(pool, np.ndarray):
             pass
         else:
-            raise ValueError('Unexpected type for pool: %s' % type(pool))
+            raise ValueError("Unexpected type for pool: %s" % type(pool))
         assert isinstance(pool, np.ndarray)
         return pool
 
@@ -287,28 +287,28 @@ class Serializable(abc.ABC):
         data = self._get_data()
         if data_fields:
             data = [(k, v) for k, v in data if k in data_fields]
-        with open(path, 'wb') as fout:
+        with open(path, "wb") as fout:
             total_objs = len(data)
-            fout.write(struct.pack('Q', total_objs))
+            fout.write(struct.pack("Q", total_objs))
             for name, obj in data:
-                bname = bytes(name, encoding='utf-8')
-                fout.write(struct.pack('Q', len(bname)))
+                bname = bytes(name, encoding="utf-8")
+                fout.write(struct.pack("Q", len(bname)))
                 fout.write(bname)
                 s = pickle.dumps(obj, protocol=4)
-                fout.write(struct.pack('Q', len(s)))
+                fout.write(struct.pack("Q", len(s)))
                 fout.write(s)
 
     def _get_data(self):
-        data = [('_idmanager', self._idmanager)]
+        data = [("_idmanager", self._idmanager)]
         return data
 
     def load(self, path, data_fields=[]):
-        with open(path, 'rb') as fin:
-            total_objs = struct.unpack('Q', fin.read(8))[0]
+        with open(path, "rb") as fin:
+            total_objs = struct.unpack("Q", fin.read(8))[0]
             for _ in range(total_objs):
-                name_sz = struct.unpack('Q', fin.read(8))[0]
-                name = fin.read(name_sz).decode('utf8')
-                obj_sz = struct.unpack('Q', fin.read(8))[0]
+                name_sz = struct.unpack("Q", fin.read(8))[0]
+                name = fin.read(name_sz).decode("utf8")
+                obj_sz = struct.unpack("Q", fin.read(8))[0]
                 if data_fields and name not in data_fields:
                     fin.seek(obj_sz, 1)
                     continue

@@ -1,6 +1,5 @@
 # cython: experimental_cpp_class_def=True, language_level=3
 # distutils: language=c++
-# -*- coding: utf-8 -*-
 import cython
 
 from libc.stdint cimport int32_t, int64_t

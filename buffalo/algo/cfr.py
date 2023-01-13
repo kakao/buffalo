@@ -31,7 +31,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable):
         if opt_path is None:
             opt_path = CFROption().get_default_option()
 
-        self.logger = log.get_logger('CFR')
+        self.logger = log.get_logger("CFR")
 
         # put options into cython class with type assertion
         # see comments on options.py for the description of each parameter
@@ -45,54 +45,54 @@ class CFR(Algo, CFROption, Evaluable, Serializable):
         self.is_initialized = False
 
         self.data = None
-        data = kwargs.get('data')
-        data_opt = self.opt.get('data_opt')
-        data_opt = kwargs.get('data_opt', data_opt)
+        data = kwargs.get("data")
+        data_opt = self.opt.get("data_opt")
+        data_opt = kwargs.get("data_opt", data_opt)
         if data_opt:
             assert data_opt.data.internal_data_type == "matrix", \
                 f"internal data type is {data_opt.data.internal_data_type}, not matrix"
             self.data = buffalo.data.load(data_opt)
-            assert self.data.data_type == 'stream'
+            assert self.data.data_type == "stream"
             self.data.create()
         elif isinstance(data, Data):
             self.data = data
-        self.logger.info('CFR ({})'.format(json.dumps(self.opt, indent=2)))
+        self.logger.info("CFR ({})".format(json.dumps(self.opt, indent=2)))
         if self.data:
             self.logger.info(self.data.show_info())
-            assert self.data.data_type in ['stream']
+            assert self.data.data_type in ["stream"]
 
     @staticmethod
     def new(path, data_fields=[]):
         return CFR.instantiate(CFROption, path, data_fields)
 
     def set_data(self, data):
-        assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
+        assert isinstance(data, aux.data.Data), "Wrong instance: {}".format(type(data))
         self.data = data
 
-    def normalize(self, group='item'):
+    def normalize(self, group="item"):
         assert group in ["user", "item", "context"], \
             f"group ({group}) is not properly provided"
-        if group == 'user' and not self.opt._nrz_U:
+        if group == "user" and not self.opt._nrz_U:
             self.U = self._normalize(self.U)
             self.opt._nrz_U = True
-        elif group == 'item' and not self.opt._nrz_I:
+        elif group == "item" and not self.opt._nrz_I:
             self.I = self._normalize(self.I)
             self.opt._nrz_I = True
-        elif group == 'context' and not self.opt._nrz_C:
+        elif group == "context" and not self.opt._nrz_C:
             self.C = self._normalize(self.C)
             self.opt._nrz_C = True
 
     def initialize(self):
         super().initialize()
-        assert self.data, 'Data is not set'
+        assert self.data, "Data is not set"
         header = self.data.get_header()
         num_users, num_items, d = \
             header["num_users"], header["num_items"], self.opt.d
-        for attr, shape, name in [('U', (num_users, d), "user"),
-                                  ('I', (num_items, d), "item"),
-                                  ('C', (num_items, d), "context"),
-                                  ('Ib', (num_items, 1), "item_bias"),
-                                  ('Cb', (num_items, 1), "context_bias")]:
+        for attr, shape, name in [("U", (num_users, d), "user"),
+                                  ("I", (num_items, d), "item"),
+                                  ("C", (num_items, d), "context"),
+                                  ("Ib", (num_items, 1), "item_bias"),
+                                  ("Cb", (num_items, 1), "context_bias")]:
             setattr(self, attr, None)
             F = np.random.normal(scale=1.0 / (d ** 2), size=shape).astype(np.float32)
             setattr(self, attr, F)
@@ -125,7 +125,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable):
         buf.initialize(self.data, with_sppmi=True)
         return buf
 
-    def _iterate(self, buf, group='user'):
+    def _iterate(self, buf, group="user"):
         assert group in ["user", "item", "context"], f"group {group} is not properly provided"
         header = self.data.get_scale_info(with_sppmi=True)
         err, update_t, feed_t, updated = 0, 0, 0, 0
@@ -141,7 +141,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable):
             total = header["sppmi_nnz"]
             _groups = ["sppmi"]
 
-        with ProgressBar(log.DEBUG, desc='%s' % group,
+        with ProgressBar(log.DEBUG, desc="%s" % group,
                          total=total, mininterval=30) as pbar:
             st = time.time()
             for start_x, next_x in buf.fetch_batch_range(_groups):
@@ -155,7 +155,7 @@ class CFR(Algo, CFROption, Evaluable, Serializable):
                 st = time.time()
             pbar.refresh()
         self.logger.debug(
-            f'updated {group} processed({updated}) elapsed(data feed: {feed_t:.3f} update: {update_t:.3f}")')
+            f"updated {group} processed({updated}) elapsed(data feed: {feed_t:.3f} update: {update_t:.3f}")
         return err
 
     def partial_update(self, buf, group, start_x, next_x):
@@ -189,53 +189,53 @@ class CFR(Algo, CFROption, Evaluable, Serializable):
     def train(self, training_callback: Optional[Callable[[int, Dict[str, float]], None]] = None):
         assert self.is_initialized, "embedding matrix is not initialized"
         buf = self._get_buffer()
-        best_loss, self.validation_result = float('inf'), {}
+        best_loss, self.validation_result = float("inf"), {}
         scale = self.compute_scale()
         for i in range(self.opt.num_iters):
             start_t = time.time()
-            loss = self._iterate(buf, group='user')
-            loss += self._iterate(buf, group='item')
-            loss += self._iterate(buf, group='context')
+            loss = self._iterate(buf, group="user")
+            loss += self._iterate(buf, group="item")
+            loss += self._iterate(buf, group="context")
             loss /= scale
             train_t = time.time() - start_t
-            metrics = {'train_loss': loss}
+            metrics = {"train_loss": loss}
             if self.opt.validation and \
                self.opt.evaluation_on_learning and \
                self.periodical(self.opt.evaluation_period, i):
                 start_t = time.time()
                 self.validation_result = self.get_validation_results()
                 vali_t = time.time() - start_t
-                val_str = ' '.join([f'{k}:{v:0.5f}' for k, v in self.validation_result.items()])
-                self.logger.info(f'Validation: {val_str} Elased {vali_t:0.3f}')
-                metrics.update({'vali_%s' % k: v
+                val_str = " ".join([f"{k}:{v:0.5f}" for k, v in self.validation_result.items()])
+                self.logger.info(f"Validation: {val_str} Elased {vali_t:0.3f}")
+                metrics.update({"vali_%s" % k: v
                                 for k, v in self.validation_result.items()})
                 if training_callback is not None and callable(training_callback):
                     training_callback(i, metrics)
-            self.logger.info('Iteration %d: Loss %.3f Elapsed %.3f secs' % (i + 1, loss, train_t))
+            self.logger.info("Iteration %d: Loss %.3f Elapsed %.3f secs" % (i + 1, loss, train_t))
             best_loss = self.save_best_only(loss, best_loss, i)
             if self.early_stopping(loss):
                 break
-        ret = {'train_loss': loss}
-        ret.update({'vali_%s' % k: v
+        ret = {"train_loss": loss}
+        ret.update({"vali_%s" % k: v
                     for k, v in self.validation_result.items()})
         return ret
 
-    def _get_feature(self, index, group='item'):
-        if group == 'item':
+    def _get_feature(self, index, group="item"):
+        if group == "item":
             return self.I[index]
-        elif group == 'user':
+        elif group == "user":
             return self.U[index]
-        elif group == 'context':
+        elif group == "context":
             return self.C[index]
         return None
 
     def _get_data(self):
         data = super()._get_data()
-        data.extend([('opt', self.opt),
-                     ('I', self.I),
-                     ('U', self.U),
-                     ('C', self.C)])
+        data.extend([("opt", self.opt),
+                     ("I", self.I),
+                     ("U", self.U),
+                     ("C", self.C)])
         return data
 
     def get_evaluation_metrics(self):
-        return ['train_loss', 'vali_rmse', 'vali_ndcg', 'vali_map', 'vali_accuracy', 'vali_error']
+        return ["train_loss", "vali_rmse", "vali_ndcg", "vali_map", "vali_accuracy", "vali_error"]

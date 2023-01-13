@@ -25,29 +25,29 @@ class WARP(Algo, WARPOption, Evaluable, Serializable):
         if opt_path is None:
             opt_path = WARPOption().get_default_option()
 
-        self.logger = log.get_logger('WARP')
+        self.logger = log.get_logger("WARP")
         self.opt, self.opt_path = self.get_option(opt_path)
         # TODO:GPU Implementation
         if self.opt.accelerator is True:
             raise NotImplementedError("GPU version WARP is not implemented yet")
         self.obj = CyWARP()
 
-        assert self.obj.init(bytes(self.opt_path, 'utf-8')),\
-            'cannot parse option file: %s' % opt_path
+        assert self.obj.init(bytes(self.opt_path, "utf-8")),\
+            "cannot parse option file: %s" % opt_path
 
         self.data = None
-        data = kwargs.get('data')
-        data_opt = self.opt.get('data_opt')
-        data_opt = kwargs.get('data_opt', data_opt)
+        data = kwargs.get("data")
+        data_opt = self.opt.get("data_opt")
+        data_opt = kwargs.get("data_opt", data_opt)
         if data_opt:
             self.data = buffalo.data.load(data_opt)
             self.data.create()
         elif isinstance(data, Data):
             self.data = data
-        self.logger.info('WARP(%s)' % json.dumps(self.opt, indent=2))
+        self.logger.info("WARP(%s)" % json.dumps(self.opt, indent=2))
         if self.data:
             self.logger.info(self.data.show_info())
-            assert self.data.data_type in ['matrix']
+            assert self.data.data_type in ["matrix"]
         if isinstance(self.opt.score_func, str):
             self.opt.score_func = self.opt.score_func.lower()
 
@@ -56,37 +56,37 @@ class WARP(Algo, WARPOption, Evaluable, Serializable):
         return WARP.instantiate(WARPOption, path, data_fields)
 
     def set_data(self, data):
-        assert isinstance(data, aux.data.Data), 'Wrong instance: {}'.format(type(data))
+        assert isinstance(data, aux.data.Data), "Wrong instance: {}".format(type(data))
         self.data = data
 
-    def normalize(self, group='item'):
+    def normalize(self, group="item"):
         if self.opt["score_func"] == "L2":
             self.logger.warning("Normalization will harm performance if score func is L2")
-        if group == 'item' and not self.opt._nrz_Q:
+        if group == "item" and not self.opt._nrz_Q:
             self.Q = self._normalize(self.Q)
             self.opt._nrz_Q = True
-        elif group == 'user' and not self.opt._nrz_P:
+        elif group == "user" and not self.opt._nrz_P:
             self.P = self._normalize(self.P)
             self.opt._nrz_P = True
 
     def initialize(self):
         super().initialize()
-        assert self.data, 'Data is not set'
+        assert self.data, "Data is not set"
         self.buf = BufferedDataMatrix()
         self.buf.initialize(self.data)
         self.init_factors()
 
     def init_factors(self):
         header = self.data.get_header()
-        self.num_nnz = header['num_nnz']
-        for attr_name in ['P', 'Q', 'Qb']:
+        self.num_nnz = header["num_nnz"]
+        for attr_name in ["P", "Q", "Qb"]:
             setattr(self, attr_name, None)
         self.P = np.random.normal(scale=1.0 / (self.opt.d ** 2),
-                                  size=(header['num_users'], self.opt.d)).astype("float32")
+                                  size=(header["num_users"], self.opt.d)).astype("float32")
         self.Q = np.random.normal(scale=1.0 / (self.opt.d ** 2),
-                                  size=(header['num_items'], self.opt.d)).astype("float32")
+                                  size=(header["num_items"], self.opt.d)).astype("float32")
         self.Qb = np.random.normal(scale=1.0 / (self.opt.d ** 2),
-                                   size=(header['num_items'], 1)).astype("float32")
+                                   size=(header["num_items"], 1)).astype("float32")
         if not self.opt.use_bias:
             self.Qb *= 0
         self.obj.initialize_model(self.P, self.Q, self.Qb, self.num_nnz)
@@ -107,7 +107,7 @@ class WARP(Algo, WARPOption, Evaluable, Serializable):
         return zip(rows, topks)
 
     def _get_most_similar_item(self, col, topk, pool):
-        if self.opt.score_func == 'L2':
+        if self.opt.score_func == "L2":
             return self._get_most_similar_L2(col, topk, pool)
         else:
             return super()._get_most_similar_item(col, topk, self.Q, self.opt._nrz_Q, pool)
@@ -152,9 +152,9 @@ class WARP(Algo, WARPOption, Evaluable, Serializable):
     def sampling_loss_samples(self):
         users, positives, negatives = [], [], []
         if self.opt.compute_loss_on_training:
-            self.logger.info('Sampling loss samples...')
+            self.logger.info("Sampling loss samples...")
             header = self.data.get_header()
-            num_loss_samples = int(header['num_users'] ** 0.5)
+            num_loss_samples = int(header["num_users"] ** 0.5)
             _users = np.random.choice(range(self.P.shape[0]), size=num_loss_samples, replace=False)
             users = []
             positives, negatives = [], []
@@ -170,27 +170,27 @@ class WARP(Algo, WARPOption, Evaluable, Serializable):
                 users.append(u)
                 positives.append(keys[0])
                 negatives.append(negs[0])
-            self.logger.info('Generated %s loss samples.' % len(users))
+            self.logger.info("Generated %s loss samples." % len(users))
         self._sub_samples = [
-            np.array(users, dtype=np.int32, order='F'),
-            np.array(positives, dtype=np.int32, order='F'),
-            np.array(negatives, dtype=np.int32, order='F')
+            np.array(users, dtype=np.int32, order="F"),
+            np.array(positives, dtype=np.int32, order="F"),
+            np.array(negatives, dtype=np.int32, order="F")
         ]
 
-    def _get_feature(self, index, group='item'):
-        if group == 'item':
+    def _get_feature(self, index, group="item"):
+        if group == "item":
             return self.Q[index]
-        elif group == 'user':
+        elif group == "user":
             return self.P[index]
         return None
 
     def _iterate(self):
         header = self.data.get_header()
-        # end = header['num_users']
+        # end = header["num_users"]
         update_t, feed_t, updated = 0, 0, 0
-        self.buf.set_group('rowwise')
+        self.buf.set_group("rowwise")
         with log.ProgressBar(log.DEBUG,
-                             total=header['num_nnz'], mininterval=30) as pbar:
+                             total=header["num_nnz"], mininterval=30) as pbar:
             start_t = time.time()
             for sz in self.buf.fetch_batch():
                 updated += sz
@@ -202,7 +202,7 @@ class WARP(Algo, WARPOption, Evaluable, Serializable):
                 pbar.update(sz)
             pbar.refresh()
         self.obj.update_parameters()
-        self.logger.debug(f'updated processed({updated}) elapsed(data feed: {feed_t:0.3f} update: {update_t:0.3f}')
+        self.logger.debug(f"updated processed({updated}) elapsed(data feed: {feed_t:0.3f} update: {update_t:0.3f}")
 
     def compute_loss(self):
         return self.obj.compute_loss(self._sub_samples[0],
@@ -236,7 +236,7 @@ class WARP(Algo, WARPOption, Evaluable, Serializable):
     def train(self, training_callback: Optional[Callable[[int, Dict[str, float]], None]] = None):
         self.validation_result = {}
         self.sampling_loss_samples()
-        best_loss = float('inf')
+        best_loss = float("inf")
         # initialize placeholder in case of running accelerator otherwise launch workers
         self._prepare_train()
         for i in range(self.opt.num_iters):
@@ -244,35 +244,35 @@ class WARP(Algo, WARPOption, Evaluable, Serializable):
             self._iterate()
             self.obj.wait_until_done()
             loss = self.compute_loss() if self.opt.compute_loss_on_training else 0.0
-            metrics = {'train_loss': loss}
+            metrics = {"train_loss": loss}
             if self.opt.validation and \
                self.opt.evaluation_on_learning and \
                self.periodical(self.opt.evaluation_period, i):
                 start_t = time.time()
                 self.validation_result = self.get_validation_results()
                 vali_t = time.time() - start_t
-                val_str = ' '.join([f'{k}:{v:0.5f}' for k, v in self.validation_result.items()])
-                self.logger.info(f'Validation: {val_str} Elased {vali_t:0.3f}')
-                metrics.update({'val_%s' % k: v
+                val_str = " ".join([f"{k}:{v:0.5f}" for k, v in self.validation_result.items()])
+                self.logger.info(f"Validation: {val_str} Elased {vali_t:0.3f}")
+                metrics.update({"val_%s" % k: v
                                 for k, v in self.validation_result.items()})
                 if training_callback is not None and callable(training_callback):
                     training_callback(i, metrics)
-            self.logger.info('Iteration %s: PR-Loss %.3f Elapsed %.3f secs' % (i + 1, loss, time.time() - start_t))
+            self.logger.info("Iteration %s: PR-Loss %.3f Elapsed %.3f secs" % (i + 1, loss, time.time() - start_t))
             best_loss = self.save_best_only(loss, best_loss, i)
             if self.early_stopping(loss):
                 break
         # reshape factor if using accelerator else join workers
-        ret = {'train_loss': self._finalize_train()}
-        ret.update({'val_%s' % k: v for k, v in self.validation_result.items()})
+        ret = {"train_loss": self._finalize_train()}
+        ret.update({"val_%s" % k: v for k, v in self.validation_result.items()})
         return ret
 
     def _get_data(self):
         data = super()._get_data()
-        data.extend([('opt', self.opt),
-                     ('Q', self.Q),
-                     ('Qb', self.Qb),
-                     ('P', self.P)])
+        data.extend([("opt", self.opt),
+                     ("Q", self.Q),
+                     ("Qb", self.Qb),
+                     ("P", self.P)])
         return data
 
     def get_evaluation_metrics(self):
-        return ['val_rmse', 'val_ndcg', 'val_map', 'val_accuracy', 'val_error', 'train_loss']
+        return ["val_rmse", "val_ndcg", "val_map", "val_accuracy", "val_error", "train_loss"]

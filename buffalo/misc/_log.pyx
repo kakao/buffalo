@@ -1,6 +1,5 @@
 # cython: experimental_cpp_class_def=True, language_level=3
 # distutils: language=c++
-# -*- coding: utf-8 -*-
 
 
 cdef extern from "buffalo/misc/log.hpp":

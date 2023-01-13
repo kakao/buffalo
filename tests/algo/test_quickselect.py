@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import time
 from os import environ
 
@@ -53,5 +52,5 @@ class TestQuickSelect(TestBase):
         self.assertGreaterEqual(t_np_argparttion / t_quickselect, 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

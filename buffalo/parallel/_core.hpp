@@ -5,6 +5,7 @@
 #include <string>
 #include <cstdio>
 #include <random>
+#include <limits>
 #include <fstream>
 #include <algorithm>
 #include <unordered_set>
@@ -24,7 +25,7 @@ struct nn_t
 {
     int key;
     float val;
-    nn_t() : key(-1), val(float('-inf')) {}
+    nn_t() : key(-1), val(numeric_limits<float>::min()) {}
     bool operator < (const float& that){
         return this->val > that;
     }
@@ -113,7 +114,7 @@ void dot_topn(
     for (int i=0; i < num_queries; ++i){
         topn_t topn;
         topn.alloc(correct_k);
-        float last_one = float('-inf')f;
+        float last_one = numeric_limits<float>::min();
         int q = indexes[i];
         for (int j=0; j < q_rows; ++j) {
             if (is_same and q == j)

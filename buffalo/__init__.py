@@ -18,7 +18,7 @@ from buffalo.algo.options import (
 from buffalo.algo.plsi import PLSI
 from buffalo.algo.w2v import W2V
 from buffalo.algo.warp import WARP
-from buffalo.data.mm import *
-from buffalo.data.stream import *
+from buffalo.data.mm import MatrixMarket, MatrixMarketOptions
+from buffalo.data.stream import Stream, StreamOptions
 from buffalo.misc import aux, log, set_log_level
 from buffalo.parallel.base import ParALS, ParBPRMF, ParCFR, ParW2V

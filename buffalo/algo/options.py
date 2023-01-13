@@ -10,7 +10,7 @@ class AlgoOption(InputOptions):
 
         :ivar bool evaluation_on_learning: Set True to do run evaluation on training phrase. (default: True)
         :ivar bool compute_loss_on_training: Set True to calculate loss on training phrase. (default: True)
-        :ivar int early_stopping_rounds: The number of exceed epochs after reached minimum loss on training phrase. If set 0, it doesn't work. (default: 0)
+        :ivar int early_stopping_rounds: The number of exceed epochs after reached minimum loss on training phrase. If set 0, it doesn"t work. (default: 0)
         :ivar bool save_best: Whenever the loss improved, save the model.
         :ivar int evaluation_period: How often will do evaluation in epochs. (default: 1)
         :ivar int save_period: How often will do save_best routine in epochs. (default: 10)
@@ -18,22 +18,22 @@ class AlgoOption(InputOptions):
         :ivar dict validation: The validation options.
         """
         opt = {
-            'evaluation_on_learning': True,
-            'compute_loss_on_training': True,
-            'early_stopping_rounds': 0,
-            'save_best': False,
-            'evaluation_period': 1,
-            'save_period': 10,
-            'random_seed': 0,
-            'validation': {}
+            "evaluation_on_learning": True,
+            "compute_loss_on_training": True,
+            "early_stopping_rounds": 0,
+            "save_best": False,
+            "evaluation_period": 1,
+            "save_period": 10,
+            "random_seed": 0,
+            "validation": {}
         }
         return opt
 
     def is_valid_option(self, opt):
         b = super().is_valid_option(opt)
-        for f in ['num_workers']:
+        for f in ["num_workers"]:
             if f not in opt:
-                raise RuntimeError(f'{f} not defined')
+                raise RuntimeError(f"{f} not defined")
         return b
 
 
@@ -65,23 +65,23 @@ class ALSOption(AlgoOption):
 
         opt = super().get_default_option()
         opt.update({
-            'adaptive_reg': False,
-            'save_factors': False,
-            'accelerator': False,
-            'd': 20,
-            'num_iters': 10,
-            'num_workers': 1,
-            'hyper_threads': 256,
-            'num_cg_max_iters': 3,
-            'reg_u': 0.1,
-            'reg_i': 0.1,
-            'alpha': 8,
-            'optimizer': 'manual_cg',
-            'cg_tolerance': 1e-10,
-            'block_size': 32,
-            'eps': 1e-10,
-            'model_path': '',
-            'data_opt': {}
+            "adaptive_reg": False,
+            "save_factors": False,
+            "accelerator": False,
+            "d": 20,
+            "num_iters": 10,
+            "num_workers": 1,
+            "hyper_threads": 256,
+            "num_cg_max_iters": 3,
+            "reg_u": 0.1,
+            "reg_i": 0.1,
+            "alpha": 8,
+            "optimizer": "manual_cg",
+            "cg_tolerance": 1e-10,
+            "block_size": 32,
+            "eps": 1e-10,
+            "model_path": "",
+            "data_opt": {}
         })
         return Option(opt)
 
@@ -114,28 +114,28 @@ class CFROption(AlgoOption):
         :ivar float l: The relative weight of loss on user-item relation over item-context relation. (default: 1.0)
         :ivar str optimizer: The name of optimizer, should be in [llt, ldlt, manual_cg, eigen_cg, eigen_bicg, eigen_gmres, eigen_dgmres, eigen_minres]. (default: manual_cg)
         :ivar int num_cg_max_iters: The number of maximum iterations for conjugate gradient optimizer. (default: 3)
-        :ivar str model_path: Where to save model. (default: '')
+        :ivar str model_path: Where to save model. (default: "")
         :ivar dict data_opt: This option will be used to load data if given. (default: {})
         """
         opt = super().get_default_option()
         opt.update({
-            'save_factors': False,
-            'd': 20,
-            'num_iters': 10,
-            'num_workers': 1,
-            'num_cg_max_iters': 3,
+            "save_factors": False,
+            "d": 20,
+            "num_iters": 10,
+            "num_workers": 1,
+            "num_cg_max_iters": 3,
 
-            'cg_tolerance': 1e-10,
-            'eps': 1e-10,
-            'reg_u': 0.1,
-            'reg_i': 0.1,
-            'reg_c': 0.1,
-            'alpha': 8.0,
-            'l': 1.0,
+            "cg_tolerance": 1e-10,
+            "eps": 1e-10,
+            "reg_u": 0.1,
+            "reg_i": 0.1,
+            "reg_c": 0.1,
+            "alpha": 8.0,
+            "l": 1.0,
 
-            'optimizer': 'manual_cg',
-            'model_path': '',
-            'data_opt': {}
+            "optimizer": "manual_cg",
+            "model_path": "",
+            "data_opt": {}
         })
         return Option(opt)
 
@@ -183,35 +183,35 @@ class BPRMFOption(AlgoOption):
         """
         opt = super().get_default_option()
         opt.update({
-            'accelerator': False,
-            'use_bias': True,
-            'evaluation_period': 100,
-            'num_workers': 1,
-            'hyper_threads': 256,
-            'num_iters': 100,
-            'd': 20,
-            'update_i': True,
-            'update_j': True,
-            'reg_u': 0.025,
-            'reg_i': 0.025,
-            'reg_j': 0.025,
-            'reg_b': 0.025,
+            "accelerator": False,
+            "use_bias": True,
+            "evaluation_period": 100,
+            "num_workers": 1,
+            "hyper_threads": 256,
+            "num_iters": 100,
+            "d": 20,
+            "update_i": True,
+            "update_j": True,
+            "reg_u": 0.025,
+            "reg_i": 0.025,
+            "reg_j": 0.025,
+            "reg_b": 0.025,
 
-            'optimizer': 'sgd',
-            'lr': 0.002,
-            'min_lr': 0.0001,
-            'beta1': 0.9,
-            'beta2': 0.999,
-            'eps': 1e-10,
+            "optimizer": "sgd",
+            "lr": 0.002,
+            "min_lr": 0.0001,
+            "beta1": 0.9,
+            "beta2": 0.999,
+            "eps": 1e-10,
 
-            'per_coordinate_normalize': False,
-            'num_negative_samples': 1,
-            'sampling_power': 0.0,
-            'verify_neg': True,
-            'random_positive': False,
+            "per_coordinate_normalize": False,
+            "num_negative_samples": 1,
+            "sampling_power": 0.0,
+            "verify_neg": True,
+            "random_positive": False,
 
-            'model_path': '',
-            'data_opt': {}
+            "model_path": "",
+            "data_opt": {}
         })
         return Option(opt)
 
@@ -230,7 +230,7 @@ class WARPOption(AlgoOption):
         :ivar int num_iters: The number of iterations for training. (default: 15)
         :ivar int d: The number of latent feature dimension. (default: 30)
         :ivar int max_trials: The maximum number of attempts to find a violating negative sample during training.
-        :ivar str score_func: score function to use: either ['dot', 'l2']
+        :ivar str score_func: score function to use: either ["dot", "l2"]
         :ivar bool update_i: Set True, to update positive item feature. (default: True)
         :ivar bool update_j: Set True, to update negative item feature. (default: True)
         :ivar float reg_u: The L2 regularization coefficient for user embedding matrix. (default: 0.0)
@@ -248,29 +248,29 @@ class WARPOption(AlgoOption):
         """
         opt = super().get_default_option()
         opt.update({
-            'accelerator': False,
-            'evaluation_period': 5,
-            'num_workers': 1,
-            'hyper_threads': 256,
-            'num_iters': 40,
-            'd': 64,
-            'threshold': 1.0,
-            'score_func': "dot",
-            'max_trials': 500,
-            'update_i': True,
-            'update_j': True,
-            'reg_u': 0.0,
-            'reg_i': 0.0,
-            'reg_j': 0.0,
-            'optimizer': 'adagrad',
-            'lr': 0.05,
-            'min_lr': 0.0001,
-            'beta1': 0.9,
-            'beta2': 0.999,
-            'eps': 1e-10,
-            'per_coordinate_normalize': False,
-            'model_path': '',
-            'data_opt': {}
+            "accelerator": False,
+            "evaluation_period": 5,
+            "num_workers": 1,
+            "hyper_threads": 256,
+            "num_iters": 40,
+            "d": 64,
+            "threshold": 1.0,
+            "score_func": "dot",
+            "max_trials": 500,
+            "update_i": True,
+            "update_j": True,
+            "reg_u": 0.0,
+            "reg_i": 0.0,
+            "reg_j": 0.0,
+            "optimizer": "adagrad",
+            "lr": 0.05,
+            "min_lr": 0.0001,
+            "beta1": 0.9,
+            "beta2": 0.999,
+            "eps": 1e-10,
+            "per_coordinate_normalize": False,
+            "model_path": "",
+            "data_opt": {}
         })
         return Option(opt)
 
@@ -296,21 +296,21 @@ class W2VOption(AlgoOption):
         """
         opt = super().get_default_option()
         opt.update({
-            'evaluation_on_learning': False,
+            "evaluation_on_learning": False,
 
-            'num_workers': 1,
-            'num_iters': 3,
-            'd': 20,
-            'window': 5,
-            'min_count': 5,
-            'sample': 0.001,
-            'num_negative_samples': 5,
+            "num_workers": 1,
+            "num_iters": 3,
+            "d": 20,
+            "window": 5,
+            "min_count": 5,
+            "sample": 0.001,
+            "num_negative_samples": 5,
 
-            'lr': 0.025,
-            'min_lr': 0.0001,
+            "lr": 0.025,
+            "min_lr": 0.0001,
 
-            'model_path': '',
-            'data_opt': {}
+            "model_path": "",
+            "data_opt": {}
         })
         return Option(opt)
 
@@ -328,21 +328,21 @@ class PLSIOption(AlgoOption):
         :ivar float alpha1: The coefficient of regularization term for clustering assignment. (default: 1.0)
         :ivar float alpha2: The coefficient of regularization term for item preference in each cluster. (default: 1.0)
         :ivar float eps: epsilon for numerical stability (default: 1e-10)
-        :ivar str model_path: Where to save model. (default: '')
+        :ivar str model_path: Where to save model. (default: "")
         :ivar bool save_factors: Set True, to save models. (default: False)
         :ivar dict data_opt: This option will be used to load data if given. (default: {})
         """
         opt = super().get_default_option()
         opt.update({
-            'd': 20,
-            'num_iters': 10,
-            'num_workers': 1,
-            'alpha1': 1.0,
-            'alpha2': 1.0,
-            'eps': 1e-10,
-            'model_path': '',
-            'save_factors': False,
-            'data_opt': {},
-            'inherit_opt': {}
+            "d": 20,
+            "num_iters": 10,
+            "num_workers": 1,
+            "alpha1": 1.0,
+            "alpha2": 1.0,
+            "eps": 1e-10,
+            "model_path": "",
+            "save_factors": False,
+            "data_opt": {},
+            "inherit_opt": {}
         })
         return Option(opt)

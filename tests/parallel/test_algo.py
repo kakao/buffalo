@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
 import os
 
-os.environ['OMP_NUM_THREADS'] = '1'
+os.environ["OMP_NUM_THREADS"] = "1"
 import time
 import unittest
 from itertools import combinations
@@ -28,9 +27,9 @@ from .base import TestBase
 
 class TestAlgo(TestBase):
     def load_text8_model(self):
-        if os.path.isfile('text8.w2v.bin'):
+        if os.path.isfile("text8.w2v.bin"):
             w2v = W2V()
-            w2v.load('text8.w2v.bin')
+            w2v.load("text8.w2v.bin")
             return w2v
         set_log_level(3)
         opt = W2VOption().get_default_option()
@@ -38,10 +37,10 @@ class TestAlgo(TestBase):
         opt.d = 40
         opt.min_count = 4
         opt.num_iters = 10
-        opt.model_path = 'text8.w2v.bin'
+        opt.model_path = "text8.w2v.bin"
         data_opt = StreamOptions().get_default_option()
-        data_opt.input.main = self.text8 + 'main'
-        data_opt.data.path = './text8.h5py'
+        data_opt.input.main = self.text8 + "main"
+        data_opt.data.path = "./text8.h5py"
         data_opt.data.use_cache = True
         data_opt.data.validation = {}
 
@@ -53,11 +52,11 @@ class TestAlgo(TestBase):
 
     def get_ml100k_mm_opt(self):
         data_opt = MatrixMarketOptions().get_default_option()
-        data_opt.input.main = self.ml_100k + 'main'
-        data_opt.input.uid = self.ml_100k + 'uid'
-        data_opt.input.iid = self.ml_100k + 'iid'
+        data_opt.input.main = self.ml_100k + "main"
+        data_opt.input.uid = self.ml_100k + "uid"
+        data_opt.input.iid = self.ml_100k + "iid"
         data_opt.data.use_cache = True
-        data_opt.data.path = './ml100k.h5py'
+        data_opt.data.path = "./ml100k.h5py"
         return data_opt
 
     def test01_most_similar(self):
@@ -70,12 +69,12 @@ class TestAlgo(TestBase):
         als.initialize()
         als.train()
         pals = ParALS(als)
-        random_keys = [k for k, _ in als.most_similar('49.Star_Wars_(1977)', topk=128)]
+        random_keys = [k for k, _ in als.most_similar("49.Star_Wars_(1977)", topk=128)]
         random_indexes = als.get_index_pool(random_keys)
         naive = [als.most_similar(k, topk=10) for k in random_keys]
         topks0 = [[k for k, _ in result] for result in naive]
         scores0 = np.array([[v for _, v in result] for result in naive])
-        self.assertEqual(scores0.shape, (128, 10,), msg='check even size')
+        self.assertEqual(scores0.shape, (128, 10,), msg="check even size")
         scores0 = scores0.reshape(len(naive), 10)
         pals.num_workers = 1
         topks1, scores1 = pals.most_similar(random_keys, topk=10, repr=True)
@@ -217,5 +216,5 @@ class TestAlgo(TestBase):
             self.assertEqual(naive[q], t)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
