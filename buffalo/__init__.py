@@ -2,7 +2,6 @@ import importlib.metadata
 
 __version__ = importlib.metadata.version('buffalo')
 
-from buffalo.parallel.base import ParALS, ParBPRMF, ParCFR, ParW2V
 from buffalo.algo.als import ALS, inited_CUALS
 from buffalo.algo.base import Algo
 from buffalo.algo.bpr import BPRMF, inited_CUBPR
@@ -22,3 +21,4 @@ from buffalo.algo.warp import WARP
 from buffalo.data.mm import *
 from buffalo.data.stream import *
 from buffalo.misc import aux, log, set_log_level
+from buffalo.parallel.base import ParALS, ParBPRMF, ParCFR, ParW2V

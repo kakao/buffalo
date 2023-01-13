@@ -1,8 +1,6 @@
-from typing import Callable, Optional, Dict
-
-
 import json
 import time
+from typing import Callable, Dict, Optional
 
 import numpy as np
 
