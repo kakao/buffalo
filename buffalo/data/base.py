@@ -7,7 +7,8 @@ import psutil
 from scipy.sparse import csr_matrix
 
 from buffalo.data import prepro
-from buffalo.data.fileio import chunking_into_bins, sort_and_compressed_binarization
+from buffalo.data.fileio import (chunking_into_bins,
+                                 sort_and_compressed_binarization)
 from buffalo.misc import aux, log
 
 
