@@ -37,7 +37,6 @@ scipy = "^1.7.1"
 pytest = "^7.2.0"
 poethepoet = "^0.16.5"
 isort = "^5.10.1"
-black = "^22.12.0"
 flake8 = "^6.0.0"
 cpplint = "^1.6.1"
 codespell = "^2.2.2"
@@ -55,11 +54,7 @@ script = "build_extension.py"
 
   [tool.poe.tasks.isort]
   help = "Run isort on the code base"
-  cmd  = "isort --profile black . -p=buffalo --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests/ --skip=.pyx --skip=setup.py --check-only"
-
-  [tool.poe.tasks.black]
-  help = "Run black on the code base"
-  cmd  = "black . --exclude=3rd/ --check"
+  cmd  = "isort . -p=buffalo --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests/ --skip=.pyx --skip=setup.py --check-only"
 
   [tool.poe.tasks.flake8-py]
   help = "Run flake8 on the code base"
