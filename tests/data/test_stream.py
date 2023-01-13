@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
-import unittest
 import tempfile
+import unittest
 
 from buffalo import Stream, StreamOptions
 

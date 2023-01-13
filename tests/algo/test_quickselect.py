@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 import time
 from os import environ
+
 environ["OMP_NUM_THREADS"] = "4"
 environ["OPENBLAS_NUM_THREADS"] = "4"
 environ["MKL_NUM_THREADS"] = "4"
 environ["VECLIB_MAXIMUM_THREADS"] = "4"
 environ["NUMEXPR_NUM_THREADS"] = "4"
 
+import unittest
+
 import numpy as np
 
-import unittest
 from buffalo.evaluate.base import Evaluable
 
 from .base import TestBase

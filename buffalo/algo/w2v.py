@@ -1,6 +1,5 @@
-# cython: experimental_cpp_class_def=True, language_level=3
-# distutils: language=c++
-# -*- coding: utf-8 -*-
+from typing import Callable, Optional, Dict
+
 import json
 import time
 
@@ -192,7 +191,7 @@ class W2V(Algo, W2VOption, Evaluable, Serializable):
                 pbar.update(sz)
         self.logger.debug(f'processed({updated}) elapsed(data feed: {feed_t:0.3f}s update: {update_t:0.3f})s')
 
-    def train(self, training_callback=None):
+    def train(self, training_callback: Optional[Callable[[int, Dict[str, float]], None]] = None):
         self.validation_result = {}
         self.obj.launch_workers()
         for i in range(self.opt.num_iters):

@@ -3,8 +3,7 @@ import unittest
 
 import numpy as np
 
-from buffalo import BPRMF, inited_CUBPR, BPRMFOption
-from buffalo import aux, set_log_level
+from buffalo import BPRMF, BPRMFOption, aux, inited_CUBPR, set_log_level
 
 from .base import TestBase
 

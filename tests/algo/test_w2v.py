@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
 import os
-
 import unittest
-import numpy as np
 from tempfile import NamedTemporaryFile
 
-from buffalo import W2V, W2VOption
-from buffalo import set_log_level, StreamOptions
+import numpy as np
+
+from buffalo import W2V, StreamOptions, W2VOption, set_log_level
 
 from .base import TestBase
 

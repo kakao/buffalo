@@ -1,3 +1,5 @@
+from typing import Callable, Optional, Dict
+
 import json
 import time
 
@@ -140,7 +142,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable):
             f'{group} updated: processed({updated}) elapsed(data feed: {feed_t:0.3f}s update: {update_t:0.03}s)')
         return loss_nume, loss_deno
 
-    def train(self, training_callback=None):
+    def train(self, training_callback: Optional[Callable[[int, Dict[str, float]], None]] = None):
         if self.opt.accelerator:
             for attr in ["P", "Q"]:
                 F = getattr(self, attr)
@@ -156,7 +158,7 @@ class ALS(Algo, ALSOption, Evaluable, Serializable):
             lindptr, rindptr, batch_size = buf.get_indptrs()
             self.obj.set_placeholder(lindptr, rindptr, batch_size)
 
-        best_loss, rmse, self.validation_result = 987654321.0, None, {}
+        best_loss, rmse, self.validation_result = float('inf'), None, {}
         full_st = time.time()
         for i in range(self.opt.num_iters):
             start_t = time.time()

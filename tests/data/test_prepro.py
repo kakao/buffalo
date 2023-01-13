@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
-import os
 import math
-import unittest
+import os
 import tempfile
+import unittest
 
-from buffalo import aux
-from buffalo import MatrixMarket, MatrixMarketOptions
+from buffalo import MatrixMarket, MatrixMarketOptions, aux
 
 
 class TestPrepro(unittest.TestCase):

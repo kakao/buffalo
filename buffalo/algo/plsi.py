@@ -1,3 +1,5 @@
+from typing import Callable, Optional, Dict
+
 import json
 import time
 
@@ -158,7 +160,7 @@ class PLSI(Algo, PLSIOption, Evaluable, Serializable):
             f'updated processed({updated}) elapsed(data feed: {feed_t:0.5f} update: {update_t:0.5f})')
         return loss_nume, loss_deno
 
-    def train(self, training_callback=None):
+    def train(self, training_callback: Optional[Callable[[int, Dict[str, float]], None]] = None):
         best_loss, loss, self.validation_result = 1e+10, None, {}
         self.logger.info(f'Train pLSI, K: {self.opt.d}, alpha1: {self.opt.alpha1}, '
                          f'alpha2: {self.opt.alpha2}, num_workers: {self.opt.num_workers}')

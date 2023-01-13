@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 import time
-import psutil
 import unittest
 
 import numpy as np
+import psutil
 
 from buffalo.algo.als import ALS
 from buffalo.misc.log import set_log_level
 
-from .base import TestBase, MockParallel
+from .base import MockParallel, TestBase
 
 
 class TestParallelBase(TestBase):

@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
-import unittest
 import tempfile
+import unittest
 
 import numpy as np
 import scipy.sparse
 
-from buffalo import set_log_level
-from buffalo import MatrixMarket, MatrixMarketOptions
+from buffalo import MatrixMarket, MatrixMarketOptions, set_log_level
 
 
 class TestMatrixMarket(unittest.TestCase):

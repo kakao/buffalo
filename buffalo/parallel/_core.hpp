@@ -24,7 +24,7 @@ struct nn_t
 {
     int key;
     float val;
-    nn_t() : key(-1), val(-987654321.0) {}
+    nn_t() : key(-1), val(float('-inf')) {}
     bool operator < (const float& that){
         return this->val > that;
     }
@@ -113,7 +113,7 @@ void dot_topn(
     for (int i=0; i < num_queries; ++i){
         topn_t topn;
         topn.alloc(correct_k);
-        float last_one = -987654321.0f;
+        float last_one = float('-inf')f;
         int q = indexes[i];
         for (int j=0; j < q_rows; ++j) {
             if (is_same and q == j)

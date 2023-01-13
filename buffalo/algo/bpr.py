@@ -1,5 +1,6 @@
-# cython: experimental_cpp_class_def=True, language_level=3
-# distutils: language=c++
+from typing import Callable, Optional, Dict
+
+
 import json
 import time
 
@@ -217,10 +218,10 @@ class BPRMF(Algo, BPRMFOption, Evaluable, Serializable):
         else:
             return self.obj.join()
 
-    def train(self, training_callback=None):
+    def train(self, training_callback: Optional[Callable[[int, Dict[str, float]], None]] = None):
         self.validation_result = {}
         self.sampling_loss_samples()
-        best_loss = 987654321.0
+        best_loss = float('inf')
         # initialize placeholder in case of running accelerator otherwise launch workers
         self._prepare_train()
 

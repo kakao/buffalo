@@ -5,8 +5,8 @@ import unittest
 
 import numpy as np
 
+from buffalo import WARP, Algo, ALSOption, MatrixMarketOptions, set_log_level
 from buffalo.misc import aux, log
-from buffalo import Algo, WARP, set_log_level, ALSOption, MatrixMarketOptions
 
 
 class MockAlgo(Algo):
@@ -17,7 +17,7 @@ class MockAlgo(Algo):
         option = ALSOption().get_default_option()
         option.model_path = 'hello.world.bin'
         self.opt = option
-        self._optimize_loss = {'loss': 987654321.0}
+        self._optimize_loss = {'loss': float('inf')}
 
     def save(self, path):
         return path

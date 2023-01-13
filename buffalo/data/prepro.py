@@ -34,7 +34,7 @@ class OneBased(PreProcess):
 class MinMaxScalar(PreProcess):
     def __init__(self, opt):
         super(MinMaxScalar, self).__init__(opt)
-        self.value_min = 987654321.0
+        self.value_min = float('inf')
         self.value_max = 0.0
 
     def pre(self, header):

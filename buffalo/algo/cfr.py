@@ -1,3 +1,5 @@
+from typing import Callable, Optional, Dict
+
 import json
 import time
 
@@ -185,10 +187,10 @@ class CFR(Algo, CFROption, Evaluable, Serializable):
         alpha, l = self.opt.alpha, self.opt.l
         return l * (alpha * vsum + num_users * num_items) + sppmi_nnz
 
-    def train(self, training_callback=None):
+    def train(self, training_callback: Optional[Callable[[int, Dict[str, float]], None]] = None):
         assert self.is_initialized, "embedding matrix is not initialized"
         buf = self._get_buffer()
-        best_loss, self.validation_result = 987654321.0, {}
+        best_loss, self.validation_result = float('inf'), {}
         scale = self.compute_scale()
         for i in range(self.opt.num_iters):
             start_t = time.time()

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
 
-
 from buffalo.misc import aux, log
 
 

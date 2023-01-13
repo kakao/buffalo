@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 import os
 import time
-
 import unittest
-from buffalo import CFR, CFROption
-from buffalo import aux, set_log_level
-from buffalo import StreamOptions
+
+from buffalo import CFR, CFROption, StreamOptions, aux, set_log_level
 
 from .base import TestBase
 

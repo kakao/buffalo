@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
+
 os.environ['OMP_NUM_THREADS'] = '1'
 import time
 import unittest
@@ -11,14 +12,16 @@ from buffalo import (
     ALS,
     BPRMF,
     W2V,
+    ALSOption,
+    BPRMFOption,
+    MatrixMarketOptions,
     ParALS,
     ParBPRMF,
     ParW2V,
-    ALSOption,
-    BPRMFOption,
+    StreamOptions,
     W2VOption,
+    set_log_level,
 )
-from buffalo import set_log_level, MatrixMarketOptions, StreamOptions
 
 from .base import TestBase
 
