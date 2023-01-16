@@ -30,7 +30,7 @@ jobs:
     - name: Lint with isort
       run: |
         isort . -p=buffalo --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests \
-        --skip=.pyx --skip=setup.py --check-only
+        --skip=.pyx --check-only
 
     - name: Lint with flake8 for .py
       run: |

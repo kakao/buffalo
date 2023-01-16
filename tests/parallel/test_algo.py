@@ -183,6 +183,7 @@ class TestAlgo(TestBase):
         opt = ALSOption().get_default_option()
         opt.d = 20
         opt.num_workers = 1
+        opt.num_iters = 0
         als = ALS(opt, data_opt=data_opt)
         als.initialize()
         als.train()

@@ -54,7 +54,7 @@ script = "build_extension.py"
 
   [tool.poe.tasks.isort]
   help = "Run isort on the code base"
-  cmd  = "isort . -p=buffalo --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests/ --skip=.pyx --skip=setup.py --check-only"
+  cmd  = "isort . -p=buffalo --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests/ --skip=.pyx --check-only"
 
   [tool.poe.tasks.flake8-py]
   help = "Run flake8 on the code base"
