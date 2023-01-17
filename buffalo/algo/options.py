@@ -10,7 +10,7 @@ class AlgoOption(InputOptions):
 
         :ivar bool evaluation_on_learning: Set True to do run evaluation on training phrase. (default: True)
         :ivar bool compute_loss_on_training: Set True to calculate loss on training phrase. (default: True)
-        :ivar int early_stopping_rounds: The number of exceed epochs after reached minimum loss on training phrase. If set 0, it doesn"t work. (default: 0)
+        :ivar int early_stopping_rounds: The number of exceed epochs after reached minimum loss on training phrase. If set 0, it doesn't work. (default: 0)
         :ivar bool save_best: Whenever the loss improved, save the model.
         :ivar int evaluation_period: How often will do evaluation in epochs. (default: 1)
         :ivar int save_period: How often will do save_best routine in epochs. (default: 10)
