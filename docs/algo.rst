@@ -8,6 +8,33 @@ Buffalo provides the following algorithm implementations:
   - Word2Vec
   - CoFactors
 
+All algorithms inherit common parent classes such as Algo, Serializable, Evaluable.
+
+
+Algo
+---------
+.. autoclass:: buffalo.algo.base.Algo
+   :members:
+   :exclude-members: get_option, periodical, save_best_only, early_stopping
+   :show-inheritance:
+   :undoc-members:
+
+Serializable
+`````````````
+.. autoclass:: buffalo.algo.base.Serializable
+   :members:
+   :exclude-members:
+   :show-inheritance:
+   :undoc-members:
+
+Evaluable
+`````````
+.. autoclass:: buffalo.evaluate.base.Evaluable
+   :members:
+   :exclude-members:
+   :show-inheritance:
+   :undoc-members:
+   
 Alternating Least Squares
 -------------------------
 .. autoclass:: buffalo.ALS
