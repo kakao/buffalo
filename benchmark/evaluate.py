@@ -1,10 +1,9 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 
 
 def evaluate_ranking_metrics(recs, topk, vali_data, total_items):
-    gt = vali_data['vali_gt']
-    validation_seen = vali_data['validation_seen']
+    gt = vali_data["vali_gt"]
+    validation_seen = vali_data["validation_seen"]
 
     NDCG = 0.0
     AP = 0.0
@@ -68,5 +67,5 @@ def evaluate_ranking_metrics(recs, topk, vali_data, total_items):
     AP /= N
     ACC = HIT / N
     AUC = AUC / N
-    ret = {'ndcg': NDCG, 'map': AP, 'accuracy': ACC, 'auc': AUC}
+    ret = {"ndcg": NDCG, "map": AP, "accuracy": ACC, "auc": AUC}
     return ret

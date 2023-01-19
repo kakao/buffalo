@@ -53,12 +53,12 @@ def get_logger(name=__file__, no_fileno=False):
 
     sh = logging.StreamHandler()
     sh.setLevel(logging.DEBUG)
-    if name == 'pbar':
-        formatter = logging.Formatter('%(message)s')
+    if name == "pbar":
+        formatter = logging.Formatter("%(message)s")
     elif no_fileno:
-        formatter = logging.Formatter('[%(levelname)-8s] %(asctime)s %(message)s', '%Y-%m-%d %H:%M:%S')
+        formatter = logging.Formatter("[%(levelname)-8s] %(asctime)s %(message)s", "%Y-%m-%d %H:%M:%S")
     else:
-        formatter = logging.Formatter('[%(levelname)-8s] %(asctime)s [%(filename)s:%(lineno)d] %(message)s', '%Y-%m-%d %H:%M:%S')
+        formatter = logging.Formatter("[%(levelname)-8s] %(asctime)s [%(filename)s:%(lineno)d] %(message)s", "%Y-%m-%d %H:%M:%S")
     sh.setFormatter(formatter)
 
     logger.addHandler(sh)
@@ -69,11 +69,11 @@ def get_logger(name=__file__, no_fileno=False):
 class ProgressBar(object):
     def __init__(self, level, **kwargs):
         self.lvl = level
-        self._logger = get_logger('pbar', no_fileno=True)
+        self._logger = get_logger("pbar", no_fileno=True)
         self.logger = self.get_logger_func(self._logger, self.lvl)
         for handle in self._logger.handlers:
             self.terminator = handle.terminator
-            handle.terminator = ''
+            handle.terminator = ""
         self.initialize(**kwargs)
 
     def get_logger_func(self, logger, level):
@@ -87,33 +87,33 @@ class ProgressBar(object):
             return logger.debug
 
     def initialize(self, **kwargs):
-        if 'iterable' in kwargs:
+        if "iterable" in kwargs:
             try:
-                kwargs['total'] = len(kwargs['iterable'])
+                kwargs["total"] = len(kwargs["iterable"])
             except Exception:
                 pass
-            self.iterable = kwargs['iterable']
-        if 'total' in kwargs:
-            self.fmt = '\r[{desc}] {percent} {elapsed:0.1f}/{remains:0.1f}secs {ips:0,.2f}it/s'
+            self.iterable = kwargs["iterable"]
+        if "total" in kwargs:
+            self.fmt = "\r[{desc}] {percent} {elapsed:0.1f}/{remains:0.1f}secs {ips:0,.2f}it/s"
         else:
-            self.fmt = '\r[{desc}] {n_fmt:10,d}it {elapsed:0.1f}secs {ips:0,.2f}it/s'
+            self.fmt = "\r[{desc}] {n_fmt:10,d}it {elapsed:0.1f}secs {ips:0,.2f}it/s"
         self.s_t = time.time()
         self.t = time.time()
-        self.desc = kwargs.get('desc', 'PROGRESS')
-        self.period_secs = kwargs.get('mininterval', 1)
-        self.total = kwargs.get('total', -1)
+        self.desc = kwargs.get("desc", "PROGRESS")
+        self.period_secs = kwargs.get("mininterval", 1)
+        self.total = kwargs.get("total", -1)
         self.step = 0
 
     def get_msg(self):
         t = time.time()
         elapsed = t - self.s_t
         remains = 0
-        percent = '0.00%'
+        percent = "0.00%"
         ips = 0.0
         if self.step > 0:
             remains = self.total / self.step * elapsed
             ips = self.step / elapsed
-            percent = '%3.2f%s' % (elapsed / remains * 100, '%')
+            percent = "%3.2f%s" % (elapsed / remains * 100, "%")
         msg = self.fmt.format(desc=self.desc,
                               percent=percent,
                               n_fmt=int(self.step),
@@ -130,7 +130,7 @@ class ProgressBar(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.total != -1:
             self.step = self.total
-        self.logger(self.get_msg() + '\n')
+        self.logger(self.get_msg() + "\n")
 
     def __iter__(self):
         delta = None
@@ -148,7 +148,7 @@ class ProgressBar(object):
                     period_iter = cnts
         if self.total != -1:
             self.step = self.total
-        self.logger(self.get_msg() + '\n')
+        self.logger(self.get_msg() + "\n")
 
     def update(self, step):
         self.step += step

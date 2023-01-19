@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 
 
@@ -34,7 +33,7 @@ class OneBased(PreProcess):
 class MinMaxScalar(PreProcess):
     def __init__(self, opt):
         super(MinMaxScalar, self).__init__(opt)
-        self.value_min = 987654321.0
+        self.value_min = float("inf")
         self.value_max = 0.0
 
     def pre(self, header):
@@ -47,16 +46,16 @@ class MinMaxScalar(PreProcess):
 
     def post(self, db):
         if self.value_max - self.value_min < 0.00000001:
-            db['val'][:] = 1.0
-            db['val'][:] *= self.opt.max
+            db["val"][:] = 1.0
+            db["val"][:] *= self.opt.max
             return
-        sz = db['val'].shape[0]
-        per = db['val'].chunks[0]
+        sz = db["val"].shape[0]
+        per = db["val"].chunks[0]
         for idx in range(0, sz, per):
-            chunk = db['val'][idx:idx + per]
+            chunk = db["val"][idx:idx + per]
             chunk = (chunk - self.value_min) / (self.value_max - self.value_min)
             chunk = chunk * (self.opt.max - self.opt.min) + self.opt.min
-            db['val'][idx:idx + per] = chunk
+            db["val"][idx:idx + per] = chunk
 
 
 class ImplicitALS(PreProcess):

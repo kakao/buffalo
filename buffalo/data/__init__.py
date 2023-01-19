@@ -1,5 +1,7 @@
-# -*- coding: utf-8 -*-
 from buffalo.misc import aux
+
+from .mm import MatrixMarket, MatrixMarketDataReader, MatrixMarketOptions
+from .stream import Stream, StreamOptions
 
 
 def load(opt):

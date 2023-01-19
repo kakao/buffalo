@@ -11,25 +11,25 @@ It is written in C++/OpenMP to maximize CPU utilization. Even with a single thre
    :show-inheritance:
    :undoc-members:
 
-.. autoclass:: buffalo.parallel.base.ParALS
+.. autoclass:: buffalo.ParALS
    :members: most_similar, topk_recommendation
    :exclude-members:
    :show-inheritance:
    :undoc-members:
 
-.. autoclass:: buffalo.parallel.base.ParBPRMF
+.. autoclass:: buffalo.ParBPRMF
    :members: most_similar, topk_recommendation
    :exclude-members:
    :show-inheritance:
    :undoc-members:
 
-.. autoclass:: buffalo.parallel.base.ParW2V
+.. autoclass:: buffalo.ParW2V
    :members: most_similar, topk_recommendation
    :exclude-members:
    :show-inheritance:
    :undoc-members:
 
-.. autoclass:: buffalo.parallel.base.ParCFR
+.. autoclass:: buffalo.ParCFR
    :members: most_similar, topk_recommendation
    :exclude-members:
    :show-inheritance:

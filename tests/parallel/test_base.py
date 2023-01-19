@@ -1,14 +1,13 @@
-# -*- coding: utf-8 -*-
 import time
-import psutil
 import unittest
 
 import numpy as np
+import psutil
 
 from buffalo.algo.als import ALS
 from buffalo.misc.log import set_log_level
 
-from .base import TestBase, MockParallel
+from .base import MockParallel, TestBase
 
 
 class TestParallelBase(TestBase):
@@ -44,7 +43,7 @@ class TestParallelBase(TestBase):
         Q = self.get_factors(128, 5)
         indexes = np.array([0, 1, 2, 3, 4], dtype=np.int32)
         pool = np.array([], dtype=np.int32)
-        topks1, scores1 = mp._most_similar('item', indexes, Q, 10, pool, -1, True)
+        topks1, scores1 = mp._most_similar("item", indexes, Q, 10, pool, -1, True)
         topks2, scores2 = self.get_most_similar(indexes, Q, 10)
         self.assertTrue(np.allclose(topks1, topks2, atol=1e-07))
         self.assertTrue(np.allclose(scores1, scores2, atol=1e-07))
@@ -67,7 +66,7 @@ class TestParallelBase(TestBase):
                                   if i * 2 < num_cpu][:3]:
             mp.num_workers = num_workers
             start_t = time.time()
-            ret = mp._most_similar('item', indexes, Q, 10, pool, -1, True)
+            ret = mp._most_similar("item", indexes, Q, 10, pool, -1, True)
             elapsed.append(time.time() - start_t)
             results.append(ret)
         for i in range(1, len(elapsed)):
@@ -82,7 +81,7 @@ class TestParallelBase(TestBase):
         Q = self.get_factors(128, 5)
         indexes = np.array([0, 1, 2, 3, 4], dtype=np.int32)
         pool = np.array([5, 6, 7], dtype=np.int32)
-        topks, scores = mp._most_similar('item', indexes, Q, 10, pool, -1, True)
+        topks, scores = mp._most_similar("item", indexes, Q, 10, pool, -1, True)
         self.assertTrue(set(topks[::].reshape(10 * 5)), set([5, 6, 7, -1]))
 
     def test04_topk(self):
@@ -99,5 +98,5 @@ class TestParallelBase(TestBase):
         self.assertTrue(np.allclose(scores1, scores2, atol=1e-07))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

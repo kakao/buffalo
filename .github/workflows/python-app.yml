@@ -24,17 +24,17 @@ jobs:
     - name: Install Lint dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flake8 pytest poetry codespell cpplint poethepoet isort
+        pip install flake8 pytest poetry codespell cpplint poethepoet isort flake8-quotes
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
     - name: Lint with isort
       run: |
-        isort --profile black . -p=buffalo --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests \
-        --skip=.pyx --skip=setup.py --check-only
+        isort . -p=buffalo --skip=3rd/ --skip=docs/ --skip=build/ --skip=tests \
+        --skip=.pyx --check-only
 
     - name: Lint with flake8 for .py
       run: |
-        flake8 ./ --filename='*.py' --ignore=E402,E501,E731,E741 --exclude=__init__.py,setup.py,3rd/,build/
+        flake8 buffalo ./ --filename='*.py' --ignore=E402,E501,E731,E741 --exclude=__init__.py,setup.py,3rd/,build/ --inline-quotes=double
 
     - name: Lint with flake8 for .pyx
       run: |

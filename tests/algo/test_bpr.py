@@ -1,12 +1,8 @@
-# -*- coding: utf-8 -*-
 import unittest
 
 import numpy as np
 
-from buffalo.misc import aux
-from buffalo.misc.log import set_log_level
-from buffalo.algo.options import BPRMFOption
-from buffalo.algo.bpr import BPRMF, inited_CUBPR
+from buffalo import BPRMF, BPRMFOption, aux, inited_CUBPR, set_log_level
 
 from .base import TestBase
 
@@ -19,9 +15,9 @@ class TestBPRMF(TestBase):
     def test01_is_valid_option(self):
         opt = BPRMFOption().get_default_option()
         self.assertTrue(BPRMFOption().is_valid_option(opt))
-        opt['save_best'] = 1
+        opt["save_best"] = 1
         self.assertRaises(RuntimeError, BPRMFOption().is_valid_option, opt)
-        opt['save_best'] = False
+        opt["save_best"] = False
         self.assertTrue(BPRMFOption().is_valid_option(opt))
 
     def test02_init_with_dict(self):
@@ -46,30 +42,36 @@ class TestBPRMF(TestBase):
         opt.num_workers = 4
         opt.num_iters = 500
         opt.random_seed = 7
-        opt.validation = aux.Option({'topk': 10})
-        opt.tensorboard = aux.Option({'root': './tb',
-                                      'name': 'bpr'})
+        opt.validation = aux.Option({"topk": 10})
 
         self._test5_validation(BPRMF, opt, ndcg=0.03, map=0.02)
+
+    def test05_1_validation_with_callback(self,):
+        opt = BPRMFOption().get_default_option()
+        opt.d = 5
+        opt.num_iters = 15
+        opt.evaluation_period = 5
+        opt.validation = aux.Option({"topk": 10})
+        self._test5_1_validation_with_callback(BPRMF, opt)
 
     def test06_topk(self):
         opt = BPRMFOption().get_default_option()
         opt.d = 5
         opt.num_iters = 200
-        opt.validation = aux.Option({'topk': 10})
+        opt.validation = aux.Option({"topk": 10})
         self._test6_topk(BPRMF, opt)
 
     def test07_train_ml_20m(self):
         opt = BPRMFOption().get_default_option()
         opt.num_workers = 8
-        opt.validation = aux.Option({'topk': 10})
+        opt.validation = aux.Option({"topk": 10})
         self._test7_train_ml_20m(BPRMF, opt)
 
     def test08_serialization(self):
         opt = BPRMFOption().get_default_option()
         opt.num_iters = 200
         opt.d = 5
-        opt.validation = aux.Option({'topk': 10})
+        opt.validation = aux.Option({"topk": 10})
 
         self._test8_serialization(BPRMF, opt)
 
@@ -77,13 +79,13 @@ class TestBPRMF(TestBase):
         opt = BPRMFOption().get_default_option()
         opt.num_iters = 200
         opt.d = 5
-        opt.validation = aux.Option({'topk': 10})
+        opt.validation = aux.Option({"topk": 10})
         self._test9_compact_serialization(BPRMF, opt)
 
     def test10_fast_most_similar(self):
         opt = BPRMFOption().get_default_option()
         opt.d = 5
-        opt.validation = aux.Option({'topk': 10})
+        opt.validation = aux.Option({"topk": 10})
         self._test10_fast_most_similar(BPRMF, opt)
 
     def test11_gpu_validation(self):
@@ -99,9 +101,7 @@ class TestBPRMF(TestBase):
         opt.num_iters = 500
         opt.evaluation_period = 50
         opt.random_seed = 777
-        opt.validation = aux.Option({'topk': 10})
-        opt.tensorboard = aux.Option({'root': './tb',
-                                      'name': 'bpr'})
+        opt.validation = aux.Option({"topk": 10})
 
         self._test5_validation(BPRMF, opt, ndcg=0.03, map=0.02)
 
@@ -114,9 +114,9 @@ class TestBPRMF(TestBase):
         opt.verify_neg = False
         opt.num_iters = 30
         opt.evaluation_period = 5
-        opt.validation = aux.Option({'topk': 10})
+        opt.validation = aux.Option({"topk": 10})
         self._test7_train_ml_20m(BPRMF, opt)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

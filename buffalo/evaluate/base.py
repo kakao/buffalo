@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import numpy as np
 
 from buffalo.parallel._core import quickselect
@@ -9,19 +8,19 @@ class Evaluable(object):
         pass
 
     def prepare_evaluation(self):
-        if not self.opt.validation or not self.data.has_group('vali'):
+        if not self.opt.validation or not self.data.has_group("vali"):
             return
-        if hasattr(self.data, 'vali_data') is False:
+        if hasattr(self.data, "vali_data") is False:
             self.data._prepare_validation_data()
 
     def show_validation_results(self):
         results = self.get_validation_results()
         if not results:
-            return 'No validation results'
-        return 'Validation results: ' + ', '.join(f'{k}: {v:0.5f}' for k, v in results.items())
+            return "No validation results"
+        return "Validation results: " + ", ".join(f"{k}: {v:0.5f}" for k, v in results.items())
 
     def get_validation_results(self):
-        if not self.opt.validation or not self.data.has_group('vali'):
+        if not self.opt.validation or not self.data.has_group("vali"):
             return
 
         results = {}
@@ -37,23 +36,23 @@ class Evaluable(object):
             scores = scores.reshape(1, scores.shape[0])
             is_many = False
         k = min(k, scores.shape[1])
-        assert k > 0, f'k({k}) or cols({scores.shape[1]}) should be greater than 0'
+        assert k > 0, f"k({k}) or cols({scores.shape[1]}) should be greater than 0"
         result = np.empty(shape=(scores.shape[0], k), dtype=np.int32)
         quickselect(scores, result, sorted, num_threads)
         return result if is_many else result[0]
 
     def _evaluate_ranking_metrics(self):
-        if hasattr(self.data, 'vali_data') is False:
+        if hasattr(self.data, "vali_data") is False:
             self.prepare_evaluation()
 
-        batch_size = self.opt.validation.get('batch', 128)
+        batch_size = self.opt.validation.get("batch", 128)
         topk = self.opt.validation.topk
 
-        gt = self.data.vali_data['vali_gt']
-        rows = self.data.vali_data['vali_rows']
-        validation_seen = self.data.vali_data['validation_seen']
-        validation_max_seen_size = self.data.vali_data['validation_max_seen_size']
-        num_items = self.data.get_header()['num_items']
+        gt = self.data.vali_data["vali_gt"]
+        rows = self.data.vali_data["vali_rows"]
+        validation_seen = self.data.vali_data["validation_seen"]
+        validation_max_seen_size = self.data.vali_data["validation_max_seen_size"]
+        num_items = self.data.get_header()["num_items"]
 
         # can significantly save evaluation time
         if self.opt.validation.eval_samples:
@@ -125,17 +124,17 @@ class Evaluable(object):
         AP /= N
         ACC = HIT / N
         AUC = AUC / N
-        ret = {'ndcg': NDCG, 'map': AP, 'accuracy': ACC, 'auc': AUC}
+        ret = {"ndcg": NDCG, "map": AP, "accuracy": ACC, "auc": AUC}
         return ret
 
     def _evaluate_score_metrics(self):
-        if hasattr(self.data, 'vali_data') is False:
+        if hasattr(self.data, "vali_data") is False:
             self.prepare_evaluation()
 
         vali_data = self.data.vali_data
-        row = vali_data['row']
-        col = vali_data['col']
-        val = vali_data['val']
+        row = vali_data["row"]
+        col = vali_data["col"]
+        val = vali_data["val"]
         scores = self._get_scores(row, col)
         ERROR = 0.0
         RMSE = 0.0
@@ -146,4 +145,4 @@ class Evaluable(object):
         RMSE /= len(scores)
         RMSE = RMSE ** 0.5
         ERROR /= len(scores)
-        return {'rmse': RMSE, 'error': ERROR}
+        return {"rmse": RMSE, "error": ERROR}
