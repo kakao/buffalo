@@ -46,6 +46,7 @@ Buffalo = "buffalo.cli:_cli_buffalo"
 
 [tool.poetry.build]
 script = "build_extension.py"
+generate-setup-file = true
 
 [tool.poe.tasks]
   [tool.poe.tasks.codespell]
