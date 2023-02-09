@@ -46,6 +46,7 @@ Buffalo = "buffalo.cli:_cli_buffalo"
 
 [tool.poetry.build]
 script = "build_extension.py"
+generate-setup-file = true
 
 [tool.poe.tasks]
   [tool.poe.tasks.codespell]
@@ -77,5 +78,5 @@ script = "build_extension.py"
   sequence  = ["isort", "flake8-py", "flake8-pyx", "cpplint"]
 
 [build-system]
-requires = ["poetry-core>=1.2.0", "setuptools", "wheel", "numpy>=1.21.6", "Cython>=0.29.32", "packaging>=22.0"]
+requires = ["poetry-core==1.5.0", "setuptools", "wheel", "numpy>=1.21.6", "Cython>=0.29.32", "packaging>=22.0"]
 build-backend = "poetry.core.masonry.api"
