@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "buffalo"
-version = "2.0.0"
+version = "2.0.1"
 description = "TOROS Buffalo: A fast and scalable production-ready open source project for recommender systems"
 authors = ["recoteam <recoteam@kakaocorp.com>"]
 license = "Apache2"
