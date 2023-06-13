@@ -75,7 +75,7 @@ class ALSOption(AlgoOption):
             "num_cg_max_iters": 3,
             "reg_u": 0.1,
             "reg_i": 0.1,
-            "alpha": 8,
+            "alpha": 8.0,
             "optimizer": "manual_cg",
             "cg_tolerance": 1e-10,
             "block_size": 32,
