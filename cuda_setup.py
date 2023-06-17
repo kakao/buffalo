@@ -3,18 +3,19 @@
 import logging
 import os
 import sys
+from typing import Optional
 from distutils import ccompiler, errors, msvccompiler, unixccompiler
 
 from setuptools.command.build_ext import build_ext as setuptools_build_ext
 
 
-def find_in_path(name, path):
+def find_in_path(name: str, path: str) -> Optional[str]:
     """
         Find a file in a search path
     """
     # adapted from http://code.activestate.com/recipes/52224-find-a-file-given-a-search-path/
-    for dir in path.split(os.pathsep):
-        binpath = os.path.join(dir, name)
+    for dirname in path.split(os.pathsep):
+        binpath = os.path.join(dirname, name)
         if os.path.exists(binpath):
             return os.path.abspath(binpath)
     return None
