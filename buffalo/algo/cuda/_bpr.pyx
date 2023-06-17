@@ -1,30 +1,27 @@
-# cython: experimental_cpp_class_def=True, language_level=3
+# cython: language_level=3, boundscheck=False, wraparound=False
 # distutils: language=c++
-import cython
 
+cimport numpy as np
 from libc.stdint cimport int32_t, int64_t
-from libcpp cimport bool
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 
-import numpy as np
-
-cimport numpy as np
+np.import_array()
 
 
 cdef extern from "buffalo/cuda/bpr/bpr.hpp" namespace "cuda_bpr":
     cdef cppclass CuBPR:
         CuBPR() nogil except +
-        bool init(string) nogil except +
+        bint init(string) nogil except +
         void set_placeholder(int64_t* indptr, size_t batch_size) nogil except +
         void set_cumulative_table(int64_t*) nogil except +
         void initialize_model(float*, int,
-                              float*, float*, int, int64_t, bool) nogil except +
+                              float*, float*, int, int64_t, bint) nogil except +
         pair[double, double] partial_update(int, int,
                                             int64_t*, int32_t*) nogil except +
         double compute_loss(int, int32_t*, int32_t*, int32_t*) nogil except +
         int get_vdim() nogil except +
-        void synchronize(bool)
+        void synchronize(bint)
 
 
 cdef class CyBPR:

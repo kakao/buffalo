@@ -1,20 +1,18 @@
-# cython: experimental_cpp_class_def=True, language_level=3
+# cython: language_level=3, boundscheck=False, wraparound=False
 # distutils: language=c++
-import cython
-
-from libc.stdint cimport int32_t, int64_t
-from libcpp cimport bool
-from libcpp.string cimport string
-
-import numpy as np
 
 cimport numpy as np
+from libc.stdint cimport int32_t, int64_t
+from libcpp.string cimport string
+
+
+np.import_array()
 
 
 cdef extern from "buffalo/algo_impl/bpr/bpr.hpp" namespace "bpr":
     cdef cppclass CBPRMF:
         void release() nogil except +
-        bool init(string) nogil except +
+        bint init(string) nogil except +
         void initialize_model(float*, int32_t,
                               float*, int32_t,
                               float*,
@@ -66,8 +64,6 @@ cdef class CyBPRMF:
                              int cum_table_size):
         self.obj.set_cumulative_table(&cum_table[0], cum_table_size)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def add_jobs(self,
                  int start_x,
                  int next_x,
