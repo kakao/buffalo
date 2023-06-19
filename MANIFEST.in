@@ -1,4 +1,4 @@
-include cuda_setup.py
+include install/cuda_setup.py
 include 3rd/json11/json11.hpp
 include 3rd/json11/json11.cpp
 recursive-include 3rd/eigen3/Eigen/ *

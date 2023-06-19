@@ -12,7 +12,8 @@ import numpy as np
 import packaging.version
 from setuptools import setup, Extension
 
-from .cuda_setup import CUDA, build_ext
+sys.path.append(os.path.join(os.path.dirname(__file__), "install"))
+from cuda_setup import CUDA, build_ext
 
 numpy_include_dirs = np.get_include()
 extra_include_dirs = [numpy_include_dirs, "3rd/json11", "3rd/spdlog/include", "3rd/eigen3"]
