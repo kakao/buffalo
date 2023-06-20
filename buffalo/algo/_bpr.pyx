@@ -5,7 +5,6 @@ cimport numpy as np
 from libc.stdint cimport int32_t, int64_t
 from libcpp.string cimport string
 
-
 np.import_array()
 
 

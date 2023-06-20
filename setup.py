@@ -1,7 +1,7 @@
 import glob
+import logging
 import os
 import platform
-import logging
 import re
 import subprocess
 import sys
@@ -10,7 +10,7 @@ from os.path import join as pjoin
 import cpuinfo
 import numpy as np
 import packaging.version
-from setuptools import setup, Extension
+from setuptools import Extension, setup
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "install"))
 from cuda_setup import CUDA, build_ext
