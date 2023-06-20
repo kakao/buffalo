@@ -63,8 +63,6 @@ cdef class CyBPR:
     def wait_until_done(self):
         return
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def add_jobs(self,
                  int start_x,
                  int next_x,
@@ -75,8 +73,6 @@ cdef class CyBPR:
                                        &indptr[0],
                                        &keys[0])
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def compute_loss(self,
                      np.ndarray[np.int32_t, ndim=1] user,
                      np.ndarray[np.int32_t, ndim=1] pos,

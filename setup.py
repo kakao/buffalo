@@ -155,7 +155,8 @@ if CUDA:
             libraries=["cudart", "cublas", "curand"],
             include_dirs=[
                 "./include", numpy_include_dirs, CUDA["include"], "./3rd/json11", "./3rd/spdlog/include"
-            ]
+            ],
+            define_macros=[("NPY_NO_DEPRECATED_API", "1")],
         )
     )
     extensions.append(
@@ -173,7 +174,8 @@ if CUDA:
             libraries=["cudart", "cublas", "curand"],
             include_dirs=[
                 "./include", numpy_include_dirs, CUDA["include"], "./3rd/json11", "./3rd/spdlog/include"
-            ]
+            ],
+            define_macros=[("NPY_NO_DEPRECATED_API", "1")],
         )
     )
 else:

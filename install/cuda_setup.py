@@ -56,7 +56,7 @@ def locate_cuda():
     post_args = ["-gencode=arch=compute_60,code=sm_60",
                  "-gencode=arch=compute_60,code=compute_60",
                  "-gencode=arch=compute_75,code=compute_75",
-                 "--ptxas-options=-v", "-O2"]
+                 "-O2"]
 
     if sys.platform == "win32":
         cudaconfig["lib64"] = os.path.join(home, "lib", "x64")
