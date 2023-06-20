@@ -39,6 +39,7 @@ def locate_cuda():
             continue
         home = os.environ[env_name]
         nvcc = os.path.join(home, "bin", nvcc_bin)
+        break
     else:
         # otherwise, search the PATH for NVCC
         nvcc = find_in_path(nvcc_bin, os.environ["PATH"])
