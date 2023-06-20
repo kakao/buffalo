@@ -140,30 +140,42 @@ extensions = [
 
 if CUDA:
     extra_compile_args = ["-std=c++14", "-O3"] + extended_compile_flags
-    extensions.append(Extension("buffalo.algo.cuda._als",
-                                sources=["buffalo/algo/cuda/_als.pyx",
-                                         "lib/cuda/als/als.cu",
-                                         "./3rd/json11/json11.cpp",
-                                         "lib/misc/log.cc"],
-                                language="c++",
-                                extra_compile_args=extra_compile_args,
-                                library_dirs=[CUDA["lib64"]],
-                                libraries=["cudart", "cublas", "curand"],
-                                include_dirs=["./include", numpy_include_dirs,
-                                              CUDA["include"], "./3rd/json11",
-                                              "./3rd/spdlog/include"]))
-    extensions.append(Extension("buffalo.algo.cuda._bpr",
-                                sources=["buffalo/algo/cuda/_bpr.pyx",
-                                         "lib/cuda/bpr/bpr.cu",
-                                         "./3rd/json11/json11.cpp",
-                                         "lib/misc/log.cc"],
-                                language="c++",
-                                extra_compile_args=extra_compile_args,
-                                library_dirs=[CUDA["lib64"]],
-                                libraries=["cudart", "cublas", "curand"],
-                                include_dirs=["./include", numpy_include_dirs,
-                                              CUDA["include"], "./3rd/json11",
-                                              "./3rd/spdlog/include"]))
+    extensions.append(
+        Extension(
+            name="buffalo.algo.cuda._als",
+            sources=[
+                "buffalo/algo/cuda/_als.pyx",
+                "lib/cuda/als/als.cu",
+                "./3rd/json11/json11.cpp",
+                "lib/misc/log.cc"
+            ],
+            language="c++",
+            extra_compile_args=extra_compile_args,
+            library_dirs=[CUDA["lib64"]],
+            libraries=["cudart", "cublas", "curand"],
+            include_dirs=[
+                "./include", numpy_include_dirs, CUDA["include"], "./3rd/json11", "./3rd/spdlog/include"
+            ]
+        )
+    )
+    extensions.append(
+        Extension(
+            name="buffalo.algo.cuda._bpr",
+            sources=[
+                "buffalo/algo/cuda/_bpr.pyx",
+                "lib/cuda/bpr/bpr.cu",
+                "./3rd/json11/json11.cpp",
+                "lib/misc/log.cc"
+            ],
+            language="c++",
+            extra_compile_args=extra_compile_args,
+            library_dirs=[CUDA["lib64"]],
+            libraries=["cudart", "cublas", "curand"],
+            include_dirs=[
+                "./include", numpy_include_dirs, CUDA["include"], "./3rd/json11", "./3rd/spdlog/include"
+            ]
+        )
+    )
 else:
     logging.info("Failed to find CUDA toolkit. Building without GPU acceleration.")
 
