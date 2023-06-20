@@ -259,7 +259,7 @@ pair<double, double> CALS::_partial_update_ialspp(
         const int u = x;
         int64_t beg = x == 0 ? 0 : indptr[x - 1];
         int64_t end = indptr[x];
-        int64_t data_size = end - beg;
+        // int64_t data_size = end - beg;
         for (int64_t idx=0, it = beg; it < end; ++it, ++idx) {
             const int col = keys[it - shifted];
             Yui[it - shifted] = (P.row(u) * Q.row(col).transpose()).value();
@@ -333,7 +333,7 @@ pair<double, double> CALS::_partial_update_ialspp(
                             for (int64_t idx=0, it = beg; it < end; ++it, ++idx) {
                                 const int col = keys[it - shifted];
                                 const float val = vals[it - shifted];
-                                const auto &v = block_q.row(col);
+                                // const auto &v = block_q.row(col);
                                 Ap.noalias() += val * alpha * (block_q.row(col) * p).value() * block_q.row(col);
                             }
                             float step_size = rsold / p.dot(Ap);
