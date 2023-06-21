@@ -104,8 +104,6 @@ void CWARP::worker(int worker_id)
 {
     int max_trial = opt_["max_trials"].int_value();
     double threshold = opt_["threshold"].number_value();
-    // bool update_i = opt_["update_i"].bool_value();
-    // bool update_j = opt_["update_j"].bool_value();
     double reg_u = opt_["reg_u"].number_value();
     double reg_i = opt_["reg_i"].number_value();
     double reg_j = opt_["reg_j"].number_value();
