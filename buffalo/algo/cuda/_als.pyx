@@ -1,21 +1,18 @@
-# cython: experimental_cpp_class_def=True, language_level=3
+# cython: language_level=3, boundscheck=False, wraparound=False
 # distutils: language=c++
-import cython
 
+cimport numpy as np
 from libc.stdint cimport int32_t, int64_t
-from libcpp cimport bool
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 
-import numpy as np
-
-cimport numpy as np
+np.import_array()
 
 
 cdef extern from "buffalo/cuda/als/als.hpp" namespace "cuda_als":
     cdef cppclass CuALS:
         CuALS() nogil except +
-        bool init(string) nogil except +
+        bint init(string) nogil except +
         void set_placeholder(int64_t* lindptr, int64_t* rindptr, size_t batch_size)
         void initialize_model(float*, int,
                               float*, int) nogil except +
@@ -46,7 +43,7 @@ cdef class CyALS:
 
     def set_placeholder(self, np.ndarray[np.int64_t, ndim=1] lindptr,
                         np.ndarray[np.int64_t, ndim=1] rindptr,
-                        batch_size):
+                        size_t batch_size):
         self.obj.set_placeholder(&lindptr[0], &rindptr[0], batch_size)
 
     def precompute(self, axis):
@@ -55,8 +52,6 @@ cdef class CyALS:
     def get_vdim(self):
         return self.obj.get_vdim()
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def partial_update(self,
                        int start_x,
                        int next_x,

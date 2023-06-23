@@ -1,0 +1,9 @@
+include install/cuda_setup.py
+include 3rd/json11/json11.hpp
+include 3rd/json11/json11.cpp
+recursive-include 3rd/eigen3/Eigen/ *
+recursive-include 3rd/eigen3/unsupported/Eigen/ *
+recursive-include 3rd/spdlog/include/spdlog/ *
+recursive-include buffalo/ *.py *.pyx *.hpp
+recursive-include include/ *.hpp
+recursive-include lib/ *.cc *.cu
