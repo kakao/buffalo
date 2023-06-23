@@ -16,6 +16,9 @@ jobs:
         python-version: [38, 39, 310, 311]
         cibw-arch: [auto, aarch64]
         exclude:
+          # Do not build wheel for linux-aarch64 temporarily
+          - os: ubuntu-latest
+            cibw-arch: aarch64
           - os: macos-latest
             cibw-arch: aarch64
 
