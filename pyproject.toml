@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=67.6.1", "numpy~=1.23.5", "Cython>=0.29.32", "packaging>=22.0", "py-cpuinfo"]
+requires = ["setuptools>=67.6.1", "numpy~=1.24.3", "Cython>=0.29.32", "packaging>=22.0", "py-cpuinfo"]
 build-backend = "setuptools.build_meta"
 
 [tool.cibuildwheel]
