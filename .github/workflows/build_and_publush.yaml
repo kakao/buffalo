@@ -1,9 +1,10 @@
 name: Build and publish distribution
 
 on:
+  workflow_dispatch:
   push:
-    tag:
-      - 'v*' 
+    tags:
+      - v*
 
 jobs:
   build_wheels:
