@@ -1,21 +1,18 @@
-# cython: experimental_cpp_class_def=True, language_level=3
+# cython: language_level=3, boundscheck=False, wraparound=False
 # distutils: language=c++
-import cython
 
+cimport numpy as np
 from libc.stdint cimport int32_t, int64_t
-from libcpp cimport bool
 from libcpp.pair cimport pair
 from libcpp.string cimport string
 
-import numpy as np
-
-cimport numpy as np
+np.import_array()
 
 
 cdef extern from "buffalo/algo_impl/als/als.hpp" namespace "als":
     cdef cppclass CALS:
         void release() nogil except +
-        bool init(string) nogil except +
+        bint init(string) nogil except +
         void initialize_model(float*, int,
                               float*, int) nogil except +
         void precompute(int) nogil except +
@@ -51,8 +48,6 @@ cdef class CyALS:
     def precompute(self, axis):
         self.obj.precompute(axis)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def partial_update(self,
                        int start_x,
                        int next_x,

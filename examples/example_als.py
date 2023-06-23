@@ -1,8 +1,6 @@
 import json
 import time
 
-import fire
-
 from buffalo.algo import ALS, ALSOption
 from buffalo.data import MatrixMarketOptions
 from buffalo.misc import aux, log
@@ -75,8 +73,3 @@ def example2():
         print("took: %.3f secs" % (time.time() - start_t))
     except ImportError:
         print("n2 is not installed. skip it")
-
-
-if __name__ == "__main__":
-    fire.Fire({"example1": example1,
-               "example2": example2})

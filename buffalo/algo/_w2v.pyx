@@ -1,20 +1,17 @@
-# cython: experimental_cpp_class_def=True, language_level=3
+# cython: language_level=3, boundscheck=False, wraparound=False
 # distutils: language=c++
-import cython
-
-from libc.stdint cimport int32_t, int64_t, uint32_t
-from libcpp cimport bool
-from libcpp.string cimport string
-
-import numpy as np
 
 cimport numpy as np
+from libc.stdint cimport int32_t, int64_t, uint32_t
+from libcpp.string cimport string
+
+np.import_array()
 
 
 cdef extern from "buffalo/algo_impl/w2v/w2v.hpp" namespace "w2v":
     cdef cppclass CW2V:
         void release() nogil except +
-        bool init(string) nogil except +
+        bint init(string) nogil except +
         void initialize_model(float*, int32_t,
                               int32_t*,
                               uint32_t*,
@@ -58,8 +55,6 @@ cdef class CyW2V:
     def launch_workers(self):
         self.obj.launch_workers()
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def add_jobs(self,
                  int start_x,
                  int next_x,

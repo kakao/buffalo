@@ -1,17 +1,16 @@
-# cython: experimental_cpp_class_def=True, language_level=3
+# cython: language_level=3, boundscheck=False, wraparound=False
 # distutils: language=c++
-import cython
-import numpy as np
 
 cimport numpy as np
 from libc.stdint cimport int32_t, int64_t
-from libcpp cimport bool as bool_t
 from libcpp.string cimport string
+
+np.import_array()
 
 
 cdef extern from "buffalo/algo_impl/plsi/plsi.hpp" namespace "plsi":
     cdef cppclass CPLSI:
-        bool_t init(string) nogil except +
+        bint init(string) nogil except +
         void release() nogil except +
         void swap() nogil except +
         void reset() nogil except +
@@ -51,8 +50,6 @@ cdef class CyPLSI:
     def normalize(self, alpha1, alpha2):
         self.obj.normalize(alpha1, alpha2)
 
-    @cython.boundscheck(False)
-    @cython.wraparound(False)
     def partial_update(self, int start_x, int next_x,
                        np.ndarray[np.int64_t, ndim=1] indptr,
                        np.ndarray[np.int32_t, ndim=1] keys,

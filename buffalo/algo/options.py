@@ -1,7 +1,7 @@
-from buffalo.misc.aux import InputOptions, Option
+from aurochs.misc import aux
 
 
-class AlgoOption(InputOptions):
+class AlgoOption(aux.InputOptions):
     def __init__(self, *args, **kwargs):
         super(AlgoOption, self).__init__(*args, **kwargs)
 
@@ -83,7 +83,7 @@ class ALSOption(AlgoOption):
             "model_path": "",
             "data_opt": {}
         })
-        return Option(opt)
+        return aux.Option(opt)
 
     def is_valid_option(self, opt):
         b = super().is_valid_option(opt)
@@ -137,7 +137,7 @@ class CFROption(AlgoOption):
             "model_path": "",
             "data_opt": {}
         })
-        return Option(opt)
+        return aux.Option(opt)
 
     def is_valid_option(self, opt):
         b = super().is_valid_option(opt)
@@ -213,7 +213,7 @@ class BPRMFOption(AlgoOption):
             "model_path": "",
             "data_opt": {}
         })
-        return Option(opt)
+        return aux.Option(opt)
 
 
 class WARPOption(AlgoOption):
@@ -272,7 +272,7 @@ class WARPOption(AlgoOption):
             "model_path": "",
             "data_opt": {}
         })
-        return Option(opt)
+        return aux.Option(opt)
 
 
 class W2VOption(AlgoOption):
@@ -312,7 +312,7 @@ class W2VOption(AlgoOption):
             "model_path": "",
             "data_opt": {}
         })
-        return Option(opt)
+        return aux.Option(opt)
 
 
 class PLSIOption(AlgoOption):
@@ -345,4 +345,4 @@ class PLSIOption(AlgoOption):
             "data_opt": {},
             "inherit_opt": {}
         })
-        return Option(opt)
+        return aux.Option(opt)
