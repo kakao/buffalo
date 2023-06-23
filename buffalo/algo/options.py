@@ -1,4 +1,4 @@
-from aurochs.misc import aux
+from buffalo.misc import aux
 
 
 class AlgoOption(aux.InputOptions):
