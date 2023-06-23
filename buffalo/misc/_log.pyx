@@ -1,4 +1,4 @@
-# cython: experimental_cpp_class_def=True, language_level=3
+# cython: language_level=3, nonecheck=False
 # distutils: language=c++
 
 
@@ -9,7 +9,6 @@ cdef extern from "buffalo/misc/log.hpp":
 
 
 cdef class PyBuffaloLog:
-    """CALS object holder"""
     cdef _BuffaloLogger* obj
 
     def __cinit__(self):

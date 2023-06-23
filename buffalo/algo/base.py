@@ -3,11 +3,7 @@ import logging
 import pickle
 import struct
 
-import absl.logging
 import numpy as np
-
-logging.root.removeHandler(absl.logging._absl_handler)
-absl.logging._warn_preinit_stderr = False
 
 from buffalo.misc import aux
 

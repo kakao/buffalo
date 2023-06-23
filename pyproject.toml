@@ -1,6 +1,13 @@
 [build-system]
-requires = ["setuptools>=67.6.1", "numpy>=1.21.6", "Cython>=0.29.32", "packaging>=22.0", "py-cpuinfo"]
+requires = ["setuptools>=67.6.1", "numpy~=1.23.5", "Cython>=0.29.32", "packaging>=22.0", "py-cpuinfo"]
 build-backend = "setuptools.build_meta"
+
+[tool.cibuildwheel]
+test-command = ""
+skip = ["pp*", "*musl*",  "*-manylinux_i686", "*win*"]
+
+[tool.cibuildwheel.macos]
+before-all = "brew install gcc && brew install libomp"
 
 [tool.poe.tasks]
   [tool.poe.tasks.codespell]

@@ -1,0 +1,76 @@
+name: Build and publish distribution
+
+on:
+  push:
+    tag:
+      - 'v*' 
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: [38, 39, 310, 311]
+        cibw-arch: [auto, aarch64]
+        exclude:
+          - os: macos-latest
+            cibw-arch: aarch64
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+
+    - name: Set up QEMU
+      if: runner.os == 'Linux'
+      uses: docker/setup-qemu-action@v2
+      with:
+        platforms: all
+
+    - name: Build wheels
+      uses: pypa/cibuildwheel@v2.13.1
+      env:
+        CIBW_BUILD: cp${{ matrix.python-version }}-*
+        CIBW_ARCHS_LINUX: ${{ matrix.cibw-arch }}
+        CIBW_ARCHS_MACOS: ${{ matrix.cibw-arch }}
+
+    - name: Build sdist
+      run: |
+        pip install build
+        python -m build . --sdist -o wheelhouse
+      if: ${{ matrix.python-version == '311' && runner.os == 'Linux'  && matrix.cibw-arch == 'auto' }}
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: wheels
+        path: wheelhouse
+
+  publish:
+    name: Publish
+    needs: [build_wheels]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
+
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: wheels
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install twine
+      run: pip install twine
+
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      run: |
+        pip install --upgrade twine
+        twine upload --skip-existing *
+        rm -f *
