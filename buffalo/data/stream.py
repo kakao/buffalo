@@ -23,8 +23,7 @@ class StreamOptions(DataOption):
             iid: Item names corresponding to each item id.
         data:
             validation: See validation section.
-            batch_mb: Internal batch size. Generally, the larger size, faster.
-            use_cache: Set True to use already built data, otherwise building new one every time.
+            batch_mb: Internal batch size. Generally, the larger size, faster.y built data, otherwise building new one every time.
             disk_based: Set True to use disk based data compressing with low memory usage.
               Otherwise, base on approximated data size system will decided on its own.
             tmp_dir: Where temporary files goes on.
@@ -171,6 +170,7 @@ class Stream(Data):
         self.logger.debug("sort working_data")
         aux.psort(working_data_path, key=1)
         w_path = aux.get_temporary_file(root=self.opt.data.tmp_dir)
+        self.temp_file_list.append(w_path)
         self.logger.debug(f"build sppmi in_parallel. w: {w_path}")
         num_workers = psutil.cpu_count()
         nnz = parallel_build_sppmi(working_data_path, w_path, sppmi_total_lines, sz, k, num_workers)
@@ -207,7 +207,9 @@ class Stream(Data):
             warnings.simplefilter("ignore", ResourceWarning)
             if with_sppmi:
                 w_sppmi = open(aux.get_temporary_file(root=self.opt.data.tmp_dir), "w")
+                self.temp_file_list.append(w_sppmi)
             file_path = aux.get_temporary_file(root=self.opt.data.tmp_dir)
+            self.temp_file_list.append(file_path)
             with open(stream_main_path) as fin, open(file_path, "w") as w:
                 total_index = 0
                 internal_data_type = self.opt.data.internal_data_type
@@ -308,4 +310,5 @@ class Stream(Data):
                 if os.path.isfile(self.path):
                     os.remove(self.path)
             raise
+        self.temp_file_clear()
         self.logger.info("DB built on %s" % data_path)

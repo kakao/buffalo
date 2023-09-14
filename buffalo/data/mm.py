@@ -69,6 +69,7 @@ class MatrixMarketDataReader(DataReader):
 
         log.get_logger("MatrixMarketDataReader").debug("creating temporary matrix-market data from numpy-kind array")
         tmp_path = aux.get_temporary_file(self.opt.data.tmp_dir)
+        self.temp_file_list.append(tmp_path)
         with open(tmp_path, "wb") as fout:
             if isinstance(main, (np.ndarray,)) and main.ndim == 2:
                 main = scipy.sparse.csr_matrix(main)
@@ -172,6 +173,7 @@ class MatrixMarket(Data):
         vali_indexes = [] if "vali" not in db else db["vali"]["indexes"]
         vali_lines = []
         file_path = aux.get_temporary_file(self.opt.data.tmp_dir)
+        self.temp_file_list.append(file_path)
         with open(file_path, "w") as w:
             fin = open(source_path, mode="r")
             file_size = fin.seek(0, 2)
@@ -272,4 +274,6 @@ class MatrixMarket(Data):
                 if os.path.isfile(self.path):
                     os.remove(self.path)
             raise
+        self.reader.temp_file_clear()
+        self.temp_file_clear()
         self.logger.info("DB built on %s" % data_path)
