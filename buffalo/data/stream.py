@@ -23,7 +23,8 @@ class StreamOptions(DataOption):
             iid: Item names corresponding to each item id.
         data:
             validation: See validation section.
-            batch_mb: Internal batch size. Generally, the larger size, faster.y built data, otherwise building new one every time.
+            batch_mb: Internal batch size. Generally, the larger size, faster.
+            use_cache: Set True to use already built data, otherwise building new one every time.
             disk_based: Set True to use disk based data compressing with low memory usage.
               Otherwise, base on approximated data size system will decided on its own.
             tmp_dir: Where temporary files goes on.
