@@ -26,6 +26,7 @@ class Data(object):
             self.prepro = getattr(prepro, self.opt.data.value_prepro.name)(self.opt.data.value_prepro)
             self.value_prepro = self.prepro
         self.data_type = None
+        self.temp_file_list = []
 
     @abc.abstractmethod
     def create_database(self, filename, **kwargs):
@@ -165,6 +166,12 @@ class Data(object):
             self.handle.close()
             self.handle = None
             self.header = None
+
+    def temp_file_clear(self):
+        for path in self.temp_file_list:
+            if os.path.isfile(path):
+                os.remove(path)
+        self.temp_file_list = []
 
     def _create_database(self, path, **kwargs):
         # Create database structure
@@ -469,6 +476,7 @@ class DataOption(object):
 class DataReader(object):
     def __init__(self, opt):
         self.opt = opt
+        self.temp_file_list = []
 
     def get_main_path(self):
         return self.opt.input.main
@@ -484,6 +492,7 @@ class DataReader(object):
         if hasattr(self, field_name):
             return getattr(self, field_name)
         tmp_path = aux.get_temporary_file(self.opt.data.tmp_dir)
+        self.temp_file_list.append(tmp_path)
         with open(tmp_path, "w") as fout:
             if isinstance(obj, np.ndarray,) and obj.ndim == 1:
                 fout.write("\n".join(map(str, obj.tolist())))
@@ -493,3 +502,9 @@ class DataReader(object):
                 raise RuntimeError(f"Unexpected data type for id list: {type(obj)}")
         setattr(self, field_name, tmp_path)
         return tmp_path
+
+    def temp_file_clear(self):
+        for path in self.temp_file_list:
+            if os.path.isfile(path):
+                os.remove(path)
+        self.temp_file_list = []
