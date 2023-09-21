@@ -203,7 +203,7 @@ class Data(object):
         idmap = f.create_group("idmap")
         idmap.create_dataset("rows", (num_users,), dtype="S%s" % uid_max_col,
                              maxshape=(num_users,))
-        idmap.create_dataset("cols", (num_items,), dtype="S%s" % iid_max_col,
+        idmap.create_dataset("cols", (num_items,), dtype=h5py.string_dtype('utf-8', length=iid_max_col),
                              maxshape=(num_items,))
         return f
 
