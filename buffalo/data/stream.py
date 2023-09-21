@@ -148,7 +148,7 @@ class Stream(Data):
             else:
                 cols = sorted(itemids.items(), key=lambda x: x[1])
                 cols = [k for k, _ in cols]
-                idmap["cols"][:] = np.array(cols, dtype=f"S{iid_max_col}")
+                idmap["cols"][:] = cols
         except Exception as e:
             self.logger.error("Cannot create db: %s" % (str(e)))
             self.logger.error(traceback.format_exc())
