@@ -124,7 +124,7 @@ class EALSOption(AlgoOption):
             "reg_u": 0.1,
             "reg_i": 0.1,
             "alpha": 8.0,
-            "c0": 128,
+            "c0": 128.0,
             "exponent": 0.5,
             "model_path": "",
             "data_opt": {}
