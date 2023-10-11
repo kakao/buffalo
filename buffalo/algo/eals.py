@@ -81,7 +81,7 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
         self.P[:, self.opt.d:] = 0.0
         self.Q[:, self.opt.d:] = 0.0
 
-				# Double precision is used for training a model to prevent from numerical instability.
+				# Double precision is used for training a model to prevent numerical instability.
         self._P_f64 = self.P.astype("float")
         self._Q_f64 = self.Q.astype("float")
         self._C_f64 = self._get_negative_weights()
@@ -116,13 +116,13 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
         # Get item popularity from self.data
         pop = np.zeros(self.data.get_header()["num_items"], dtype="float")
         buf = self._get_buffer()
-        buf.set_group("colwise")  # Search items by colwise manner
+        buf.set_group("colwise")  # Search items by column-wise manner
         for _ in buf.fetch_batch():
             start_x, next_x, indptr, __, ___ = buf.get()
             for i in range(next_x - start_x):
                 x = start_x + i
                 pop[x] = indptr[x] - (0 if i == 0 else indptr[x - 1])
-        # Return negative weights calculated by power-law weighting method
+        # Return negative weights calculated by the power-law weighting scheme
         pop /= max(pop)
         pop_with_exponent = pop**self.opt.get("exponent", 0.0)
         return self.opt.get("c0", 1.0) * pop_with_exponent / sum(pop_with_exponent)
@@ -154,13 +154,9 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
         assert self.obj.update(indptr, keys, vals, axis)
 
     def _get_loss(self, full_batch):
-        """
-            loss := \sqrt{\sum_{u,i} (r_{u,i} - (P_u \cdot Q_i))^2}
-            total_loss := loss^2 + l2-loss + negative-feedbacks (eALS loss)
-            where 'u', 'i' indices represent user and item, respectively.
-        """
         indptr, keys, vals = full_batch["data"]["rowwise"]
         axis = self.group2axis["rowwise"]
+        # loss: RMSE / total_loss := RMSE^2 + L2-loss + Negative Feedbacks
         loss, total_loss = self.obj.estimate_loss(full_batch["nnz"], indptr, keys, vals, axis)
         return loss, total_loss
 
