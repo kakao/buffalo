@@ -81,7 +81,7 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
         self.P[:, self.opt.d:] = 0.0
         self.Q[:, self.opt.d:] = 0.0
 
-				# Double precision is used for training a model to prevent numerical instability.
+        # Double precision is used for training a model to prevent numerical instability.
         self._P_f64 = self.P.astype("float")
         self._Q_f64 = self.Q.astype("float")
         self._C_f64 = self._get_negative_weights()
