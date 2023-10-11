@@ -109,7 +109,8 @@ class EALSOption(AlgoOption):
         :ivar float reg_u: The L2 regularization coefficient for user embedding matrix. (default: 0.1)
         :ivar float reg_i: The L2 regularization coefficient for item embedding matrix. (default: 0.1)
         :ivar float alpha: The coefficient of giving more weights to losses on positive samples. (default: 8)
-        :ivar float eps: epsilon for numerical stability (default: 1e-10)
+        :ivar float c0: The strength of the negative feedbacks
+        :ivar float exponent: exponent to item popularity for the negative feedbacks
         :ivar str model_path: Where to save model.
         :ivar dict data_opt: This option will be used to load data if given.
         """
@@ -123,9 +124,8 @@ class EALSOption(AlgoOption):
             "reg_u": 0.1,
             "reg_i": 0.1,
             "alpha": 8.0,
-            "eps": 1e-10,
-            "c0": 1.0,
-            "exponent": 0.0,
+            "c0": 128,
+            "exponent": 0.5,
             "model_path": "",
             "data_opt": {}
         })
