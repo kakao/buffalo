@@ -9,7 +9,6 @@ from buffalo.algo._eals import CyEALS
 from buffalo.algo.base import Algo, Serializable
 from buffalo.algo.options import EALSOption
 from buffalo.data.base import Data
-from buffalo.data.buffered_data import BufferedDataMatrix
 from buffalo.evaluate import Evaluable
 from buffalo.misc import aux, log
 
@@ -74,6 +73,7 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
         assert self.data, "Data is not set"
         self.vdim = self.opt.d
         header = self.data.get_header()
+        self._nnz = header["num_nnz"]
         for name, rows in [("P", header["num_users"]), ("Q", header["num_items"])]:
             setattr(self, name, None)
             setattr(self, name, np.random.normal(scale=1.0 / (self.opt.d ** 2),
@@ -107,80 +107,51 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
         scores = (self.P[row] * self.Q[col]).sum(axis=1)
         return scores
 
-    def _get_buffer(self):
-        buf = BufferedDataMatrix()
-        buf.initialize(self.data)
-        return buf
-
     def _get_negative_weights(self):
         # Get item popularity from self.data
-        pop = np.zeros(self.data.get_header()["num_items"], dtype="float")
-        buf = self._get_buffer()
-        buf.set_group("colwise")  # Search items by column-wise manner
-        for _ in buf.fetch_batch():
-            start_x, next_x, indptr, __, ___ = buf.get()
-            for i in range(next_x - start_x):
-                x = start_x + i
-                pop[x] = indptr[x] - (0 if i == 0 else indptr[x - 1])
+        indptr, _, __ = self._get_mm_data(group="colwise")
+        pop = np.array([indptr[i] - (0 if i == 0 else indptr[i - 1]) for i in range(len(indptr))], dtype="float")
+        assert len(pop) == self.data.get_header()["num_items"]
         # Return negative weights calculated by the power-law weighting scheme
         pop /= max(pop)
         pop_with_exponent = pop**self.opt.get("exponent", 0.0)
         return self.opt.get("c0", 1.0) * pop_with_exponent / sum(pop_with_exponent)
 
-    def _get_full_batch_from(self, buf, group):
-        header = self.data.get_header()
-        num = header["num_users"] if group == "rowwise" else header["num_items"]
-        nnz = header["num_nnz"]
-        buf.set_group(group)
-        keys, vals = [], []
-        for _ in buf.fetch_batch():
-            __, ___, indptr, k, v = buf.get()
-            keys.append(k.copy())
-            vals.append(v.copy())
-        keys = np.array(keys).reshape([-1])
-        vals = np.array(vals).reshape([-1])
-        return indptr[:num], keys[:nnz], vals[:nnz]
+    def _get_mm_data(self, group):
+        group = self.data.get_group(group)
+        indptr = group["indptr"][:]
+        keys = group["key"][:]
+        vals = group["val"][:]
+        return indptr, keys, vals
 
-    def _precompute(self, full_batch):
+    def _precompute_cache(self):
         for group in ["rowwise", "colwise"]:
-            indptr, keys, _ = full_batch["data"][group]
+            indptr, keys, _ = self._get_mm_data(group)
             axis = self.group2axis[group]
-            self.obj.precompute_cache(full_batch["nnz"], indptr, keys, axis)
+            self.obj.precompute_cache(self._nnz, indptr, keys, axis)
 
-    def _iterate(self, full_batch, group):
-        self.logger.info(f"Updating params({group})......")
-        indptr, keys, vals = full_batch["data"][group]
+    def _iterate(self, group):
+        indptr, keys, vals = self._get_mm_data(group)
         axis = self.group2axis[group]
         assert self.obj.update(indptr, keys, vals, axis)
 
-    def _get_loss(self, full_batch):
-        indptr, keys, vals = full_batch["data"]["rowwise"]
-        axis = self.group2axis["rowwise"]
+    def _get_loss(self):
+        indptr, keys, vals = self._get_mm_data(group="rowwise")
         # loss: RMSE / total_loss := RMSE^2 + L2-loss + Negative Feedbacks
-        loss, total_loss = self.obj.estimate_loss(full_batch["nnz"], indptr, keys, vals, axis)
+        loss, total_loss = self.obj.estimate_loss(self._nnz, indptr, keys, vals, 0)
         return loss, total_loss
 
     def train(self, training_callback: Optional[Callable[[int, Dict[str, float]], None]] = None):
-        buf = self._get_buffer()
-        header = self.data.get_header()
-        nnz = header["num_nnz"]
-        full_batch = {
-            "data": {
-                "rowwise": self._get_full_batch_from(buf, group="rowwise"),
-                "colwise": self._get_full_batch_from(buf, group="colwise"),
-            },
-            "nnz": nnz,
-        }
         best_loss, loss, self.validation_result = float("inf"), None, {}
         full_st = time.time()
 
-        self._precompute(full_batch)
+        self._precompute_cache()
 
         for i in range(self.opt.num_iters):
             start_t = time.time()
-            self._iterate(full_batch, group="rowwise")
-            self._iterate(full_batch, group="colwise")
-            loss, total_loss = self._get_loss(full_batch)
+            self._iterate(group="rowwise")
+            self._iterate(group="colwise")
+            loss, total_loss = self._get_loss()
 
             train_t = time.time() - start_t
             metrics = {"train_loss": loss}
@@ -196,7 +167,7 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
                                     for k, v in self.validation_result.items()})
                     if training_callback is not None and callable(training_callback):
                         training_callback(i, metrics)
-            self.logger.info("Iteration %d: RMSE %.3f TotalLoss %.3f Elapsed %.3f secs" % (i + 1, loss, (total_loss / nnz), train_t))
+            self.logger.info("Iteration %d: RMSE %.3f TotalLoss %.3f Elapsed %.3f secs" % (i + 1, loss, (total_loss / self._nnz), train_t))
             best_loss = self.save_best_only(loss, best_loss, i)
             if self.early_stopping(loss):
                 break
