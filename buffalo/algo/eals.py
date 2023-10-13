@@ -58,11 +58,9 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
     def normalize(self, group="item"):
         if group == "item" and not self.opt._nrz_Q:
             self.Q = self._normalize(self.Q)
-            self._Q_f64 = self.Q.astype("float")
             self.opt._nrz_Q = True
         elif group == "user" and not self.opt._nrz_P:
             self.P = self._normalize(self.P)
-            self._P_f64 = self.P.astype("float")
             self.opt._nrz_P = True
 
     def initialize(self):
@@ -80,13 +78,9 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
                                 size=(rows, self.vdim)).astype("float32"))
         self.P[:, self.opt.d:] = 0.0
         self.Q[:, self.opt.d:] = 0.0
+        self.C = self._get_negative_weights()
 
-        # Double precision is used for training a model to prevent numerical instability.
-        self._P_f64 = self.P.astype("float")
-        self._Q_f64 = self.Q.astype("float")
-        self._C_f64 = self._get_negative_weights()
-
-        self.obj.initialize_model(self._P_f64, self._Q_f64, self._C_f64)
+        self.obj.initialize_model(self.P, self.Q, self.C)
 
     def _get_topk_recommendation(self, rows, topk, pool=None):
         p = self.P[rows]
@@ -110,7 +104,7 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
     def _get_negative_weights(self):
         # Get item popularity from self.data
         indptr, _, __ = self._get_mm_data(group="colwise")
-        pop = np.array([indptr[i] - (0 if i == 0 else indptr[i - 1]) for i in range(len(indptr))], dtype="float")
+        pop = np.array([indptr[i] - (0 if i == 0 else indptr[i - 1]) for i in range(len(indptr))], dtype="float32")
         assert len(pop) == self.data.get_header()["num_items"]
         # Return negative weights calculated by the power-law weighting scheme
         pop /= max(pop)
@@ -171,8 +165,6 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
             best_loss = self.save_best_only(loss, best_loss, i)
             if self.early_stopping(loss):
                 break
-        self.P = self._P_f64.astype("float32")
-        self.Q = self._Q_f64.astype("float32")
 
         full_el = time.time() - full_st
         self.logger.info(f"elapsed for full epochs: {full_el:.2f} sec")

@@ -12,14 +12,14 @@ np.import_array()
 cdef extern from "buffalo/algo_impl/eals/eals.hpp" namespace "eals":
     cdef cppclass EALS:
         bint init(string) nogil except +
-        void initialize_model(double*, double*, double*, int, int) nogil except +
+        void initialize_model(float*, float*, float*, int, int) nogil except +
         void precompute_cache(int, int64_t*, int32_t*, int) nogil except +
         bint update(int64_t*, int32_t*, float*, int) nogil except +
-        pair[double, double] estimate_loss(int,
-                                           int64_t*,
-                                           int32_t*,
-                                           float*,
-                                           int) nogil except +
+        pair[float, float] estimate_loss(int,
+                                         int64_t*,
+                                         int32_t*,
+                                         float*,
+                                         int) nogil except +
 
 cdef class CyEALS:
     """CEALS object holder"""
@@ -35,9 +35,9 @@ cdef class CyEALS:
         return self._obj.init(option_path)
 
     def initialize_model(self,
-                         np.ndarray[np.float64_t, ndim=2] P,
-                         np.ndarray[np.float64_t, ndim=2] Q,
-                         np.ndarray[np.float64_t, ndim=1] C):
+                         np.ndarray[np.float32_t, ndim=2] P,
+                         np.ndarray[np.float32_t, ndim=2] Q,
+                         np.ndarray[np.float32_t, ndim=1] C):
         self._obj.initialize_model(&P[0, 0], &Q[0, 0], &C[0], P.shape[0], Q.shape[0])
 
     def precompute_cache(self,

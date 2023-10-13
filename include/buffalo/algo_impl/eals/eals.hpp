@@ -24,9 +24,9 @@ class EALS : public Algorithm {
     virtual bool init(std::string opt_path);
     virtual bool parse_option(std::string opt_path);
     void _leastsquare(Map<MatrixType>& X, int idx, MatrixType& A, VectorType& y) = delete;
-    void initialize_model(double* P_ptr,
-                          double* Q_ptr,
-                          double* C_ptr,
+    void initialize_model(float* P_ptr,
+                          float* Q_ptr,
+                          float* C_ptr,
                           const int32_t P_rows,
                           const int32_t Q_rows);
     void precompute_cache(const int32_t nnz,
@@ -37,7 +37,7 @@ class EALS : public Algorithm {
                 const int32_t* keys,
                 const float* vals,
                 const int32_t axis);
-    std::pair<double, double> estimate_loss(const int32_t nnz,
+    std::pair<float, float> estimate_loss(const int32_t nnz,
                                             const int64_t* indptr,
                                             const int32_t* keys,
                                             const float* vals,
@@ -69,9 +69,9 @@ class EALS : public Algorithm {
     Json opt_;
     int32_t P_rows_, Q_rows_;
     bool is_P_cached_, is_Q_cached_;
-    double* P_ptr_, * Q_ptr_, * C_ptr_;
-    std::vector<double> vhat_cache_u_, vhat_cache_i_;
+    float* P_ptr_, * Q_ptr_, * C_ptr_;
+    std::vector<float> vhat_cache_u_, vhat_cache_i_;
     std::vector<int64_t> ind_u2i_, ind_i2u_;
-    const double kOne, kZero;
+    const float kOne, kZero;
 };
 } // end namespace eals
