@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <numeric>
 #include <cmath>
+#include <string>
+#include <utility>
 #include <functional>
 
 #include "json11.hpp"
@@ -14,8 +16,6 @@
 #include "buffalo/misc/blas.hpp"
 
 
-using namespace Eigen;
-
 namespace eals {
 class EALS : public Algorithm {
  public:
@@ -23,7 +23,10 @@ class EALS : public Algorithm {
     virtual ~EALS();
     virtual bool init(std::string opt_path);
     virtual bool parse_option(std::string opt_path);
-    void _leastsquare(Map<MatrixType>& X, int idx, MatrixType& A, VectorType& y) = delete;
+    void _leastsquare(Map<MatrixType>& X,
+                      int idx,
+                      MatrixType& A,
+                      VectorType& y) = delete;
     void initialize_model(float* P_ptr,
                           float* Q_ptr,
                           float* C_ptr,
@@ -38,14 +41,14 @@ class EALS : public Algorithm {
                 const float* vals,
                 const int32_t axis);
     std::pair<float, float> estimate_loss(const int32_t nnz,
-                                            const int64_t* indptr,
-                                            const int32_t* keys,
-                                            const float* vals,
-                                            const int32_t axis);
+                                          const int64_t* indptr,
+                                          const int32_t* keys,
+                                          const float* vals,
+                                          const int32_t axis);
 
  private:
     class IdxCoord {
-      public:
+     public:
         void set(int32_t row, int32_t col, int64_t key) {
             row_ = row;
             col_ = col;
@@ -54,7 +57,7 @@ class EALS : public Algorithm {
         int32_t get_row() const { return row_; }
         int32_t get_col() const { return col_; }
         int64_t get_key() const { return key_; }
-      private:
+     private:
         int32_t row_, col_;
         int64_t key_;
     };
@@ -74,4 +77,4 @@ class EALS : public Algorithm {
     std::vector<int64_t> ind_u2i_, ind_i2u_;
     const float kOne, kZero;
 };
-} // end namespace eals
+}  // end namespace eals

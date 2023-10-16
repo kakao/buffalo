@@ -90,8 +90,7 @@ void EALS::precompute_cache(const int32_t nnz,
             } else {
                 return a.get_row() < b.get_row();
             }
-        }
-    );
+        });
     for (int32_t ind=0; ind < nnz; ++ind) {
         const int64_t key = idx_xmajor[ind].get_key();
         ind_mapper[key] = ind;
@@ -115,10 +114,10 @@ bool EALS::update(const int64_t* indptr,
 }
 
 std::pair<float, float> EALS::estimate_loss(const int32_t nnz,
-                                              const int64_t* indptr,
-                                              const int32_t* keys,
-                                              const float* vals,
-                                              const int32_t axis) {
+                                            const int64_t* indptr,
+                                            const int32_t* keys,
+                                            const float* vals,
+                                            const int32_t axis) {
     // Loss := sum_{(u,i) \in R} (1 + alpha * v_{u,i}) * (v_{u,i} - vHat_{u,i})^2 +
     //         sum_{u} sum_{i \notin R_u} C_{i} * vHat_{u,i}^2 +
     //         reg_u * |P|^2 + reg_i * |Q|^2
@@ -146,7 +145,7 @@ std::pair<float, float> EALS::estimate_loss(const int32_t nnz,
             const float error = (v - vhat);
             feedbacks4tid[tid] += (kOne + alpha * v) * error * error;
             const int32_t iidx = axis == 0 ? yidx : xidx;
-            feedbacks4tid[tid] -= C_ptr_[iidx] * vhat * vhat; // To avoid duplication in a term of negative feedbacks.
+            feedbacks4tid[tid] -= C_ptr_[iidx] * vhat * vhat;  // To avoid duplication in a term of negative feedbacks.
             mse4tid[tid] += error * error;
         }
     }
@@ -168,7 +167,7 @@ std::pair<float, float> EALS::estimate_loss(const int32_t nnz,
     #pragma omp parallel for schedule(dynamic, 8)
     for (int32_t iidx=0; iidx < Q_rows_; ++iidx) {
         const int32_t ridx = iidx * D;
-        for (int32_t d=0; d<D; ++d) {
+        for (int32_t d=0; d < D; ++d) {
             CQ[ridx + d] = std::sqrt(C_ptr_[iidx]) * Q_ptr_[ridx + d];
         }
     }
@@ -195,8 +194,7 @@ void EALS::update_P_(const int64_t* indptr,
         std::transform(q_ptr, q_ptr + D, cq_ptr,
             [sqrt_C](const float elem) -> float {
                 return sqrt_C * elem;
-            }
-        );
+            });
     }
     std::vector<float> Sq(D * D, kZero);
     blas::syrk("u", "t", D, Q_rows_, kOne, CQ.data(), kZero, Sq.data());
@@ -281,4 +279,4 @@ void EALS::update_Q_(const int64_t* indptr,
         }
     }
 }
-} // end namespace eals
+}  // end namespace eals
