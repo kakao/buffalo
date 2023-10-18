@@ -1,28 +1,31 @@
 #pragma once
-
 #include <omp.h>
+
+#include <string>
+#include <utility>
 #include <iostream>
 #include <vector>
 #include <algorithm>
 #include <numeric>
 #include <cmath>
-#include <string>
-#include <utility>
 #include <functional>
 
-#include "json11.hpp"
 #include "buffalo/algo.hpp"
-#include "buffalo/misc/log.hpp"
 #include "buffalo/misc/blas.hpp"
+using namespace std;
+using namespace Eigen;
 
 
 namespace eals {
-class EALS : public Algorithm {
+
+
+class CEALS : public Algorithm {
  public:
-    EALS();
-    virtual ~EALS();
-    virtual bool init(std::string opt_path);
-    virtual bool parse_option(std::string opt_path);
+    CEALS();
+    virtual ~CEALS();
+
+    virtual bool init(string opt_path);
+    virtual bool parse_option(string opt_path);
     void _leastsquare(Map<MatrixType>& X,
                       int idx,
                       MatrixType& A,
@@ -40,11 +43,11 @@ class EALS : public Algorithm {
                 const int32_t* keys,
                 const float* vals,
                 const int32_t axis);
-    std::pair<float, float> estimate_loss(const int32_t nnz,
-                                          const int64_t* indptr,
-                                          const int32_t* keys,
-                                          const float* vals,
-                                          const int32_t axis);
+    pair<float, float> estimate_loss(const int32_t nnz,
+                                     const int64_t* indptr,
+                                     const int32_t* keys,
+                                     const float* vals,
+                                     const int32_t axis);
 
  private:
     class IdxCoord {
@@ -73,8 +76,9 @@ class EALS : public Algorithm {
     int32_t P_rows_, Q_rows_;
     bool is_P_cached_, is_Q_cached_;
     float* P_ptr_, * Q_ptr_, * C_ptr_;
-    std::vector<float> vhat_cache_u_, vhat_cache_i_;
-    std::vector<int64_t> ind_u2i_, ind_i2u_;
+    vector<float> vhat_cache_u_, vhat_cache_i_;
+    vector<int64_t> ind_u2i_, ind_i2u_;
     const float kOne, kZero;
 };
-}  // end namespace eals
+
+}

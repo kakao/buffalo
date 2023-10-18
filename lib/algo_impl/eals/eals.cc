@@ -2,7 +2,8 @@
 
 
 namespace eals {
-EALS::EALS()
+
+CEALS::CEALS()
     : P_ptr_(nullptr),
       Q_ptr_(nullptr),
       C_ptr_(nullptr),
@@ -13,9 +14,9 @@ EALS::EALS()
       kOne(1.0),
       kZero(0.0) {}
 
-EALS::~EALS() {}
+CEALS::~CEALS() {}
 
-bool EALS::init(std::string opt_path) {
+bool CEALS::init(std::string opt_path) {
     const bool ok = parse_option(opt_path);
     if (ok) {
         const int32_t num_workers = opt_["num_workers"].int_value();
@@ -24,12 +25,12 @@ bool EALS::init(std::string opt_path) {
     return ok;
 }
 
-bool EALS::parse_option(std::string opt_path) {
+bool CEALS::parse_option(std::string opt_path) {
     const bool ok = Algorithm::parse_option(opt_path, opt_);
     return ok;
 }
 
-void EALS::initialize_model(float* P_ptr,
+void CEALS::initialize_model(float* P_ptr,
                             float* Q_ptr,
                             float* C_ptr,
                             const int32_t P_rows,
@@ -45,7 +46,7 @@ void EALS::initialize_model(float* P_ptr,
     DEBUG("P({} x {}) Q({} x {}) set", P_rows_, D, Q_rows_, D);
 }
 
-void EALS::precompute_cache(const int32_t nnz,
+void CEALS::precompute_cache(const int32_t nnz,
                             const int64_t* indptr,
                             const int32_t* keys,
                             const int32_t axis) {
@@ -98,7 +99,7 @@ void EALS::precompute_cache(const int32_t nnz,
     is_cached = true;
 }
 
-bool EALS::update(const int64_t* indptr,
+bool CEALS::update(const int64_t* indptr,
                   const int32_t* keys,
                   const float* vals,
                   const int32_t axis) {
@@ -113,7 +114,7 @@ bool EALS::update(const int64_t* indptr,
     return is_cached;
 }
 
-std::pair<float, float> EALS::estimate_loss(const int32_t nnz,
+std::pair<float, float> CEALS::estimate_loss(const int32_t nnz,
                                             const int64_t* indptr,
                                             const int32_t* keys,
                                             const float* vals,
@@ -181,7 +182,7 @@ std::pair<float, float> EALS::estimate_loss(const int32_t nnz,
     return std::pair<float, float>(rmse, loss);
 }
 
-void EALS::update_P_(const int64_t* indptr,
+void CEALS::update_P_(const int64_t* indptr,
                      const int32_t* keys,
                      const float* vals) {
     const int32_t D = opt_["d"].int_value();
@@ -236,7 +237,7 @@ void EALS::update_P_(const int64_t* indptr,
     }
 }
 
-void EALS::update_Q_(const int64_t* indptr,
+void CEALS::update_Q_(const int64_t* indptr,
                      const int32_t* keys,
                      const float* vals) {
     const int32_t D = opt_["d"].int_value();
@@ -279,4 +280,5 @@ void EALS::update_Q_(const int64_t* indptr,
         }
     }
 }
-}  // end namespace eals
+
+}

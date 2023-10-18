@@ -10,7 +10,7 @@ np.import_array()
 
 
 cdef extern from "buffalo/algo_impl/eals/eals.hpp" namespace "eals":
-    cdef cppclass EALS:
+    cdef cppclass CEALS:
         bint init(string) nogil except +
         void initialize_model(float*, float*, float*, int, int) nogil except +
         void precompute_cache(int, int64_t*, int32_t*, int) nogil except +
@@ -23,10 +23,10 @@ cdef extern from "buffalo/algo_impl/eals/eals.hpp" namespace "eals":
 
 cdef class CyEALS:
     """CEALS object holder"""
-    cdef EALS* _obj  # C-EALS object
+    cdef CEALS* _obj  # C-EALS object
 
     def __cinit__(self):
-        self._obj = new EALS()
+        self._obj = new CEALS()
 
     def __dealloc__(self):
         del self._obj
