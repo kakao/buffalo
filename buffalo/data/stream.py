@@ -121,7 +121,7 @@ class Stream(Data):
                 itemids = {iid.strip(): idx + 1 for idx, iid in enumerate(fin)}
         else:  # in case of item information is not given
             itemids = {i: idx + 1 for idx, i in enumerate(itemids)}
-        iid_max_col = max(len(k) + 1 for k in itemids.keys())
+        iid_max_col = max(len(k.encode()) + 1 for k in itemids.keys())
         num_items = len(itemids)
 
         self.logger.info("Found %d unique itemids" % len(itemids))
