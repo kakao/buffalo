@@ -14,6 +14,9 @@ class TestStream(unittest.TestCase):
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("""kim\nlee\npark""")
             cls.uid_path = f.name
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+            f.write("""사과 망고 망고 사과 파이 주스 콜라\n파이\n주스 콜라 포도""")
+            cls.unicode_main_path = f.name
         cls.temp_files = []
 
     @classmethod
@@ -83,6 +86,27 @@ class TestStream(unittest.TestCase):
         data = [(u, kk, vv) for u, kk, vv in mm.iterate(axis="colwise", use_repr_name=True)]
         data.sort()
         self.assertEqual([uu for uu, _, _ in data], ["apple", "coke", "juice", "juice", "mango", "pie", "pie"])
+
+    def test4_unicode(self):
+        opt = StreamOptions().get_default_option()
+        opt.input.main = self.unicode_main_path
+        opt.input.uid = self.uid_path
+        mm = Stream(opt)
+        mm.create()
+        self.assertTrue(True)
+        db = mm.handle
+        if opt.data.sppmi:
+            self.assertEqual(sorted(db.keys()), sorted(["idmap", "rowwise", "colwise", "vali", "sppmi"]))
+        else:
+            self.assertEqual(sorted(db.keys()), sorted(["idmap", "rowwise", "colwise", "vali"]))
+        header = mm.get_header()
+        self.assertEqual(header["num_nnz"], 9)  # due to validation samples
+        self.assertEqual(header["num_users"], 3)
+        self.assertEqual(header["num_items"], 6)
+
+        data = [(u, kk) for u, kk in mm.iterate(use_repr_name=True)]
+        self.assertEqual(len(data), 9)
+        self.assertEqual([kk for _, kk in data], ["사과", "망고", "망고", "사과", "파이", "주스", "파이", "주스", "콜라"])
 
 
 if __name__ == "__main__":
