@@ -4,7 +4,6 @@ import warnings
 from collections import Counter
 
 import h5py
-import numpy as np
 import psutil
 
 from buffalo.data.base import Data, DataOption
