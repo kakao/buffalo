@@ -17,6 +17,9 @@ class TestStream(unittest.TestCase):
         with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
             f.write("""사과 망고 망고 사과 파이 주스 콜라\n파이\n주스 콜라 포도""")
             cls.unicode_main_path = f.name
+        with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+            f.write("""김씨\n이씨\n박씨""")
+            cls.unicode_uid_path = f.name
         cls.temp_files = []
 
     @classmethod
@@ -90,7 +93,7 @@ class TestStream(unittest.TestCase):
     def test4_unicode(self):
         opt = StreamOptions().get_default_option()
         opt.input.main = self.unicode_main_path
-        opt.input.uid = self.uid_path
+        opt.input.uid = self.unicode_uid_path
         mm = Stream(opt)
         mm.create()
         self.assertTrue(True)

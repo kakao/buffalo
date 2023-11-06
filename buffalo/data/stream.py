@@ -84,7 +84,7 @@ class Stream(Data):
             with open(fname) as fin:
                 max_col = 0
                 for l in fin:
-                    max_col = max(max_col, len(l))
+                    max_col = max(max_col, len(l.encode()))
             return max_col
         uid_path, iid_path, main_path = P["uid_path"], P["iid_path"], P["main_path"]
         if uid_path:
@@ -138,13 +138,14 @@ class Stream(Data):
             # if not given, assume id as is
             if uid_path:
                 with open(uid_path) as fin:
-                    idmap["rows"][:] = np.loadtxt(fin, dtype=f"S{uid_max_col}")
+                    rows = [line.strip() for line in fin.readlines()]
+                idmap["rows"][:] = rows
             else:
-                idmap["rows"][:] = np.array([str(i) for i in range(1, num_users + 1)],
-                                            dtype=f"S{uid_max_col}")
+                idmap["rows"][:] = [str(i) for i in range(1, num_users + 1)]
             if iid_path:
                 with open(iid_path) as fin:
-                    idmap["cols"][:] = np.loadtxt(fin, dtype=f"S{iid_max_col}")
+                    cols = [line.strip() for line in fin.readlines()]
+                idmap["cols"][:] = cols
             else:
                 cols = sorted(itemids.items(), key=lambda x: x[1])
                 cols = [k for k, _ in cols]
