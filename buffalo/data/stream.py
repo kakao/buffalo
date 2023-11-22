@@ -4,7 +4,6 @@ import warnings
 from collections import Counter
 
 import h5py
-import numpy as np
 import psutil
 
 from buffalo.data.base import Data, DataOption
@@ -84,7 +83,7 @@ class Stream(Data):
             with open(fname) as fin:
                 max_col = 0
                 for l in fin:
-                    max_col = max(max_col, len(l))
+                    max_col = max(max_col, len(l.encode()))
             return max_col
         uid_path, iid_path, main_path = P["uid_path"], P["iid_path"], P["main_path"]
         if uid_path:
@@ -121,7 +120,7 @@ class Stream(Data):
                 itemids = {iid.strip(): idx + 1 for idx, iid in enumerate(fin)}
         else:  # in case of item information is not given
             itemids = {i: idx + 1 for idx, i in enumerate(itemids)}
-        iid_max_col = max(len(k) + 1 for k in itemids.keys())
+        iid_max_col = max(len(k.encode()) + 1 for k in itemids.keys())
         num_items = len(itemids)
 
         self.logger.info("Found %d unique itemids" % len(itemids))
@@ -138,17 +137,18 @@ class Stream(Data):
             # if not given, assume id as is
             if uid_path:
                 with open(uid_path) as fin:
-                    idmap["rows"][:] = np.loadtxt(fin, dtype=f"S{uid_max_col}")
+                    rows = [line.strip() for line in fin.readlines()]
+                idmap["rows"][:] = rows
             else:
-                idmap["rows"][:] = np.array([str(i) for i in range(1, num_users + 1)],
-                                            dtype=f"S{uid_max_col}")
+                idmap["rows"][:] = [str(i) for i in range(1, num_users + 1)]
             if iid_path:
                 with open(iid_path) as fin:
-                    idmap["cols"][:] = np.loadtxt(fin, dtype=f"S{iid_max_col}")
+                    cols = [line.strip() for line in fin.readlines()]
+                idmap["cols"][:] = cols
             else:
                 cols = sorted(itemids.items(), key=lambda x: x[1])
                 cols = [k for k, _ in cols]
-                idmap["cols"][:] = np.array(cols, dtype=f"S{iid_max_col}")
+                idmap["cols"][:] = cols
         except Exception as e:
             self.logger.error("Cannot create db: %s" % (str(e)))
             self.logger.error(traceback.format_exc())
