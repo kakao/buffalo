@@ -103,7 +103,7 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
 
     def _get_negative_weights(self):
         # Get item popularity from self.data
-        indptr, _, __ = self._get_mm_data(group="colwise")
+        indptr, _, _ = self._get_mm_data(group="colwise")
         pop = np.array([indptr[i] - (0 if i == 0 else indptr[i - 1]) for i in range(len(indptr))], dtype="float32")
         assert len(pop) == self.data.get_header()["num_items"]
         # Return negative weights calculated by the power-law weighting scheme
@@ -130,9 +130,10 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
         assert self.obj.update(indptr, keys, vals, axis)
 
     def _get_loss(self):
-        indptr, keys, vals = self._get_mm_data(group="rowwise")
+        axis = self.group2axis[(group := "rowwise")]
+        indptr, keys, vals = self._get_mm_data(group=group)
         # loss: RMSE / total_loss := RMSE^2 + L2-loss + Negative Feedbacks
-        loss, total_loss = self.obj.estimate_loss(self._nnz, indptr, keys, vals, 0)
+        loss, total_loss = self.obj.estimate_loss(self._nnz, indptr, keys, vals, axis)
         return loss, total_loss
 
     def train(self, training_callback: Optional[Callable[[int, Dict[str, float]], None]] = None):

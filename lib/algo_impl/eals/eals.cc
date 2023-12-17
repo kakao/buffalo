@@ -130,11 +130,10 @@ pair<float, float> CEALS::estimate_loss(const int32_t nnz,
     }
     const int32_t num_workers = opt_["num_workers"].int_value();
     const float alpha = opt_["alpha"].number_value();
-    vector<float> feedbacks4tid(num_workers, kZero);
-    vector<float> mse4tid(num_workers, kZero);
+    float feedbacks = kZero;
+    float squared_error = kZero;
     auto& vhat_cache = axis == 0 ? vhat_cache_u_ : vhat_cache_i_;
     const int32_t end_loop = axis == 0 ? P_rows_ : Q_rows_;
-    #pragma omp parallel for schedule(dynamic, 8)
     for (int32_t xidx=0; xidx < end_loop; ++xidx) {
         const int32_t tid = omp_get_thread_num();
         const int64_t beg = xidx == 0 ? 0 : indptr[xidx - 1];
@@ -144,14 +143,12 @@ pair<float, float> CEALS::estimate_loss(const int32_t nnz,
             const float v = vals[ind];
             const float vhat = vhat_cache[ind];
             const float error = (v - vhat);
-            feedbacks4tid[tid] += (kOne + alpha * v) * error * error;
+            feedbacks += (kOne + alpha * v) * error * error;
             const int32_t iidx = axis == 0 ? yidx : xidx;
-            feedbacks4tid[tid] -= C_ptr_[iidx] * vhat * vhat;  // To avoid duplication in a term of negative feedbacks.
-            mse4tid[tid] += error * error;
+            feedbacks -= C_ptr_[iidx] * vhat * vhat;  // To avoid duplication in a term of negative feedbacks.
+            squared_error += error * error;
         }
     }
-    const float squared_error = accumulate(mse4tid.begin(), mse4tid.end(), kZero);
-    float feedbacks = accumulate(feedbacks4tid.begin(), feedbacks4tid.end(), kZero);
 
     // Add L2 regularization terms
     const int32_t D = opt_["d"].int_value();
@@ -161,7 +158,7 @@ pair<float, float> CEALS::estimate_loss(const int32_t nnz,
         return init + v * v;
     };
     const float reg = reg_u * accumulate(P_ptr_, P_ptr_ + (P_rows_ * D), kZero, op) +
-                       reg_i * accumulate(Q_ptr_, Q_ptr_ + (Q_rows_ * D), kZero, op);
+                      reg_i * accumulate(Q_ptr_, Q_ptr_ + (Q_rows_ * D), kZero, op);
 
     // Add negative feedbacks: sum_{u} sum_{i \in R_u} C_{i} * vHat_{u,i}^2
     vector<float> CQ(Q_rows_ * D, kZero);
