@@ -95,6 +95,43 @@ class ALSOption(AlgoOption):
         return b
 
 
+class EALSOption(AlgoOption):
+    def __init__(self, *args, **kwargs):
+        super(EALSOption, self).__init__(*args, **kwargs)
+
+    def get_default_option(self):
+        """Options for Alternating Least Squares.
+
+        :ivar bool save_factors: Set True, to save models. (default: False)
+        :ivar int d: The number of latent feature dimension. (default: 20)
+        :ivar int num_iters: The number of iterations for training. (default: 10)
+        :ivar int num_workers: The number of threads. (default: 1)
+        :ivar float reg_u: The L2 regularization coefficient for user embedding matrix. (default: 0.1)
+        :ivar float reg_i: The L2 regularization coefficient for item embedding matrix. (default: 0.1)
+        :ivar float alpha: The coefficient of giving more weights to losses on positive samples. (default: 8)
+        :ivar float c0: The strength of the negative feedbacks
+        :ivar float exponent: exponent to item popularity for the negative feedbacks
+        :ivar str model_path: Where to save model.
+        :ivar dict data_opt: This option will be used to load data if given.
+        """
+
+        opt = super().get_default_option()
+        opt.update({
+            "save_factors": False,
+            "d": 20,
+            "num_iters": 10,
+            "num_workers": 1,
+            "reg_u": 0.1,
+            "reg_i": 0.1,
+            "alpha": 8.0,
+            "c0": 512.0,
+            "exponent": 0.5,
+            "model_path": "",
+            "data_opt": {}
+        })
+        return aux.Option(opt)
+
+
 class CFROption(AlgoOption):
     def __init__(self, *args, **kwargs):
         super(CFROption, self).__init__(*args, **kwargs)
