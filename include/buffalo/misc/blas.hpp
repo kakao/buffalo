@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <algorithm>
+
 
 extern "C" {
 // blas subroutines
