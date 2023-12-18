@@ -2,9 +2,8 @@ import json
 import time
 from typing import Callable, Dict, Optional
 
-import numpy as np
-
 import buffalo.data
+import numpy as np
 from buffalo.algo._eals import CyEALS
 from buffalo.algo.base import Algo, Serializable
 from buffalo.algo.options import EALSOption

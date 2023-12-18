@@ -1,9 +1,6 @@
 import unittest
 
-from loguru import logger
-
-import buffalo
-from buffalo import EALS, EALSOption, aux, set_log_level, MatrixMarketOptions, set_log_level
+from buffalo import EALS, EALSOption, MatrixMarketOptions, aux, set_log_level
 
 from .base import TestBase
 
