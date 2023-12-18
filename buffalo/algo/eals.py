@@ -75,7 +75,7 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
         for name, rows in [("P", header["num_users"]), ("Q", header["num_items"])]:
             setattr(self, name, None)
             setattr(self, name, np.random.normal(scale=1.0 / (self.opt.d ** 2),
-                                size=(rows, self.vdim)).astype("float32"))
+                    size=(rows, self.vdim)).astype("float32"))
         self.P[:, self.opt.d:] = 0.0
         self.Q[:, self.opt.d:] = 0.0
         self.C = self._get_negative_weights()
@@ -151,17 +151,17 @@ class EALS(Algo, EALSOption, Evaluable, Serializable):
             train_t = time.time() - start_t
             metrics = {"train_loss": loss}
             if self.opt.validation and \
-                self.opt.evaluation_on_learning and \
-                self.periodical(self.opt.evaluation_period, i):
-                    start_t = time.time()
-                    self.validation_result = self.get_validation_results()
-                    vali_t = time.time() - start_t
-                    val_str = " ".join([f"{k}:{v:0.5f}" for k, v in self.validation_result.items()])
-                    self.logger.info(f"Validation: {val_str} Elapsed {vali_t:0.3f} secs")
-                    metrics.update({"val_%s" % k: v
-                                    for k, v in self.validation_result.items()})
-                    if training_callback is not None and callable(training_callback):
-                        training_callback(i, metrics)
+               self.opt.evaluation_on_learning and \
+               self.periodical(self.opt.evaluation_period, i):
+                start_t = time.time()
+                self.validation_result = self.get_validation_results()
+                vali_t = time.time() - start_t
+                val_str = " ".join([f"{k}:{v:0.5f}" for k, v in self.validation_result.items()])
+                self.logger.info(f"Validation: {val_str} Elapsed {vali_t:0.3f} secs")
+                metrics.update({"val_%s" % k: v
+                                for k, v in self.validation_result.items()})
+                if training_callback is not None and callable(training_callback):
+                    training_callback(i, metrics)
             self.logger.info("Iteration %d: RMSE %.3f TotalLoss %.3f Elapsed %.3f secs" % (i + 1, loss, (total_loss / self._nnz), train_t))
             best_loss = self.save_best_only(loss, best_loss, i)
             if self.early_stopping(loss):

@@ -1,6 +1,6 @@
 import unittest
 
-from buffalo import EALS, EALSOption, MatrixMarketOptions, aux, set_log_level
+from buffalo import EALS, EALSOption, aux, set_log_level
 
 from .base import TestBase
 
@@ -58,7 +58,7 @@ class TestEALS(TestBase):
         opt.num_workers = 8
         opt.validation = aux.Option({"topk": 10})
         self._test7_train_ml_20m(EALS, opt)
-    
+
     def test08_serialization(self):
         opt = EALSOption().get_default_option()
         opt.d = 5
