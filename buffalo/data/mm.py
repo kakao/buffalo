@@ -5,6 +5,7 @@ import h5py
 import numpy as np
 import scipy.io
 import scipy.sparse
+
 from buffalo.data import prepro
 from buffalo.data.base import Data, DataOption, DataReader
 from buffalo.misc import aux, log
