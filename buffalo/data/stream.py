@@ -105,6 +105,8 @@ class Stream(Data):
         with open(main_path) as fin:
             for line in log.ProgressBar(level=log.DEBUG, iterable=fin):
                 data = line.strip().split()
+                if not data:
+                    continue
                 if not iid_path:
                     itemids |= set(data)
 
@@ -246,7 +248,7 @@ class Stream(Data):
                         for col in train_data:
                             w.write(f"{user} {col} 1\n")
                         for col in vali_data:
-                            vali_lines.append(f"{user} {col} {val}")
+                            vali_lines.append(f"{user} {col} 1")
                     else:
                         for col, val in Counter(train_data).items():
                             w.write(f"{user} {col} {val}\n")
