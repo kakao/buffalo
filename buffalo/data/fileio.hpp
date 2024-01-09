@@ -322,7 +322,7 @@ vector<string> _sort_and_compressed_binarization(
         records.insert(end(records), begin(v), end_it);
     }
 
-    assert(records.size == total_lines);
+    assert(records.size() == total_lines);
 
     omp_set_num_threads(num_workers);
 
