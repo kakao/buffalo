@@ -6,8 +6,10 @@ from buffalo.algo.als import ALS, inited_CUALS
 from buffalo.algo.base import Algo
 from buffalo.algo.bpr import BPRMF, inited_CUBPR
 from buffalo.algo.cfr import CFR
+from buffalo.algo.eals import EALS
 from buffalo.algo.options import (AlgoOption, ALSOption, BPRMFOption,
-                                  CFROption, PLSIOption, W2VOption, WARPOption)
+                                  CFROption, EALSOption, PLSIOption, W2VOption,
+                                  WARPOption)
 from buffalo.algo.plsi import PLSI
 from buffalo.algo.w2v import W2V
 from buffalo.algo.warp import WARP

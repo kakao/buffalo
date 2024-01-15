@@ -141,11 +141,15 @@ class ProgressBar(object):
             cnts += 1
             self.step += 1
             if period_iter != 0 and (cnts % period_iter == 0):
+                self.t = time.time()
                 self.logger(self.get_msg())
             else:
-                delta = time.time() - self.s_t
+                t = time.time()
+                delta = t - self.t
                 if delta > self.period_secs:
                     period_iter = cnts
+                    self.t = t
+                    self.logger(self.get_msg())
         if self.total != -1:
             self.step = self.total
         self.logger(self.get_msg() + "\n")

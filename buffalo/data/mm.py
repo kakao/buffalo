@@ -69,6 +69,7 @@ class MatrixMarketDataReader(DataReader):
 
         log.get_logger("MatrixMarketDataReader").debug("creating temporary matrix-market data from numpy-kind array")
         tmp_path = aux.get_temporary_file(self.opt.data.tmp_dir)
+        self.temp_file_list.append(tmp_path)
         with open(tmp_path, "wb") as fout:
             if isinstance(main, (np.ndarray,)) and main.ndim == 2:
                 main = scipy.sparse.csr_matrix(main)
@@ -137,17 +138,17 @@ class MatrixMarket(Data):
                 # if not given, assume id as is
                 if uid_path:
                     with open(uid_path) as fin:
-                        idmap["rows"][:] = np.loadtxt(fin, dtype=f"S{uid_max_col}")
+                        idmap["rows"][:] = np.loadtxt(fin, dtype=h5py.string_dtype("utf-8", length=uid_max_col))
                 else:
                     idmap["rows"][:] = np.array([str(i) for i in range(1, num_users + 1)],
-                                                dtype=f"S{uid_max_col}")
+                                                dtype=h5py.string_dtype("utf-8", length=uid_max_col))
                 pbar.update(1)
                 if iid_path:
                     with open(iid_path) as fin:
-                        idmap["cols"][:] = np.loadtxt(fin, dtype=f"S{iid_max_col}")
+                        idmap["cols"][:] = np.loadtxt(fin, dtype=h5py.string_dtype("utf-8", length=iid_max_col))
                 else:
                     idmap["cols"][:] = np.array([str(i) for i in range(1, num_items + 1)],
-                                                dtype=f"S{iid_max_col}")
+                                                dtype=h5py.string_dtype("utf-8", length=iid_max_col))
                 pbar.update(1)
                 num_header_lines = 0
                 with open(main_path) as fin:
@@ -172,6 +173,7 @@ class MatrixMarket(Data):
         vali_indexes = [] if "vali" not in db else db["vali"]["indexes"]
         vali_lines = []
         file_path = aux.get_temporary_file(self.opt.data.tmp_dir)
+        self.temp_file_list.append(file_path)
         with open(file_path, "w") as w:
             fin = open(source_path, mode="r")
             file_size = fin.seek(0, 2)
@@ -250,8 +252,8 @@ class MatrixMarket(Data):
         self.logger.debug("Building meta part...")
         db, num_header_lines = self._create(data_path,
                                             {"main_path": mm_main_path,
-                                                "uid_path": mm_uid_path,
-                                                "iid_path": mm_iid_path},
+                                             "uid_path": mm_uid_path,
+                                             "iid_path": mm_iid_path},
                                             header)
         try:
             num_header_lines += 1  # add metaline
@@ -272,4 +274,6 @@ class MatrixMarket(Data):
                 if os.path.isfile(self.path):
                     os.remove(self.path)
             raise
+        self.reader.temp_file_clear()
+        self.temp_file_clear()
         self.logger.info("DB built on %s" % data_path)
