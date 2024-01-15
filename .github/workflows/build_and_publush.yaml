@@ -33,10 +33,10 @@ jobs:
       with:
         platforms: all
     
-    - name: install openblas
+    - name: Install openblas
       run: |
         if [ "$RUNNER_OS" == "Linux" ]; then
-          apt install libopenblas-dev
+          sudo apt install libopenblas-dev
         elif [ "$RUNNER_OS" == "macOS" ]; then
           brew install openblas
         fi
