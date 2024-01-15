@@ -32,7 +32,14 @@ jobs:
       uses: docker/setup-qemu-action@v2
       with:
         platforms: all
-
+    
+    - name: install openblas
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          apt install libopenblas-dev
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          brew install openblas
+          
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.13.1
       env:
@@ -42,10 +49,6 @@ jobs:
 
     - name: Build sdist
       run: |
-        if [ "$RUNNER_OS" == "Linux" ]; then
-          apt install libopenblas-dev
-        elif [ "$RUNNER_OS" == "macOS" ]; then
-          brew install openblas
         pip install build
         python -m build . --sdist -o wheelhouse
       if: ${{ matrix.python-version == '311' && runner.os == 'Linux'  && matrix.cibw-arch == 'auto' }}
