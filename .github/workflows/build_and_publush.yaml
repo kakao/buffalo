@@ -39,7 +39,9 @@ jobs:
           apt install libopenblas-dev
         elif [ "$RUNNER_OS" == "macOS" ]; then
           brew install openblas
-          
+        fi
+      shell: bash
+      
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.13.1
       env:
