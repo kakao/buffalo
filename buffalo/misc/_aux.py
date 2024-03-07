@@ -140,11 +140,14 @@ def get_temporary_file(root="/tmp/", write_mode="w"):
 
 
 @atexit.register
-def __cleanup_tempory_files():
+def __cleanup_temporary_files():
     for path in _temporary_files:
         if os.path.isfile(path):
             os.remove(path)
+    _temporary_files.clear()
 
+def cleanup_temporary_files():
+    __cleanup_temporary_files()
 
 def register_cleanup_file(path):
     _temporary_files.append(path)
