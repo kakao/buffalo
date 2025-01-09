@@ -1,4 +1,5 @@
 [![Linux/Mac Build Status](https://travis-ci.org/kakao/buffalo.svg?branch=master)](https://travis-ci.org/kakao/buffalo)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkakao%2Fbuffalo.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkakao%2Fbuffalo?ref=badge_shield)
 
 <center><img src="./docs/buffalo.png" width="320px"></center>
 
@@ -29,3 +30,6 @@ distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
 WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 License for the specific language governing permissions and limitations under
 the License.
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkakao%2Fbuffalo.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkakao%2Fbuffalo?ref=badge_large)
