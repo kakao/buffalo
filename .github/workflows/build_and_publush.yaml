@@ -32,7 +32,16 @@ jobs:
       uses: docker/setup-qemu-action@v2
       with:
         platforms: all
-
+    
+    - name: Install openblas
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          sudo apt install libopenblas-dev
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          brew install openblas
+        fi
+      shell: bash
+      
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.13.1
       env:

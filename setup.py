@@ -87,7 +87,7 @@ extensions = [
               sources=["buffalo/algo/_eals.pyx", "lib/algo_impl/eals/eals.cc"] + common_srcs,
               language="c++",
               include_dirs=["./include"] + extra_include_dirs,
-              libraries=["gomp", "openblas"],
+              libraries=["gomp"],
               extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
               define_macros=[("NPY_NO_DEPRECATED_API", "1")]),
     Extension(name="buffalo.algo._cfr",
