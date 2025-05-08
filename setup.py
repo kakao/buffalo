@@ -28,7 +28,7 @@ extra_libraries = []
 extra_define_macros = []
 if blas_lib_name:
     extra_libraries.append(blas_lib_name)
-    extra_define_macros.append("BUFFALO_USE_BLAS")
+    extra_define_macros.append(("BUFFALO_USE_BLAS", None))
 
 # NOTE: buffalo needs gcc/g++ for compilation since it uses gnu's parallel sort implementation.
 # Clang does not support parallel sort so far.
