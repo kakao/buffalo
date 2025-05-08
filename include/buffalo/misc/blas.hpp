@@ -20,12 +20,12 @@ namespace impl {
 // LSAME function: Compares two characters case-insensitively
 // In Fortran BLAS, LSAME(CA, CB) is true if CA is the same letter as CB regardless of case.
 // CA and CB are CHARACTER*1.
-bool lsame(char ca, char cb) {
+inline bool lsame(char ca, char cb) {
     return (std::toupper(static_cast<unsigned char>(ca)) == std::toupper(static_cast<unsigned char>(cb)));
 }
 
 // XERBLA error handler (basic version)
-void xerbla(const std::string& srname, int info) {
+inline void xerbla(const std::string& srname, int info) {
     std::cerr << "** On entry to " << srname
               << " parameter number " << info
               << " had an illegal value" << std::endl;
