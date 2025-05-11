@@ -5,8 +5,6 @@ from typing import Optional
 BLAS_LIB_NAMES = [
     "openblas",  # OpenBLAS
     "mkl_rt",  # Intel MKL (runtime)
-    "Accelerate",  # macOS Accelerate Framework (often found as part of System)
-    "vecLib",  # Also macOS, part of Accelerate
     "blas",  # Generic
 ]
 
