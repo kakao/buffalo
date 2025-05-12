@@ -8,7 +8,7 @@ on:
 
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.os }} / py${{ matrix.python-version }} / ${{ matrix.cibw-arch }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -30,13 +30,11 @@ jobs:
     - name: Set up QEMU
       if: runner.os == 'Linux'
       uses: docker/setup-qemu-action@v2
-      with:
-        platforms: all
     
     - name: Install openblas
       run: |
         if [ "$RUNNER_OS" == "Linux" ]; then
-          sudo apt install libopenblas-dev
+          sudo apt update && sudo apt install -y libopenblas-dev
         elif [ "$RUNNER_OS" == "macOS" ]; then
           brew install openblas
         fi
@@ -53,12 +51,13 @@ jobs:
       run: |
         pip install build
         python -m build . --sdist -o wheelhouse
-      if: ${{ matrix.python-version == '311' && runner.os == 'Linux'  && matrix.cibw-arch == 'auto' }}
+      if: ${{ runner.os == 'Linux' && matrix.python-version == '310' && matrix.cibw-arch == 'auto' }}
 
     - uses: actions/upload-artifact@v4
       with:
-        name: wheels
+        name: wheels-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.cibw-arch }}
         path: wheelhouse
+        if-no-files-found: warn
 
   publish:
     name: Publish
@@ -67,9 +66,10 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
 
     steps:
-    - uses: actions/download-artifact@v3
+    - name: Download all wheel/sdist artifacts
+      uses: actions/download-artifact@v3
       with:
-        name: wheels
+        path: all_dist_artifacts
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -79,11 +79,14 @@ jobs:
     - name: Install twine
       run: pip install twine
 
+    - name: List downloaded files for verification
+      run: |
+        echo "Downloaded artifacts will be in subdirectories under all_dist_artifacts/"
+        ls -R all_dist_artifacts
+
     - name: Publish to PyPI
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: |
-        pip install --upgrade twine
-        twine upload --skip-existing *
-        rm -f *
+        find all_dist_artifacts -name "*.whl" -print0 -o -name "*.tar.gz" -print0 | xargs -0 --no-run-if-empty twine upload --skip-existing
