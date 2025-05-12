@@ -22,7 +22,6 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    steps:
     - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
