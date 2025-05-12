@@ -21,6 +21,8 @@ jobs:
             cibw-arch: aarch64
           - os: macos-latest
             cibw-arch: aarch64
+          - os: macos-latest
+            python-version: 311
 
     steps:
     - uses: actions/checkout@v3
