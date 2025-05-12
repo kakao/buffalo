@@ -5,7 +5,7 @@ import os
 import sys
 from distutils import ccompiler, errors, unixccompiler
 
-if sys.platform == 'win32':
+if sys.platform == "win32":
     from distutils import msvccompiler
 else:
     msvccompiler = None
@@ -156,7 +156,7 @@ if msvccompiler:
             # Return compiled object filenames.
             return other_objects + cu_objects
 else:
-    _MSVCCompiler = None # Define as None if msvccompiler could not be imported or not on Windows
+    _MSVCCompiler = None  # Define as None if msvccompiler could not be imported or not on Windows
 
 
 class cuda_build_ext(setuptools_build_ext):
