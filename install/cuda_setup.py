@@ -3,7 +3,13 @@
 import logging
 import os
 import sys
-from distutils import ccompiler, errors, msvccompiler, unixccompiler
+from distutils import ccompiler, errors, unixccompiler
+
+if sys.platform == 'win32':
+    from distutils import msvccompiler
+else:
+    msvccompiler = None
+
 from typing import Optional
 
 from setuptools.command.build_ext import build_ext as setuptools_build_ext
@@ -99,55 +105,58 @@ class _UnixCCompiler(unixccompiler.UnixCCompiler):
             self.compiler_so = _compiler_so
 
 
-class _MSVCCompiler(msvccompiler.MSVCCompiler):
-    _cu_extensions = [".cu"]
+if msvccompiler:
+    class _MSVCCompiler(msvccompiler.MSVCCompiler):
+        _cu_extensions = [".cu"]
 
-    src_extensions = list(unixccompiler.UnixCCompiler.src_extensions)
-    src_extensions.extend(_cu_extensions)
+        src_extensions = list(unixccompiler.UnixCCompiler.src_extensions)
+        src_extensions.extend(_cu_extensions)
 
-    def _compile_cu(self, sources, output_dir=None, macros=None,
-                    include_dirs=None, debug=0, extra_preargs=None,
-                    extra_postargs=None, depends=None):
-        # Compile CUDA C files, mainly derived from UnixCCompiler._compile().
-        macros, objects, extra_postargs, pp_opts, _build = \
-            self._setup_compile(output_dir, macros, include_dirs, sources,
-                                depends, extra_postargs)
+        def _compile_cu(self, sources, output_dir=None, macros=None,
+                        include_dirs=None, debug=0, extra_preargs=None,
+                        extra_postargs=None, depends=None):
+            # Compile CUDA C files, mainly derived from UnixCCompiler._compile().
+            macros, objects, extra_postargs, pp_opts, _build = \
+                self._setup_compile(output_dir, macros, include_dirs, sources,
+                                    depends, extra_postargs)
 
-        compiler_so = CUDA["nvcc"]
-        cc_args = self._get_cc_args(pp_opts, debug, extra_preargs)
-        post_args = CUDA["post_args"]
+            compiler_so = CUDA["nvcc"]
+            cc_args = self._get_cc_args(pp_opts, debug, extra_preargs)
+            post_args = CUDA["post_args"]
 
-        for obj in objects:
-            try:
-                src, _ = _build[obj]
-            except KeyError:
-                continue
-            try:
-                self.spawn([compiler_so] + cc_args + [src, "-o", obj] + post_args)
-            except errors.DistutilsExecError as e:
-                raise errors.CompileError(str(e))
+            for obj in objects:
+                try:
+                    src, _ = _build[obj]
+                except KeyError:
+                    continue
+                try:
+                    self.spawn([compiler_so] + cc_args + [src, "-o", obj] + post_args)
+                except errors.DistutilsExecError as e:
+                    raise errors.CompileError(str(e))
 
-        return objects
+            return objects
 
-    def compile(self, sources, **kwargs):
-        # Split CUDA C sources and others.
-        cu_sources = []
-        other_sources = []
-        for source in sources:
-            if os.path.splitext(source)[1] == ".cu":
-                cu_sources.append(source)
-            else:
-                other_sources.append(source)
+        def compile(self, sources, **kwargs):
+            # Split CUDA C sources and others.
+            cu_sources = []
+            other_sources = []
+            for source in sources:
+                if os.path.splitext(source)[1] == ".cu":
+                    cu_sources.append(source)
+                else:
+                    other_sources.append(source)
 
-        # Compile source files other than CUDA C ones.
-        other_objects = msvccompiler.MSVCCompiler.compile(
-            self, other_sources, **kwargs)
+            # Compile source files other than CUDA C ones.
+            other_objects = msvccompiler.MSVCCompiler.compile(
+                self, other_sources, **kwargs)
 
-        # Compile CUDA C sources.
-        cu_objects = self._compile_cu(cu_sources, **kwargs)
+            # Compile CUDA C sources.
+            cu_objects = self._compile_cu(cu_sources, **kwargs)
 
-        # Return compiled object filenames.
-        return other_objects + cu_objects
+            # Return compiled object filenames.
+            return other_objects + cu_objects
+else:
+    _MSVCCompiler = None # Define as None if msvccompiler could not be imported or not on Windows
 
 
 class cuda_build_ext(setuptools_build_ext):
@@ -163,6 +172,11 @@ class cuda_build_ext(setuptools_build_ext):
                         if not sys.platform == "win32":
                             CCompiler = _UnixCCompiler
                         else:
+                            if msvccompiler is None:
+                                raise errors.DistutilsPlatformError(
+                                    "Cannot get a working MSVC compiler for CUDA. "
+                                    "Check CUDA and MSVC setup, and Python's distutils/setuptools."
+                                )
                             CCompiler = _MSVCCompiler
                         return CCompiler(
                             None, kwargs["dry_run"], kwargs["force"])
