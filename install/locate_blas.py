@@ -39,10 +39,10 @@ def _locate_blas() -> Optional[str]:
 
     if loaded_lib:
         try:
-            ssyrk_func = getattr(loaded_lib, "ssyrk_")  # Note the trailing underscore
+            ssyrk_func = getattr(loaded_lib, "ssyrk_")  # Note the trailing underscore # noqa: F841
         except AttributeError:
             try:
-                ssyrk_func = getattr(loaded_lib, "cblas_ssyrk")  # cblas interface
+                ssyrk_func = getattr(loaded_lib, "cblas_ssyrk")  # cblas interface # noqa: F841
             except AttributeError:
                 pass
     return found_lib
