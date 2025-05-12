@@ -44,6 +44,7 @@ jobs:
         CIBW_BUILD: cp${{ matrix.python-version }}-*
         CIBW_ARCHS_LINUX: ${{ matrix.cibw-arch }}
         CIBW_ARCHS_MACOS: ${{ matrix.cibw-arch }}
+        CIBW_ENVIRONMENT_MACOS: "MACOSX_DEPLOYMENT_TARGET_arm64='14.0' MACOSX_DEPLOYMENT_TARGET_universal2='14.0' MACOSX_DEPLOYMENT_TARGET_x86_64='10.13'"
 
     - name: Build sdist
       run: |
