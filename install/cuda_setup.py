@@ -3,7 +3,11 @@
 import logging
 import os
 import sys
-from distutils import ccompiler, errors, unixccompiler
+
+try:
+    from distutils import ccompiler, errors, unixccompiler
+except ImportError:
+    from setuptools._distutils import ccompiler, errors, unixccompiler
 
 if sys.platform == "win32":
     from distutils import msvccompiler
