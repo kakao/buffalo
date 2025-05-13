@@ -73,7 +73,7 @@ jobs:
     - name: Set up Python for publishing
       uses: actions/setup-python@v5
       with:
-        python-version: '3.11'
+        python-version: '3.10'
 
     - name: Install twine
       run: pip install twine
