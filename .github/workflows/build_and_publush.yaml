@@ -46,11 +46,18 @@ jobs:
           brew install openblas
         fi
       shell: bash
+
+    - name: Prepare CIBW_BUILD value
+      id: prep_cibw
+      shell: bash # Use bash for shell parameter expansion
+      run: |
+        PY_VERSION_NO_DOT="${{ matrix.python-version//./}}"
+        echo "CIBW_BUILD_VAR=cp${PY_VERSION_NO_DOT}-*" >> $GITHUB_ENV
       
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.13.1
       env:
-        CIBW_BUILD: cp${{ replace(matrix.python-version, '.', '') }}-*
+        CIBW_BUILD: ${{ env.CIBW_BUILD_VAR }}
         CIBW_ARCHS_LINUX: ${{ matrix.cibw-arch }}
         CIBW_ARCHS_MACOS: ${{ matrix.cibw-arch }}
 
@@ -62,7 +69,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: wheels-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.cibw-arch }}
+        name: wheels-${{ matrix.os }}-py${{ matrix.python-version }}-${{ matrix.cibw-arch }}
         path: wheelhouse
         if-no-files-found: warn
 
