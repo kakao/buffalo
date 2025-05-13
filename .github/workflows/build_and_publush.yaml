@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [38, 39, 310, 311]
+        python-version: [38, 39, 310]
         cibw-arch: [auto, aarch64]
         exclude:
           # Do not build wheel for linux-aarch64 temporarily
@@ -34,7 +34,10 @@ jobs:
       uses: docker/setup-qemu-action@v3
     
     - name: Install openblas
-      run: sudo apt update && sudo apt install -y libopenblas-dev
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          sudo apt update && sudo apt install -y libopenblas-dev
+        fi
       shell: bash
       
     - name: Build wheels
