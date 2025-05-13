@@ -49,9 +49,10 @@ jobs:
 
     - name: Prepare CIBW_BUILD value
       id: prep_cibw
-      shell: bash # Use bash for shell parameter expansion
+      shell: bash
       run: |
-        PY_VERSION_NO_DOT="${{ matrix.python-version//./}}"
+        PY_VERSION_INPUT="${{ matrix.python-version }}"
+        PY_VERSION_NO_DOT="${PY_VERSION_INPUT//./}"
         echo "CIBW_BUILD_VAR=cp${PY_VERSION_NO_DOT}-*" >> $GITHUB_ENV
       
     - name: Build wheels
