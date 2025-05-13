@@ -55,7 +55,7 @@ jobs:
         python -m build . --sdist -o wheelhouse
       if: ${{ matrix.python-version == '311' && runner.os == 'Linux'  && matrix.cibw-arch == 'auto' }}
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: wheels
         path: wheelhouse
