@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: [38, 39, 310, 311]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
         cibw-arch: [auto, aarch64]
         exclude:
           # Do not build wheel for linux-aarch64 temporarily
@@ -23,6 +23,11 @@ jobs:
             cibw-arch: aarch64
 
     steps:
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
     - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
@@ -45,7 +50,7 @@ jobs:
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.13.1
       env:
-        CIBW_BUILD: cp${{ matrix.python-version }}-*
+        CIBW_BUILD: cp${{ replace(matrix.python-version, '.', '') }}-*
         CIBW_ARCHS_LINUX: ${{ matrix.cibw-arch }}
         CIBW_ARCHS_MACOS: ${{ matrix.cibw-arch }}
 
@@ -53,7 +58,7 @@ jobs:
       run: |
         pip install build
         python -m build . --sdist -o wheelhouse
-      if: ${{ matrix.python-version == '311' && runner.os == 'Linux'  && matrix.cibw-arch == 'auto' }}
+      if: ${{ matrix.python-version == '3.11' && runner.os == 'Linux'  && matrix.cibw-arch == 'auto' }}
 
     - uses: actions/upload-artifact@v4
       with:
