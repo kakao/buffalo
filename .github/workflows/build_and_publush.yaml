@@ -57,8 +57,9 @@ jobs:
 
     - uses: actions/upload-artifact@v4
       with:
-        name: wheels
+        name: wheels-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.cibw-arch }}
         path: wheelhouse
+        if-no-files-found: warn
 
   publish:
     name: Publish
@@ -67,9 +68,10 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
 
     steps:
-    - uses: actions/download-artifact@v3
+    - name: Download all wheel/sdist artifacts
+      uses: actions/download-artifact@v3
       with:
-        name: wheels
+        path: all_dist_artifacts
 
     - name: Set up Python
       uses: actions/setup-python@v4
@@ -85,5 +87,7 @@ jobs:
         TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
       run: |
         pip install --upgrade twine
-        twine upload --skip-existing *
-        rm -f *
+        echo "Uploading files from downloaded artifacts:"
+        find all_dist_artifacts -type f \( -name "*.whl" -o -name "*.tar.gz" \) -print
+        find all_dist_artifacts -type f \( -name "*.whl" -o -name "*.tar.gz" \) -print0 | xargs -0 --no-run-if-empty twine upload --skip-existing
+        rm -rf all_dist_artifacts
