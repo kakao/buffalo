@@ -15,6 +15,9 @@ jobs:
         os: [ubuntu-latest]
         python-version: [38, 39, 310, 311]
         cibw-arch: [auto, aarch64]
+        # Do not build wheel for linux-aarch64 temporarily
+          - os: ubuntu-latest
+            cibw-arch: aarch64
 
     steps:
     - name: Set up Python ${{ matrix.python-version }}
@@ -26,10 +29,8 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: Set up QEMU (for aarch64 builds)
+    - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
-      with:
-        platforms: linux/arm64
     
     - name: Install openblas
       run: sudo apt update && sudo apt install -y libopenblas-dev
