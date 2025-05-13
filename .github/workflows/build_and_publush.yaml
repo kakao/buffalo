@@ -50,7 +50,7 @@ jobs:
       run: |
         pip install build
         python -m build . --sdist -o wheelhouse
-      if: ${{ matrix.python-version == '311' && matrix.cibw-arch == 'auto' }}
+      if: ${{ matrix.python-version == '310' && matrix.cibw-arch == 'auto' }}
 
     - uses: actions/upload-artifact@v4
       with:
