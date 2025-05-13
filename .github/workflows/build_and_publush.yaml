@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        python-version: [38, 39, 310]
+        python-version: ['3.8', '3.9', '3.10']
         cibw-arch: [auto, aarch64]
         exclude:
           # Do not build wheel for linux-aarch64 temporarily
