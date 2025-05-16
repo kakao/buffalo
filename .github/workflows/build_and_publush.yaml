@@ -89,5 +89,13 @@ jobs:
       with:
         path: dist
 
+    - name: Prepare packages for publishing
+      run: |
+        mkdir flat_dist
+        find dist -mindepth 2 -type f \( -name "*.whl" -o -name "*.tar.gz" \) -exec mv {} flat_dist/ \;
+        rm -rf dist
+        mv flat_dist dist
+      shell: bash
+
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
