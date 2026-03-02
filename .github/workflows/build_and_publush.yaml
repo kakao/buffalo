@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        python-version: [38, 39, 310, 311]
+        python-version: ['3.8', '3.9', '3.10', '3.11']
         cibw-arch: [auto, aarch64]
         exclude:
           # Do not build wheel for linux-aarch64 temporarily
@@ -23,6 +23,11 @@ jobs:
             cibw-arch: aarch64
 
     steps:
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
     - uses: actions/checkout@v3
       with:
         submodules: 'recursive'
@@ -33,10 +38,27 @@ jobs:
       with:
         platforms: all
 
+    - name: Install openblas
+      run: |
+        if [ "$RUNNER_OS" == "Linux" ]; then
+          sudo apt install libopenblas-dev
+        elif [ "$RUNNER_OS" == "macOS" ]; then
+          brew install openblas
+        fi
+      shell: bash
+
+    - name: Prepare CIBW_BUILD value
+      id: prep_cibw
+      shell: bash
+      run: |
+        PY_VERSION_INPUT="${{ matrix.python-version }}"
+        PY_VERSION_NO_DOT="${PY_VERSION_INPUT//./}"
+        echo "CIBW_BUILD_VAR=cp${PY_VERSION_NO_DOT}-*" >> $GITHUB_ENV
+
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.13.1
       env:
-        CIBW_BUILD: cp${{ matrix.python-version }}-*
+        CIBW_BUILD: ${{ env.CIBW_BUILD_VAR }}
         CIBW_ARCHS_LINUX: ${{ matrix.cibw-arch }}
         CIBW_ARCHS_MACOS: ${{ matrix.cibw-arch }}
 
@@ -44,37 +66,36 @@ jobs:
       run: |
         pip install build
         python -m build . --sdist -o wheelhouse
-      if: ${{ matrix.python-version == '311' && runner.os == 'Linux'  && matrix.cibw-arch == 'auto' }}
+      if: ${{ matrix.python-version == '3.11' && runner.os == 'Linux'  && matrix.cibw-arch == 'auto' }}
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
-        name: wheels
+        name: wheels-${{ matrix.os }}-py${{ matrix.python-version }}-${{ matrix.cibw-arch }}
         path: wheelhouse
+        if-no-files-found: warn
 
   publish:
     name: Publish
     needs: [build_wheels]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
+    environment: pypi
+    permissions:
+      id-token: write
 
     steps:
-    - uses: actions/download-artifact@v3
+    - name: Download all wheel/sdist artifacts
+      uses: actions/download-artifact@v4
       with:
-        name: wheels
+        path: dist
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
-
-    - name: Install twine
-      run: pip install twine
+    - name: Prepare packages for publishing
+      run: |
+        mkdir flat_dist
+        find dist -mindepth 2 -type f \( -name "*.whl" -o -name "*.tar.gz" \) -exec mv {} flat_dist/ \;
+        rm -rf dist
+        mv flat_dist dist
+      shell: bash
 
     - name: Publish to PyPI
-      env:
-        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      run: |
-        pip install --upgrade twine
-        twine upload --skip-existing *
-        rm -f *
+      uses: pypa/gh-action-pypi-publish@release/v1

@@ -14,10 +14,21 @@ from setuptools import Extension, setup
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "install"))
 from cuda_setup import CUDA, build_ext
+from locate_blas import blas_lib_name
 
 numpy_include_dirs = np.get_include()
-extra_include_dirs = [numpy_include_dirs, "3rd/json11", "3rd/spdlog/include", "3rd/eigen3"]
+extra_include_dirs = [
+    numpy_include_dirs,
+    "3rd/json11",
+    "3rd/spdlog/include",
+    "3rd/eigen3",
+]
 common_srcs = ["lib/misc/log.cc", "lib/algo.cc", "./3rd/json11/json11.cpp"]
+extra_libraries = []
+extra_define_macros = []
+if blas_lib_name:
+    extra_libraries.append(blas_lib_name)
+    extra_define_macros.append(("BUFFALO_USE_BLAS", None))
 
 # NOTE: buffalo needs gcc/g++ for compilation since it uses gnu's parallel sort implementation.
 # Clang does not support parallel sort so far.
@@ -43,7 +54,9 @@ if platform.system().lower() == "darwin":
                 version = matched.group(1)
                 binaries.append((fname, version))
         if not binaries:
-            logging.error("To build buffalo in MacOs, gcc must be installed. Install gcc via `brew install gcc`")
+            logging.error(
+                "To build buffalo in MacOs, gcc must be installed. Install gcc via `brew install gcc`"
+            )
             sys.exit(1)
 
         binaries.sort(key=lambda x: packaging.version.Version(x[1]), reverse=True)
@@ -51,7 +64,9 @@ if platform.system().lower() == "darwin":
 
     ret = subprocess.run(["brew", "--prefix"], capture_output=True)
     if ret.stderr:
-        logging.error("`brew` is required to check and install gcc/g++. Install `brew` first.")
+        logging.error(
+            "`brew` is required to check and install gcc/g++. Install `brew` first."
+        )
         sys.exit(1)
     brew_prefix = ret.stdout.strip().decode()
     binary_dir = pjoin(brew_prefix, "bin")
@@ -74,75 +89,94 @@ if arch == "x86_64":
     if "fma" in flags:
         extended_compile_flags.append("-mfma")
 
-
 extensions = [
-    Extension(name="buffalo.algo._als",
-              sources=["buffalo/algo/_als.pyx", "lib/algo_impl/als/als.cc"] + common_srcs,
-              language="c++",
-              include_dirs=["./include"] + extra_include_dirs,
-              libraries=["gomp"],
-              extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
-              define_macros=[("NPY_NO_DEPRECATED_API", "1")]),
-    Extension(name="buffalo.algo._eals",
-              sources=["buffalo/algo/_eals.pyx", "lib/algo_impl/eals/eals.cc"] + common_srcs,
-              language="c++",
-              include_dirs=["./include"] + extra_include_dirs,
-              libraries=["gomp", "openblas"],
-              extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
-              define_macros=[("NPY_NO_DEPRECATED_API", "1")]),
-    Extension(name="buffalo.algo._cfr",
-              sources=["buffalo/algo/_cfr.pyx", "lib/algo_impl/cfr/cfr.cc"] + common_srcs,
-              language="c++",
-              include_dirs=["./include"] + extra_include_dirs,
-              libraries=["gomp"],
-              extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
-              define_macros=[("NPY_NO_DEPRECATED_API", "1")]),
-    Extension(name="buffalo.algo._bpr",
-              sources=["buffalo/algo/_bpr.pyx", "lib/algo_impl/bpr/bpr.cc"] + common_srcs,
-              language="c++",
-              include_dirs=["./include"] + extra_include_dirs,
-              libraries=["gomp"],
-              extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
-              define_macros=[("NPY_NO_DEPRECATED_API", "1")]),
-    Extension(name="buffalo.algo._plsi",
-              sources=["buffalo/algo/_plsi.pyx", "lib/algo_impl/plsi/plsi.cc"] + common_srcs,
-              language="c++",
-              include_dirs=["./include"] + extra_include_dirs,
-              libraries=["gomp"],
-              extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
-              define_macros=[("NPY_NO_DEPRECATED_API", "1")]),
-    Extension(name="buffalo.algo._warp",
-              sources=["buffalo/algo/_warp.pyx", "lib/algo_impl/warp/warp.cc"] + common_srcs,
-              language="c++",
-              include_dirs=["./include"] + extra_include_dirs,
-              libraries=["gomp"],
-              extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
-              define_macros=[("NPY_NO_DEPRECATED_API", "1")]),
-    Extension(name="buffalo.algo._w2v",
-              sources=["buffalo/algo/_w2v.pyx", "lib/algo_impl/w2v/w2v.cc"] + common_srcs,
-              language="c++",
-              include_dirs=["./include"] + extra_include_dirs,
-              libraries=["gomp"],
-              extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
-              define_macros=[("NPY_NO_DEPRECATED_API", "1")]),
-    Extension(name="buffalo.misc._log",
-              sources=["buffalo/misc/_log.pyx"] + common_srcs,
-              language="c++",
-              include_dirs=["./include"] + extra_include_dirs,
-              libraries=["gomp"],
-              extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags),
-    Extension(name="buffalo.data.fileio",
-              sources=["buffalo/data/fileio.pyx"],
-              language="c++",
-              libraries=["gomp"],
-              extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags),
-    Extension(name="buffalo.parallel._core",
-              sources=["buffalo/parallel/_core.pyx"],
-              language="c++",
-              libraries=["gomp"],
-              include_dirs=extra_include_dirs,
-              extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
-              define_macros=[("NPY_NO_DEPRECATED_API", "1")]),
+    Extension(
+        name="buffalo.algo._als",
+        sources=["buffalo/algo/_als.pyx", "lib/algo_impl/als/als.cc"] + common_srcs,
+        language="c++",
+        include_dirs=["./include"] + extra_include_dirs,
+        libraries=["gomp"],
+        extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
+        define_macros=[("NPY_NO_DEPRECATED_API", "1")],
+    ),
+    Extension(
+        name="buffalo.algo._eals",
+        sources=["buffalo/algo/_eals.pyx", "lib/algo_impl/eals/eals.cc"] + common_srcs,
+        language="c++",
+        include_dirs=["./include"] + extra_include_dirs,
+        libraries=["gomp"] + extra_libraries,
+        extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
+        define_macros=[("NPY_NO_DEPRECATED_API", "1")] + extra_define_macros,
+    ),
+    Extension(
+        name="buffalo.algo._cfr",
+        sources=["buffalo/algo/_cfr.pyx", "lib/algo_impl/cfr/cfr.cc"] + common_srcs,
+        language="c++",
+        include_dirs=["./include"] + extra_include_dirs,
+        libraries=["gomp"],
+        extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
+        define_macros=[("NPY_NO_DEPRECATED_API", "1")],
+    ),
+    Extension(
+        name="buffalo.algo._bpr",
+        sources=["buffalo/algo/_bpr.pyx", "lib/algo_impl/bpr/bpr.cc"] + common_srcs,
+        language="c++",
+        include_dirs=["./include"] + extra_include_dirs,
+        libraries=["gomp"],
+        extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
+        define_macros=[("NPY_NO_DEPRECATED_API", "1")],
+    ),
+    Extension(
+        name="buffalo.algo._plsi",
+        sources=["buffalo/algo/_plsi.pyx", "lib/algo_impl/plsi/plsi.cc"] + common_srcs,
+        language="c++",
+        include_dirs=["./include"] + extra_include_dirs,
+        libraries=["gomp"],
+        extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
+        define_macros=[("NPY_NO_DEPRECATED_API", "1")],
+    ),
+    Extension(
+        name="buffalo.algo._warp",
+        sources=["buffalo/algo/_warp.pyx", "lib/algo_impl/warp/warp.cc"] + common_srcs,
+        language="c++",
+        include_dirs=["./include"] + extra_include_dirs,
+        libraries=["gomp"],
+        extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
+        define_macros=[("NPY_NO_DEPRECATED_API", "1")],
+    ),
+    Extension(
+        name="buffalo.algo._w2v",
+        sources=["buffalo/algo/_w2v.pyx", "lib/algo_impl/w2v/w2v.cc"] + common_srcs,
+        language="c++",
+        include_dirs=["./include"] + extra_include_dirs,
+        libraries=["gomp"],
+        extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
+        define_macros=[("NPY_NO_DEPRECATED_API", "1")],
+    ),
+    Extension(
+        name="buffalo.misc._log",
+        sources=["buffalo/misc/_log.pyx"] + common_srcs,
+        language="c++",
+        include_dirs=["./include"] + extra_include_dirs,
+        libraries=["gomp"],
+        extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
+    ),
+    Extension(
+        name="buffalo.data.fileio",
+        sources=["buffalo/data/fileio.pyx"],
+        language="c++",
+        libraries=["gomp"],
+        extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
+    ),
+    Extension(
+        name="buffalo.parallel._core",
+        sources=["buffalo/parallel/_core.pyx"],
+        language="c++",
+        libraries=["gomp"],
+        include_dirs=extra_include_dirs,
+        extra_compile_args=["-fopenmp", "-std=c++14", "-O3"] + extended_compile_flags,
+        define_macros=[("NPY_NO_DEPRECATED_API", "1")],
+    ),
 ]
 
 if CUDA:
@@ -154,14 +188,18 @@ if CUDA:
                 "buffalo/algo/cuda/_als.pyx",
                 "lib/cuda/als/als.cu",
                 "./3rd/json11/json11.cpp",
-                "lib/misc/log.cc"
+                "lib/misc/log.cc",
             ],
             language="c++",
             extra_compile_args=extra_compile_args,
             library_dirs=[CUDA["lib64"]],
             libraries=["cudart", "cublas", "curand"],
             include_dirs=[
-                "./include", numpy_include_dirs, CUDA["include"], "./3rd/json11", "./3rd/spdlog/include"
+                "./include",
+                numpy_include_dirs,
+                CUDA["include"],
+                "./3rd/json11",
+                "./3rd/spdlog/include",
             ],
             define_macros=[("NPY_NO_DEPRECATED_API", "1")],
         )
@@ -173,14 +211,18 @@ if CUDA:
                 "buffalo/algo/cuda/_bpr.pyx",
                 "lib/cuda/bpr/bpr.cu",
                 "./3rd/json11/json11.cpp",
-                "lib/misc/log.cc"
+                "lib/misc/log.cc",
             ],
             language="c++",
             extra_compile_args=extra_compile_args,
             library_dirs=[CUDA["lib64"]],
             libraries=["cudart", "cublas", "curand"],
             include_dirs=[
-                "./include", numpy_include_dirs, CUDA["include"], "./3rd/json11", "./3rd/spdlog/include"
+                "./include",
+                numpy_include_dirs,
+                CUDA["include"],
+                "./3rd/json11",
+                "./3rd/spdlog/include",
             ],
             define_macros=[("NPY_NO_DEPRECATED_API", "1")],
         )
